@@ -54,7 +54,7 @@ EcAlarmSink.m_FILE_FILTER_OUT_FLAGS = -O%
 # why we can't guess what the ./configure arguments were last time
 # ./configure was called - make distclean cleans the sources
 # completely, wiping out any memory of specific configuration.
-config.make: config.make.in configure
+config.make config.h: config.make.in config.h.in configure
 	./configure
 
 
