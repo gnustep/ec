@@ -1,0 +1,25 @@
+dnl Process this file with autoconf to produce configure.
+
+AC_INIT(EcProcess.h)
+AC_CONFIG_HEADER(config.h)
+AC_PROG_CC
+AC_PROG_CPP
+
+AC_CANONICAL_HOST
+
+dnl start proper config checks
+AC_TYPE_SIGNAL
+
+AC_HEADER_STDC
+AC_HEADER_TIME
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h netinet/in.h netdb.h pwd.h string.h fcntl.h sys/fcntl.h sys/file.h sys/types.h sys/socket.h sys/signal.h stdlib.h unistd.h)
+
+AC_TYPE_GETGROUPS
+AC_TYPE_SIGNAL
+AC_TYPE_MODE_T
+
+AC_CHECK_FUNCS(getpid setpgid)
+
+AC_OUTPUT(config.make)
+
