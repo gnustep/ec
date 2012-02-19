@@ -1,5 +1,5 @@
 /* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to the type of elements in the array set by `getgroups'. Usually
    this is either `int' or `gid_t'. */
@@ -19,6 +19,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
+
+/* Define if you have libreadline */
+#define HAVE_LIBREADLINE 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1

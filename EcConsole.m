@@ -32,10 +32,11 @@
 #import "EcProcess.h"
 #import "NSFileHandle+Printf.h"
 
-#include <sys/signal.h>
+#import "config.h"
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
 #  include <stdlib.h>
+#  include <unistd.h>
 #  include <readline/readline.h>
 #  include <readline/history.h>
 #endif
@@ -70,7 +71,11 @@ static BOOL commandIsRepeat (NSString *string)
   int			pos;
 }
 - (void) connectionBecameInvalid: (NSNotification*)notification;
-#if !WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
+- (void) activateReadline;
+- (void) deactivateReadline;
+- (void) setupConnection;
+#else
 - (void) didRead: (NSNotification*)notification;
 #endif
 - (void) didWrite: (NSNotification*)notification;
@@ -92,7 +97,7 @@ static BOOL commandIsRepeat (NSString *string)
 {
   [ochan puts: @"\nExiting\n"];
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
   [self deactivateReadline];
 #endif
 
@@ -182,11 +187,11 @@ static BOOL commandIsRepeat (NSString *string)
   extra: (void*)extra
   forMode: (NSString*)mode
 {
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
   rl_callback_read_char();
 #else
   NSLog(@"ERROR: this should not get called w/o readline: %s",
-	__PRETTY_FUNCTION__);
+    __PRETTY_FUNCTION__);
 #endif
 }
 
@@ -223,7 +228,7 @@ static BOOL commandIsRepeat (NSString *string)
   [arp release];
 }
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
 
 - (char **)complete:(const char *)_text range:(NSRange)_range
 {
@@ -232,7 +237,7 @@ static BOOL commandIsRepeat (NSString *string)
 
 #endif
 
-#if !WITH_READLINE
+#if !defined(HAVE_LIBREADLINE)
 - (void) didRead: (NSNotification*)notification
 {
   NSDictionary	*userInfo = [notification userInfo];
@@ -471,7 +476,7 @@ static BOOL commandIsRepeat (NSString *string)
       return;
     }
 
-#if !WITH_READLINE
+#if !defined(HAVE_LIBREADLINE)
   if (user == nil)
     {
       if ([cmd length] > 0)
@@ -556,7 +561,7 @@ static BOOL commandIsRepeat (NSString *string)
 	}
     }
   else
-#endif /* WITH_READLINE */
+#endif /* defined(HAVE_LIBREADLINE) */
   if (commandIsRepeat(cmd))
     {
       if (pastWords == nil)
@@ -712,7 +717,7 @@ static BOOL commandIsRepeat (NSString *string)
       ichan = [[NSFileHandle fileHandleWithStandardInput] retain];
       ochan = [[NSFileHandle fileHandleWithStandardOutput] retain];
 
-#if !WITH_READLINE
+#if !defined(HAVE_LIBREADLINE)
       [[NSNotificationCenter defaultCenter] addObserver: self
 		     selector: @selector(didRead:)
 			 name: NSFileHandleReadCompletionNotification
@@ -728,7 +733,7 @@ static BOOL commandIsRepeat (NSString *string)
 {
   NSRunLoop	*loop;
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
   [self setupConnection];
   [self activateReadline];
 #endif
@@ -742,7 +747,7 @@ static BOOL commandIsRepeat (NSString *string)
 	}
     }
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
   [self deactivateReadline];
 #endif
   return 0;
@@ -755,10 +760,10 @@ static BOOL commandIsRepeat (NSString *string)
 
 /* readline handling */
 
-#if WITH_READLINE
+#if defined(HAVE_LIBREADLINE)
 
 /* readline callbacks have no context, so we need this one ... */
-static Console *rlConsole = nil;
+static EcConsole *rlConsole = nil;
 
 static void readlineReadALine(char *_line)
 {
@@ -779,7 +784,8 @@ static char **consoleCompleter(const char *text, int start, int end)
   return [rlConsole complete:text range:NSMakeRange(start, end - start)];
 }
 
-- (void)activateReadline {
+- (void) activateReadline
+{
   rlConsole = self;
   
   /* setup readline */
@@ -798,7 +804,7 @@ static char **consoleCompleter(const char *text, int start, int end)
 			       forMode: NSDefaultRunLoopMode];
 }
 
-- (void)deactivateReadline
+- (void) deactivateReadline
 {
   [[NSRunLoop currentRunLoop] removeEvent: (void*)(uintptr_t)0
 				     type: ET_RDESC 
@@ -809,7 +815,7 @@ static char **consoleCompleter(const char *text, int start, int end)
   rlConsole = nil;
 }
 
-- (void) setupConnectionr
+- (void) setupConnection
 {
   while (self->server == nil)
     {
@@ -906,6 +912,6 @@ static char **consoleCompleter(const char *text, int start, int end)
     }
 }
 
-#endif /* WITH_READLINE */
+#endif /* defined(HAVE_LIBREADLINE) */
 
 @end
