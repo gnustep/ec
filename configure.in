@@ -13,7 +13,7 @@ AC_TYPE_SIGNAL
 AC_HEADER_STDC
 AC_HEADER_TIME
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h netinet/in.h netdb.h pwd.h string.h fcntl.h sys/fcntl.h sys/file.h sys/types.h sys/socket.h sys/signal.h stdlib.h unistd.h)
+AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h netinet/in.h netdb.h pwd.h string.h fcntl.h sys/fcntl.h sys/file.h sys/resource.h sys/time.h sys/types.h sys/socket.h sys/signal.h stdlib.h unistd.h)
 
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL

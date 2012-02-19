@@ -229,10 +229,6 @@ extern NSString*	cmdLogKey(EcLogType t);
 extern NSString*	cmdLogName();
 extern NSString*	cmdLogFormat(EcLogType t, NSString *fmt);
 
-/* Return value of lat signal received, or zero.
- */
-extern int	cmdSignalled();
-
 /* Set/get version/compilation date.
  */
 extern NSString*	cmdVersion(NSString *ver);
@@ -461,6 +457,10 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Used to tell your application to quit.
  */
 - (void) cmdQuit: (int)status;
+
+/** Returns non-zero (a signal) if the process has received a unix signal.
+ */
+- (int) cmdSignalled;
 
 /** Used to tell your application about configuration changes.
  */

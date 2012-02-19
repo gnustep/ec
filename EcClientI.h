@@ -26,7 +26,15 @@
 
    */
 
-@interface	ClientInfo : NSObject
+#import	<Foundation/NSObject.h>
+
+#import	"EcProcess.h"
+
+@class	NSData;
+@class	NSMutableSet;
+@class	NSString;
+
+@interface	EcClientI : NSObject
 {
   id<CmdClient>	theServer;
   id		obj;
@@ -40,7 +48,7 @@
   BOOL		transient;
   BOOL		unregistered;
 }
-- (NSComparisonResult) compare: (ClientInfo*)other;
+- (NSComparisonResult) compare: (EcClientI*)other;
 - (NSData*) config;
 - (NSMutableSet*) files;
 - (BOOL) gnip: (unsigned)seq;

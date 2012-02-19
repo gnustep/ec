@@ -27,8 +27,8 @@ Ec_INTERFACE_VERSION=0.1
 
 NEEDS_GUI=NO
 
-# The library to be compiled
-LIBRARY_NAME=ECCL
+# The libraries to be compiled
+LIBRARY_NAME = ECCL EcTools
 
 # The Objective-C source files to be compiled
 ECCL_OBJC_FILES = \
@@ -53,22 +53,30 @@ ECCL_HEADER_FILES = \
 	EcProcess.h \
 	EcUserDefaults.h \
 
+EcTools_OBJC_FILES = \
+	EcCommand.m \
+	EcConsole.m \
+	EcControl.m \
+	EcClientI.m \
+	NSFileHandle+Printf.m \
+
+
 TOOL_NAME = \
 	Command \
 	Console \
 	Control \
 
 
-Command_OBJC_FILES = Command.m Client.m NSFileHandle+Printf.m
-Command_TOOL_LIBS += -lECCL
+Command_OBJC_FILES = Command.m
+Command_TOOL_LIBS += -lECCL -lEcTools
 Command_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
-Console_OBJC_FILES = Console.m NSFileHandle+Printf.m
-Console_TOOL_LIBS += -lECCL
+Console_OBJC_FILES = Console.m
+Console_TOOL_LIBS += -lECCL -lEcTools
 Console_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
-Control_OBJC_FILES = Control.m Client.m NSFileHandle+Printf.m
-Control_TOOL_LIBS += -lECCL
+Control_OBJC_FILES = Control.m
+Control_TOOL_LIBS += -lECCL -lEcTools
 Control_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
 

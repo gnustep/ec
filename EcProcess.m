@@ -79,6 +79,13 @@
 #ifdef	HAVE_PWD_H
 #include <pwd.h>
 #endif
+#ifdef	HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef	HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 
 
 #if	!defined(EC_DEFAULTS_PREFIX)
@@ -113,7 +120,7 @@ static NSDate	*lastOP = nil;	/* Time of last output by object.	*/
 static Class	cDateClass = 0;
 static Class	dateClass = 0;
 static Class	stringClass = 0;
-static int	signalled = 0;
+static int	cmdSignalled = 0;
 
 static RETSIGTYPE
 ihandler(int sig)
@@ -146,9 +153,9 @@ qhandler(int sig)
    * cleanup after a signal and call free(), the process may hang waiting
    * for a lock that the interupted malloc() functioin still holds.
    */
-  if (0 == signalled)
+  if (0 == cmdSignalled)
     {
-      signalled = sig;
+      cmdSignalled = sig;
     }
   else
     {
@@ -165,12 +172,6 @@ qhandler(int sig)
 #if	RETSIGTYPE != void
   return 0;
 #endif
-}
-
-int
-cmdSignalled()
-{
-  return signalled;
 }
 
 NSString*
@@ -953,6 +954,87 @@ static NSString	*noFiles = @"No log files to archive";
   return [cmdDefs objectForKey: key];
 }
 
+- (NSString*) cmdDataDirectory
+{
+  if (dataDir == nil)
+    {
+      NSFileManager	*mgr = [NSFileManager defaultManager];
+      NSString		*str = cmdUserDir();
+      BOOL		flag;
+
+      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+	{
+	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	    {
+	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+		{
+		  NSLog(@"Unable to create directory - %@", str);
+		  return nil;
+		}
+	    }
+	  else
+	    {
+	      flag = YES;
+	    }
+	}
+      if (flag == NO)
+	{
+	  NSLog(@"The path '%@' is not a directory", str);
+	  return nil;
+	}
+
+      str = [str stringByAppendingPathComponent: @"Data"];
+      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+	{
+	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	    {
+	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+		{
+		  NSLog(@"Unable to create directory - %@", str);
+		  return nil;
+		}
+	    }
+	  else
+	    {
+	      flag = YES;
+	    }
+	}
+      if (flag == NO)
+	{
+	  NSLog(@"The path '%@' is not a directory", str);
+	  return nil;
+	}
+
+      if (homeDir != nil)
+	{
+	  str = [str stringByAppendingPathComponent: homeDir];
+	  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+	    {
+	      if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+		{
+		  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
+		    {
+		      NSLog(@"Unable to create directory - %@", str);
+		      return nil;
+		    }
+		}
+	      else
+		{
+		  flag = YES;
+		}
+	    }
+	  if (flag == NO)
+	    {
+	      NSLog(@"The path '%@' is not a directory", str);
+	      return nil;
+	    }
+	}
+
+      ASSIGNCOPY(dataDir, str);
+    }
+  return dataDir;
+}
+
 - (NSUserDefaults*) cmdDefaults
 {
   return cmdDefs;
@@ -1171,90 +1253,14 @@ static NSString	*noFiles = @"No log files to archive";
   return cmdName;
 }
 
+- (int) cmdSignalled
+{
+  return cmdSignalled;
+}
+
 - (NSDate*) cmdStarted
 {
   return started;
-}
-
-- (NSString*) cmdDataDirectory
-{
-  if (dataDir == nil)
-    {
-      NSFileManager	*mgr = [NSFileManager defaultManager];
-      NSString		*str = cmdUserDir();
-      BOOL		flag;
-
-      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
-	    {
-	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-		{
-		  NSLog(@"Unable to create directory - %@", str);
-		  return nil;
-		}
-	    }
-	  else
-	    {
-	      flag = YES;
-	    }
-	}
-      if (flag == NO)
-	{
-	  NSLog(@"The path '%@' is not a directory", str);
-	  return nil;
-	}
-
-      str = [str stringByAppendingPathComponent: @"Data"];
-      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
-	    {
-	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-		{
-		  NSLog(@"Unable to create directory - %@", str);
-		  return nil;
-		}
-	    }
-	  else
-	    {
-	      flag = YES;
-	    }
-	}
-      if (flag == NO)
-	{
-	  NSLog(@"The path '%@' is not a directory", str);
-	  return nil;
-	}
-
-      if (homeDir != nil)
-	{
-	  str = [str stringByAppendingPathComponent: homeDir];
-	  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-	    {
-	      if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
-		{
-		  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
-		    {
-		      NSLog(@"Unable to create directory - %@", str);
-		      return nil;
-		    }
-		}
-	      else
-		{
-		  flag = YES;
-		}
-	    }
-	  if (flag == NO)
-	    {
-	      NSLog(@"The path '%@' is not a directory", str);
-	      return nil;
-	    }
-	}
-
-      ASSIGNCOPY(dataDir, str);
-    }
-  return dataDir;
 }
 
 - (oneway void) alarm: (in bycopy EcAlarm*)event
@@ -1914,11 +1920,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   
   [self cmdAudit: @"Started `%@'", [self cmdName]];
   
-  while ([c isValid])
+  while (YES == [c isValid])
     {
       NS_DURING
 	{
-	  [[NSRunLoop currentRunLoop] run];
+	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+				   beforeDate: nil];
+	  if (0 != [self cmdSignalled])
+	    {
+	      [self cmdQuit: [self cmdSignalled]];
+	    }
 	}
       NS_HANDLER
 	{
@@ -2815,6 +2826,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
+      struct rlimit	rlim;
       NSProcessInfo	*pinfo;
       NSFileManager	*mgr;
       NSEnumerator	*enumerator;
@@ -2823,7 +2835,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NSString		*dbg;
       NSString		*prf;
       BOOL		flag;
-      int		i;
+      NSInteger		i;
 
       EcProc = self;
 
@@ -2928,6 +2940,33 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  if (defs != nil)
 	    {
 	      [cmdDefs registerDefaults: defs];
+	    }
+	}
+
+
+      i = [cmdDefs integerForKey: @"CoreSize"];
+      if (i <= 0)
+	{
+	  i = 250000000;
+	}
+      if (getrlimit(RLIMIT_CORE, &rlim) < 0)
+	{
+	  NSLog(@"Unable to get core file size limit: %d", errno);
+	}
+      else
+	{
+	  if (rlim.rlim_max < i)
+	    {
+	      NSLog(@"Hard limit for core file size (%lu) less than desired",
+		rlim.rlim_max);
+	    }
+	  else
+	    {
+	      rlim.rlim_cur = i;
+	      if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+		{
+		  NSLog(@"Unable to set core file size limit: %d", errno);
+		}
 	    }
 	}
 
@@ -3512,7 +3551,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (void) _timedOut: (NSTimer*)timer
 {
   static BOOL	inProgress = NO;
-  int	sig = cmdSignalled();
+  int	sig = [self cmdSignalled];
 
   cmdPTimer = nil;
   if (sig > 0)

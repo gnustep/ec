@@ -23,4 +23,24 @@ ECCL_CPPFLAGS += \
 	'-DEC_DEFAULTS_STRICT=NO'\
 	'-DEC_EFFECTIVE_USER=@"brains99"'\
 
+# Command_CPPFLAGS ...
+# Allow an alternative base class to be specified ...
+# The file containing that class will also need to be added to the build/link
+# flags if it's not in the standard libraries.
+Command_CPPFLAGS += \
+	'-DEC_BASE_CLASS=EcCommand'\
+
+# Console_CPPFLAGS ...
+# Allow an alternative base class to be specified ...
+# The file containing that class will also need to be added to the build/link
+# flags if it's not in the standard libraries.
+Console_CPPFLAGS += \
+	'-DEC_BASE_CLASS=EcConsole'\
+
+# Control_CPPFLAGS ...
+# Allow an alternative base class to be specified ...
+# The file containing that class will also need to be added to the build/link
+# flags if it's not in the standard libraries.
+Control_CPPFLAGS += \
+	'-DEC_BASE_CLASS=EcControl'\
 

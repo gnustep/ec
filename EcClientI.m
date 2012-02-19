@@ -31,12 +31,12 @@
 #import <Foundation/Foundation.h>
 
 #import "EcProcess.h"
-#import "Client.h"
+#import "EcClientI.h"
 
 
-@implementation ClientInfo
+@implementation EcClientI
 
-- (NSComparisonResult) compare: (ClientInfo*)other
+- (NSComparisonResult) compare: (EcClientI*)other
 {
   return [name compare: [other name]];
 }
