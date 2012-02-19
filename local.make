@@ -1,6 +1,7 @@
 #
 # This makefile is intended to allow site-local customisation of certain
-# hard-coded defaults.  Edit it to suit your system if necessary.
+# hard-coded defaults.  Edit it to suit your system if necessary and place
+# it in the directory above the ECCL package.
 #
 
 # ECCL_CPPFLAGS ...

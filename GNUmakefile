@@ -19,7 +19,7 @@ endif
 include $(GNUSTEP_MAKEFILES)/common.make
 
 -include config.make
--include local.make
+-include ../local.make
 
 PACKAGE_NAME=EnterpriseControlConfigurationLogging
 PACKAGE_VERSION=0.1.0
