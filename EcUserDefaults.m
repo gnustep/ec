@@ -350,25 +350,23 @@ static NSLock 		*lock = nil;
 - (BOOL) setConfiguration: (NSDictionary*)config
 {
   NSDictionary	*old = [self volatileDomainForName: @"EcConfiguration"];
-  BOOL		changed = NO;
 
-  if (NO == [old isEqual: config])
+  if (old != config && NO == [old isEqual: config])
     {
-      [self removeVolatileDomainForName: @"EcConfiguration"];
-      changed = YES;
-    }
-  if (nil != config)
-    {
-      [self setVolatileDomain: config forName: @"EcConfiguration"];
-      changed = YES;
-    }
-  if (YES == changed)
-    {
+      if (nil != old)
+	{
+	  [self removeVolatileDomainForName: @"EcConfiguration"];
+	}
+      if (nil != config)
+	{
+	  [self setVolatileDomain: config forName: @"EcConfiguration"];
+	}
       [[NSNotificationCenter defaultCenter] postNotificationName:
 	NSUserDefaultsDidChangeNotification
 	object: self];
+      return YES;
     }
-  return changed;
+  return NO;
 }
 
 @end
