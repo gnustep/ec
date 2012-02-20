@@ -29,7 +29,6 @@
 
 #import <Foundation/Foundation.h>
 
-#import "EcAlarmSinkSNMP.h"
 #import "EcProcess.h"
 
 #if	!defined(EC_BASE_CLASS)
@@ -42,7 +41,6 @@ void
 inner_main()
 {
   NSDictionary		*defs;
-  EcAlarmSinkSNMP	*sink;
   NSAutoreleasePool	*arp = [NSAutoreleasePool new];
 
   cmdVersion(@"$Date: 2012-02-18 08:30:36 +0000 (Sat, 18 Feb 2012) $ $Revision: 66052 $");
@@ -58,14 +56,8 @@ inner_main()
       exit(1);
     }
 
-  /* Start the SNMP alarm sink before entering run loop.
-   */
-  sink = [[EcAlarmSinkSNMP alarmSinkSNMP] retain];
-
   [EcProc prcRun];
 
-  [sink shutdown];
-  [sink release];
   [arp release];
   exit(0);
 }

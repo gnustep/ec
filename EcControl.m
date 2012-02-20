@@ -1725,6 +1725,22 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   return self;
 }
 
+- (int) prcRun
+{
+  int	result;
+
+  /* Start the SNMP alarm sink before entering run loop.
+   */
+  sink = [[EcAlarmSinkSNMP alarmSinkSNMP] retain];
+
+  result = [super prcRun];
+
+  [sink shutdown];
+  DESTROY(sink);
+
+  return result;
+}
+
 - (NSData*) registerCommand: (id<Command>)c
 		       name: (NSString*)n
 {
