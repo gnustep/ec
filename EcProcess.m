@@ -98,6 +98,9 @@
 #define	EC_EFFECTIVE_USER @"ecuser"
 #endif
 
+@class	EcCommand;
+@class	EcControl;
+
 /* Lock for controlling access to per-process singleton instance.
  */
 static NSRecursiveLock	*prcLock = nil;
@@ -3030,7 +3033,28 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       started = RETAIN([dateClass date]);
 
+      /* See if we have a name specified for this process.
+       */
       ASSIGN(cmdName, [cmdDefs stringForKey: @"ProgramName"]);
+
+      /* If there's no ProgramName specified, but this is a Control server,
+       * try looking for the ControlName instead.
+       */
+      if (nil == cmdName && YES == [self isKindOfClass: [EcControl class]])
+	{
+	  ASSIGN(cmdName, [cmdDefs stringForKey: @"ControlName"]);
+	}
+
+      /* If there's no ProgramName specified, but this is a Command server,
+       * try looking for the CommandName instead.
+       */
+      if (nil == cmdName && YES == [self isKindOfClass: [EcCommand class]])
+	{
+	  ASSIGN(cmdName, [cmdDefs stringForKey: @"CommandName"]);
+	}
+
+      /* Finally, if no name is given at all, use the standard process name.
+       */
       if (nil == cmdName)
 	{
 	  ASSIGN(cmdName, [pinfo processName]);
