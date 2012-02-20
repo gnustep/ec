@@ -98,9 +98,6 @@
 #define	EC_EFFECTIVE_USER @"ecuser"
 #endif
 
-@class	EcCommand;
-@class	EcControl;
-
 /* Lock for controlling access to per-process singleton instance.
  */
 static NSRecursiveLock	*prcLock = nil;
@@ -3040,7 +3037,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       /* If there's no ProgramName specified, but this is a Control server,
        * try looking for the ControlName instead.
        */
-      if (nil == cmdName && YES == [self isKindOfClass: [EcControl class]])
+      if (nil == cmdName
+	&& Nil != NSClassFromString(@"EcControl")
+        && YES == [self isKindOfClass: NSClassFromString(@"EcControl")])
 	{
 	  ASSIGN(cmdName, [cmdDefs stringForKey: @"ControlName"]);
 	}
@@ -3048,7 +3047,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       /* If there's no ProgramName specified, but this is a Command server,
        * try looking for the CommandName instead.
        */
-      if (nil == cmdName && YES == [self isKindOfClass: [EcCommand class]])
+      if (nil == cmdName
+	&& Nil != NSClassFromString(@"EcCommand")
+        && YES == [self isKindOfClass: NSClassFromString(@"EcCommand")])
 	{
 	  ASSIGN(cmdName, [cmdDefs stringForKey: @"CommandName"]);
 	}
