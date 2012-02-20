@@ -1,0 +1,62 @@
+
+Here's the sort of thing you might do to set up SNMP support on your
+system, assuming that you have net-snmp installed in the normal
+locations for something like RedHat Linux.
+
+0. Edit the example GNSTEP-MIB.txt to contain your own organisation's
+   Private Enterprise Number
+
+1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs
+
+2. edit '/etc/sysconfig/snmpd.options' to contain:
+OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmpd"
+export OPTIONS
+so that any debug for the gnustep module would be logged
+in /var/log/snmpd
+
+3. edit '/etc/sysconfig/snmptrapd.options' to contain:
+OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmptrapd"
+export OPTIONS
+so that any debug for the gnustep module would be logged
+in /var/log/snmptrapd
+
+4. edit /etc/snmp/snmpd.conf to get it to send traps to snmptrapd ...
+
+rwcommunity     public
+trap2sink       localhost public
+
+and to accept agentx connections via tcp ...
+
+agentxsocket    tcp:localhost:705
+master          agentx
+
+5. restart with '/etc/rc.d/init.d/snmpd restart'
+
+6. build/install/run the Control server
+
+7. test with snmpwalk ...
+
+To look at EVERYTHING:
+snmpwalk -v 1 -c public localhost GNUSTEP-MIB::gnustep
+
+To look at the current alarms table:
+snmpwalk -v 1 -c public localhost GNUSTEP-MIB::gnustep.alarms.alarmsTable
+
+To look at the current alarms table in a tabular format (rows of columns) which will be far too wide to view in a normal terminal window:
+snmptable -v 1 -c public localhost GNUSTEP-MIB::gnustep.alarms.alarmsTable
+
+To look at the managed objects table:
+snmpwalk -v 1 -c public localhost GNUSTEP-MIB::gnustep.objects
+
+You should be able to get the heartbeat poll interval with:
+snmpget -v 1 -c public localhost GNUSTEP-MIB::pollHeartBeat.0
+
+You should be able to set the heartbeat poll interval to two minutes with 
+snmpset -v 1 -c public localhost GNUSTEP-MIB::pollHeartBeat.0 i 2
+
+You should be able to set the resync flag interval with
+snmpset -v 1 -c public localhost GNUSTEP-MIB::resyncFlag.0 i 1
+and set it back to normal with
+snmpset -v 1 -c public localhost GNUSTEP-MIB::resyncFlag.0 i 0
+
+

@@ -126,7 +126,7 @@ static BOOL
 heartbeat(time_t now);
 
 static void
-init_EcTrapSink(void);
+init_EcAlarmSink(void);
 
 static Netsnmp_Node_Handler alarmsTable_handler;
 
@@ -349,7 +349,7 @@ heartbeat(time_t now)
    * Send the trap to the list of configured destinations
    *  and clean up
    */
-  DEBUGMSGTL(("EcTrapSink", "Sending heartbeat trap.\n"));
+  DEBUGMSGTL(("EcAlarmSink", "Sending heartbeat trap.\n"));
   send_v2trap(var_list);
   snmp_free_varbind(var_list);
   return YES;
@@ -435,7 +435,7 @@ housekeeping(unsigned int clientreg, void *clientarg)
 
 
 static void
-init_EcTrapSink(void)
+init_EcAlarmSink(void)
 {
   netsnmp_handler_registration		*reg;
   netsnmp_table_registration_info	*tinfo;
@@ -685,7 +685,7 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
   int32_t	*pollHeartBeat_cache = NULL;
   int32_t	tmp;
 
-  DEBUGMSGTL(("EcTrapSink", "Got instance request:\n"));
+  DEBUGMSGTL(("EcAlarmSink", "Got instance request:\n"));
 
   switch (reqinfo->mode)
     {
@@ -713,7 +713,7 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
 	  }
 	netsnmp_request_add_list_data(requests,
 				      netsnmp_create_data_list
-				      ("EcTrapSink",
+				      ("EcAlarmSink",
 				       pollHeartBeat_cache, free));
 	break;
 
@@ -726,18 +726,18 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
 	  {
 	    pollHeartBeat = tmp;
 	    [alarmSink _store];
-	    DEBUGMSGTL(("EcTrapSink", "updated pollHeartBeat -> %d\n", tmp));
+	    DEBUGMSGTL(("EcAlarmSink", "updated pollHeartBeat -> %d\n", tmp));
 	  }
 	else
 	  {
-	    DEBUGMSGTL(("EcTrapSink", "ignored pollHeartBeat -> %d\n", tmp));
+	    DEBUGMSGTL(("EcAlarmSink", "ignored pollHeartBeat -> %d\n", tmp));
 	    netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_WRONGVALUE);
 	  }
 	break;
 
       case MODE_SET_UNDO:
 	pollHeartBeat =
-	  *((int32_t*)netsnmp_request_get_list_data(requests, "EcTrapSink"));
+	  *((int32_t*)netsnmp_request_get_list_data(requests, "EcAlarmSink"));
 	break;
 
       case MODE_SET_COMMIT:
@@ -1093,14 +1093,14 @@ static NSLock	*classLock = nil;
   p = [NSString stringWithFormat: @"tcp:%@:%@", _host, _name];
   netsnmp_ds_set_string(NETSNMP_DS_APPLICATION_ID,
     NETSNMP_DS_AGENT_X_SOCKET, [p UTF8String]);
-  if (0 != init_agent("EcTrapSink"))
+  if (0 != init_agent("EcAlarmSink"))
     {
-      NSLog(@"Unable to initialise EcTrapSink as an SNMP sub-agent");
+      NSLog(@"Unable to initialise EcAlarmSink as an SNMP sub-agent");
     }
 
   /* Initialize MIB code here
    */
-  init_EcTrapSink();
+  init_EcAlarmSink();
 
   /* Will read ecAlarmSinkSNMP.conf files.
    */
@@ -1163,7 +1163,7 @@ static NSLock	*classLock = nil;
   [pool release];
   pool = [NSAutoreleasePool new];
 
-  snmp_log(LOG_INFO,"Control-SNMP-agent is up and running.\n");
+  // snmp_log(LOG_INFO,"EcAlarmSinkSNMP startup.\n");
 
   _isRunning = YES;
   while (NO == _shouldStop)
@@ -1174,8 +1174,9 @@ static NSLock	*classLock = nil;
     }
   [pool release];
 
+  // snmp_log(LOG_INFO,"EcAlarmSinkSNMP shutdown.\n");
   /* at shutdown time */
-  snmp_shutdown("EcTrapSink");
+  snmp_shutdown("EcAlarmSink");
   _isRunning = NO;
   SOCK_CLEANUP;
 }
@@ -1428,7 +1429,7 @@ static NSLock	*classLock = nil;
   time_t	now;
   BOOL	changed = NO;
 
-  DEBUGMSGTL(("EcTrapSink", "Housekeeping timer called.\n"));
+  DEBUGMSGTL(("EcAlarmSink", "Housekeeping timer called.\n"));
 
   [_alarmLock lock];
   if (NO == _inTimeout && YES == _isRunning && NO == _shouldStop)

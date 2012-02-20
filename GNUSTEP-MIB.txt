@@ -1,0 +1,266 @@
+
+--
+--
+--
+
+GNUSTEP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+  MODULE-IDENTITY,
+  OBJECT-TYPE,
+  NOTIFICATION-TYPE,
+  Counter,
+  IpAddress,
+  enterprises
+    FROM SNMPv2-SMI
+  DisplayString
+    FROM SNMPv2-TC;
+
+gnustep MODULE-IDENTITY
+  LAST-UPDATED "201202191200Z"
+  ORGANIZATION "GNUstep"
+  CONTACT-INFO "Developer GNUstep <gnustep-dev@gnu.org>"
+  DESCRIPTION  "GNUstep MIB"
+  REVISION     "201202191200Z"
+  DESCRIPTION  "First revision of the MIB"
+::= { enterprises XXXXX }
+
+alarms OBJECT IDENTIFIER ::= { gnustep 1 }
+objects OBJECT IDENTIFIER ::= { gnustep 2 }
+traps OBJECT IDENTIFIER ::= { gnustep 3 }
+trapsPrefix OBJECT IDENTIFIER ::= { traps 0 }
+
+-----------------------------------------------
+-- Definition of the table of active alarms --
+-----------------------------------------------
+alarmsTable OBJECT-TYPE
+SYNTAX SEQUENCE OF AlarmsEntry
+MAX-ACCESS not-accessible
+STATUS current
+DESCRIPTION "List of active alarms in the platform."
+::= { alarms 1 }
+
+--------------------------------------------------------
+-- Definition of the tables index --
+--------------------------------------------------------
+alarmsEntry OBJECT-TYPE
+SYNTAX AlarmsEntry
+MAX-ACCESS not-accessible
+STATUS current
+DESCRIPTION "This is the index used to redirect each column."
+INDEX { notificationID }
+::= { alarmsTable 1 }
+
+-----------------------------------------------------------------------
+-- Definition of the contents of each record on the table --
+-----------------------------------------------------------------------
+AlarmsEntry ::=
+SEQUENCE {
+notificationID INTEGER,
+perceivedSeverity INTEGER,
+firstEventDate DisplayString,
+eventDate DisplayString,
+managedObject DisplayString,
+ideventType INTEGER,
+idprobableCause INTEGER,
+specificProblem DisplayString,
+proposedRepairAction DisplayString,
+additionalText DisplayString,
+trendIndicator DisplayString
+}
+
+-----------------------------------------------
+-- Definition of the fields for each record --
+-----------------------------------------------
+notificationID OBJECT-TYPE
+SYNTAX INTEGER ( 0 .. 214748647 )
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Single identifier of each alarm"
+::= { alarmsEntry 1 }
+
+perceivedSeverity OBJECT-TYPE
+SYNTAX INTEGER {
+indeterminate(0),
+critical(1),
+major(2),
+minor(3),
+warning(4),
+cleared(5) }
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Severity of the alarm"
+::= { alarmsEntry 2 }
+
+firstEventDate OBJECT-TYPE
+SYNTAX DisplayString
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "First alarm concurrence date. Format: YYYYMMDD HH:MM:SS"
+::= { alarmsEntry 3 }
+
+eventDate OBJECT-TYPE
+SYNTAX DisplayString
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Alarm concurrence date. Format: YYYYMMDD HH:MM:SS"
+::= { alarmsEntry 4 }
+
+managedObject OBJECT-TYPE
+SYNTAX DisplayString (SIZE (0..127) )
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Single identifier of the alarm object"
+::= { alarmsEntry 5 }
+
+ideventType OBJECT-TYPE
+SYNTAX INTEGER {
+communicationsAlarm(2),
+environmentalAlarm(3),
+equipmentAlarm(4),
+processingErrorAlarm(10),
+qualityofServiceAlarm(11) }
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Identifier of the type of event"
+::= { alarmsEntry 6 }
+
+
+-- The X.733 specification says that the probable cause is an OID, --
+-- but for ease of use this MIB defines it as an INTEGER whose value is --
+-- that of the rightmost part of the OID defined in X.721 specification. --
+-- For example the OID 'adapterError' {9.3.2.0.0.1} is represented as --
+-- the integer 1 and 'outOfMemory' {9.3.2.0.0.32} is represented as 32 --
+
+idprobableCause OBJECT-TYPE
+SYNTAX INTEGER
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Identifier of the possible event cause"
+::= { alarmsEntry 7 }
+
+specificProblem OBJECT-TYPE
+SYNTAX DisplayString
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Additional description of the event cause"
+::= { alarmsEntry 8 }
+
+proposedRepairAction OBJECT-TYPE
+SYNTAX DisplayString
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Solution suggested for the fault detected"
+::= { alarmsEntry 9 }
+
+additionalText OBJECT-TYPE
+SYNTAX DisplayString
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Detailed description of the problem"
+::= { alarmsEntry 10 }
+
+trendIndicator OBJECT-TYPE
+  SYNTAX DisplayString
+  MAX-ACCESS read-only
+  STATUS current
+  DESCRIPTION
+"Description of the alarm trends. For alarms by threshold.
+It can have the following values:
+0 (zero) ==>  First problem incident.
++  ==> The importance of the alarm is higher than the last one sent.
+-  ==> The importance of the alarm is lower than the last one sent."
+::= { alarmsEntry 11 }
+
+--------------------------------------------------------------------
+-- Flag for the inhibition of the traps sent during resynchronization--
+--------------------------------------------------------------------
+
+resyncFlag OBJECT-TYPE
+SYNTAX INTEGER ( 0 ..1 )
+MAX-ACCESS read-write
+STATUS current
+DESCRIPTION
+"Flag for the inhibition of the traps sent during the resynchronization process.
+1 = Resync in progress. The agent must store all traps to send them later on."
+::= { alarms  2 }
+
+------------------------------------------------
+-- Sequence number of the last trap sent --
+------------------------------------------------
+trapSequenceNumber OBJECT-TYPE
+SYNTAX INTEGER
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Trap sequence number"
+::= { alarms 3 }
+
+------------------------------------------------
+-- Heart beat period                     --
+------------------------------------------------
+pollHeartBeat OBJECT-TYPE
+SYNTAX INTEGER
+MAX-ACCESS read-write
+STATUS current
+DESCRIPTION "Indicates the period during which the heart-beat trap is sent. In minutes."
+::= { alarms 4 }
+
+---------------------------------------------------
+-- Definition of the alarm object table --
+---------------------------------------------------
+objectsTable OBJECT-TYPE
+SYNTAX SEQUENCE OF ObjectsEntry
+MAX-ACCESS not-accessible
+STATUS current
+DESCRIPTION "List of alarm objects of the platform."
+::= { objects 1 }
+
+--------------------------------------------------------
+-- Definition of the table index --
+--------------------------------------------------------
+objectsEntry  OBJECT-TYPE
+SYNTAX  ObjectsEntry
+MAX-ACCESS  not-accessible
+STATUS  current
+DESCRIPTION "Index of the alarm object table"
+INDEX { objectId }
+::= { objectsTable 1 }
+
+-----------------------------------------------------------------------
+-- Definition of the contents of each record on the table --
+-----------------------------------------------------------------------
+ObjectsEntry ::=
+SEQUENCE
+{
+  objectId     DisplayString
+}
+objectId OBJECT-TYPE
+SYNTAX DisplayString  (SIZE (0..127) )
+MAX-ACCESS read-only
+STATUS current
+DESCRIPTION "Single identifier of the alarm object"
+::= { objectsEntry 1 }
+
+----------------------------------------------------------------
+-- Definition of the trap sent to the alarm management area    --
+----------------------------------------------------------------
+alarmTrap NOTIFICATION-TYPE
+OBJECTS {
+trapSequenceNumber,
+notificationID,
+perceivedSeverity,
+firstEventDate,
+eventDate,
+objectId,
+ideventType,
+idprobableCause,
+specificProblem,
+proposedRepairAction,
+additionalText,
+trendIndicator
+}
+STATUS current
+DESCRIPTION "Trap format sent."
+::= { trapsPrefix 1 }
+
+END
