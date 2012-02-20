@@ -276,9 +276,9 @@ static NSArray          *modes;
         }
       if (NO == ok)
         {
-          if (serverName == nil)
+          if (nil == serverName)
             {
-              NSLog(@"Unable to log to Command server - %@", str);
+              NSLog(@"%@", str);
             }
           else
             {
