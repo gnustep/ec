@@ -1248,6 +1248,16 @@ static NSString	*noFiles = @"No log files to archive";
   return hdl;
 }
 
+- (void) cmdLostConnectionToServer: (NSString*)name
+{
+  return;
+}
+
+- (void) cmdMadeConnectionToServer: (NSString*)name
+{
+  return;
+}
+
 - (NSString*) cmdName
 {
   return cmdName;
