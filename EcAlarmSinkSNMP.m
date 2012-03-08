@@ -1435,187 +1435,196 @@ static NSLock	*classLock = nil;
   if (NO == _inTimeout && YES == _isRunning && NO == _shouldStop)
     {
       _inTimeout = YES;
-      if (0 == resyncFlag)
+      NS_DURING
 	{
-	  /* Check for alarms.
-	   */
-	  while ([_alarmQueue count] > 0)
+	  if (0 == resyncFlag)
 	    {
-	      id	o = [_alarmQueue objectAtIndex: 0];
-
-	      if (YES == [o isKindOfClass: [EcAlarm class]])
+	      /* Check for alarms.
+	       */
+	      while ([_alarmQueue count] > 0)
 		{
-		  EcAlarm	*next = (EcAlarm*)o;
-		  EcAlarm	*prev = [_alarmsActive member: next];
-		  NSString	*m = [next managedObject];
+		  id	o = [_alarmQueue objectAtIndex: 0];
 
-		  if (nil == prev)
+		  if (YES == [o isKindOfClass: [EcAlarm class]])
 		    {
-		      [next setFirstEventDate: [next eventDate]];
-		    }
-		  else
-		    {
-		      [next setFirstEventDate: [prev firstEventDate]];
-		    }
+		      EcAlarm	*next = (EcAlarm*)o;
+		      EcAlarm	*prev = [_alarmsActive member: next];
+		      NSString	*m = [next managedObject];
 
-		  if ([next perceivedSeverity] == EcAlarmSeverityCleared)
-		    {
-		      if (nil != prev)
+		      if (nil == prev)
 			{
-			  netsnmp_tdata_row	*row;
-
-			  /* Remove from the ObjC table.
-			   */
-			  [prev retain];
-			  [_alarmsActive removeObject: prev];
-
-			  /* Find and remove the SNMP table entry.
-			   */
-			  row = (netsnmp_tdata_row*)[prev extra];
-			  if (0 != row)
-			    {
-			      struct alarmsTable_entry *entry;
-
-			      entry = (struct alarmsTable_entry *)
-				netsnmp_tdata_remove_and_delete_row(alarmsTable,
-				row);
-			      if (0 != entry)
-				{
-				  SNMP_FREE(entry);
-				}
-			    }
-
-			  /* send the clear for the entry.
-			   */
-			  [next setNotificationID: [prev notificationID]];
-			  [alarmSink _trap: next forceClear: NO];
-			  [self alarmFwd: next];
-			  [prev release];
-			  changed = YES;
+			  [next setFirstEventDate: [next eventDate]];
 			}
-		    }
-		  else
-		    {
-		      /* Register any new managed object.
-		       */
-		      if (NO == [managedObjects containsObject: m])
+		      else
 			{
-			  objectsTable_createEntry(m);
-			  [managedObjects addObject: m];
-			  managedObjectsCount = [managedObjects count];
-			  [self domanageFwd: m];
-			  changed = YES;
+			  [next setFirstEventDate: [prev firstEventDate]];
 			}
 
-		      if ((nil == prev) || ([next perceivedSeverity]
-			!= [prev perceivedSeverity]))
+		      if ([next perceivedSeverity] == EcAlarmSeverityCleared)
 			{
-			  netsnmp_tdata_row	*row;
-
-			  if (nil == prev)
+			  if (nil != prev)
 			    {
-			      row = alarmsTable_createEntry
-				([next notificationID]);
-			      /* Add and send the new alarm
+			      netsnmp_tdata_row	*row;
+
+			      /* Remove from the ObjC table.
 			       */
-			      if (++notificationID <= 0) notificationID = 1;
-			      [next setNotificationID: notificationID];
-			    }
-			  else
-			    {
-			      prev = [[prev retain] autorelease];
+			      [prev retain];
 			      [_alarmsActive removeObject: prev];
+
+			      /* Find and remove the SNMP table entry.
+			       */
 			      row = (netsnmp_tdata_row*)[prev extra];
+			      if (0 != row)
+				{
+				  struct alarmsTable_entry *entry;
+
+				  entry = (struct alarmsTable_entry *)
+				    netsnmp_tdata_remove_and_delete_row(alarmsTable,
+				    row);
+				  if (0 != entry)
+				    {
+				      SNMP_FREE(entry);
+				    }
+				}
+
 			      /* send the clear for the entry.
 			       */
 			      [next setNotificationID: [prev notificationID]];
-			      [alarmSink _trap: prev forceClear: YES];
+			      [alarmSink _trap: next forceClear: NO];
+			      [self alarmFwd: next];
+			      [prev release];
+			      changed = YES;
 			    }
-
-			  /* copy new version of data into row
-			   * and send new severity trap.
+			}
+		      else
+			{
+			  /* Register any new managed object.
 			   */
-			  setAlarmTableEntry(row, next);
-			  [_alarmsActive addObject: next];
-			  [alarmSink _trap: next forceClear: NO];
-			  [self alarmFwd: next];
-			  changed = YES;
-			}
-		    }
-		}
-	      else
-		{
-		  NSString	*s = [o description];
-
-		  if (YES == [s hasPrefix: @"domanage "])
-		    {
-		      NSString	*m = [s substringFromIndex: 9];
-
-		      changed = [self snmpClearAlarms: m];
-		      if (NO == [managedObjects containsObject: m])
-			{
-			  objectsTable_createEntry(m);
-			  [managedObjects addObject: m];
-			  managedObjectsCount = [managedObjects count];
-			  changed = YES;
-			}
-		    }
-		  else if (YES == [s hasPrefix: @"unmanage "])
-		    {
-		      NSString	*m = [s substringFromIndex: 9];
-
-		      if (YES == [managedObjects containsObject: m])
-			{
-			  const char		*str;
-			  netsnmp_tdata_row	*row;
-
-			  changed = YES;
-			  [self snmpClearAlarms: m];
-			  str = [m UTF8String];
-			  row = netsnmp_tdata_row_first(objectsTable);
-			  while (0 != row)
+			  if (NO == [managedObjects containsObject: m])
 			    {
-			      struct objectsTable_entry *entry;
-
-			      entry = (struct objectsTable_entry *)row->data;
-			      if (0 == strcmp(entry->objectId, str))
-				{
-				  netsnmp_tdata_remove_and_delete_row
-				    (objectsTable, row);
-				  SNMP_FREE(entry);
-				  break;
-				}
-			      row = netsnmp_tdata_row_next(objectsTable, row);
+			      objectsTable_createEntry(m);
+			      [managedObjects addObject: m];
+			      managedObjectsCount = [managedObjects count];
+			      [self domanageFwd: m];
+			      changed = YES;
 			    }
-			  [managedObjects removeObject: m];
-			  if (YES == [m hasSuffix: @"_"])
+
+			  if ((nil == prev) || ([next perceivedSeverity]
+			    != [prev perceivedSeverity]))
 			    {
-			      NSEnumerator	*e;
-			      NSString		*s;
+			      netsnmp_tdata_row	*row;
 
-			      e = [[[managedObjects copy] autorelease]
-				objectEnumerator];
-			      while (nil != (s = [e nextObject]))
+			      if (nil == prev)
 				{
-				  if (YES == [s hasPrefix: m])
-				    {
-				      [managedObjects removeObject: s];
-				    }
+				  row = alarmsTable_createEntry
+				    ([next notificationID]);
+				  /* Add and send the new alarm
+				   */
+				  if (++notificationID <= 0) notificationID = 1;
+				  [next setNotificationID: notificationID];
 				}
+			      else
+				{
+				  prev = [[prev retain] autorelease];
+				  [_alarmsActive removeObject: prev];
+				  row = (netsnmp_tdata_row*)[prev extra];
+				  /* send the clear for the entry.
+				   */
+				  [next setNotificationID: [prev notificationID]];
+				  [alarmSink _trap: prev forceClear: YES];
+				}
+
+			      /* copy new version of data into row
+			       * and send new severity trap.
+			       */
+			      setAlarmTableEntry(row, next);
+			      [_alarmsActive addObject: next];
+			      [alarmSink _trap: next forceClear: NO];
+			      [self alarmFwd: next];
+			      changed = YES;
 			    }
-			  managedObjectsCount = [managedObjects count];
 			}
 		    }
 		  else
 		    {
-		      NSLog(@"ERROR ... unexpected command '%@'", s);
+		      NSString	*s = [o description];
+
+		      if (YES == [s hasPrefix: @"domanage "])
+			{
+			  NSString	*m = [s substringFromIndex: 9];
+
+			  changed = [self snmpClearAlarms: m];
+			  if (NO == [managedObjects containsObject: m])
+			    {
+			      objectsTable_createEntry(m);
+			      [managedObjects addObject: m];
+			      managedObjectsCount = [managedObjects count];
+			      changed = YES;
+			    }
+			}
+		      else if (YES == [s hasPrefix: @"unmanage "])
+			{
+			  NSString	*m = [s substringFromIndex: 9];
+
+			  if (YES == [managedObjects containsObject: m])
+			    {
+			      const char		*str;
+			      netsnmp_tdata_row	*row;
+
+			      changed = YES;
+			      [self snmpClearAlarms: m];
+			      str = [m UTF8String];
+			      row = netsnmp_tdata_row_first(objectsTable);
+			      while (0 != row)
+				{
+				  struct objectsTable_entry *entry;
+
+				  entry = (struct objectsTable_entry *)row->data;
+				  if (0 == strcmp(entry->objectId, str))
+				    {
+				      netsnmp_tdata_remove_and_delete_row
+					(objectsTable, row);
+				      SNMP_FREE(entry);
+				      break;
+				    }
+				  row = netsnmp_tdata_row_next(objectsTable, row);
+				}
+			      [managedObjects removeObject: m];
+			      if (YES == [m hasSuffix: @"_"])
+				{
+				  NSEnumerator	*e;
+				  NSString		*s;
+
+				  e = [[[managedObjects copy] autorelease]
+				    objectEnumerator];
+				  while (nil != (s = [e nextObject]))
+				    {
+				      if (YES == [s hasPrefix: m])
+					{
+					  [managedObjects removeObject: s];
+					}
+				    }
+				}
+			      managedObjectsCount = [managedObjects count];
+			    }
+			}
+		      else
+			{
+			  NSLog(@"ERROR ... unexpected command '%@'", s);
+			}
 		    }
+		  [_alarmQueue removeObjectAtIndex: 0];
+		  [_alarmLock unlock];
+		  [_alarmLock lock];
 		}
-	      [_alarmQueue removeObjectAtIndex: 0];
-	      [_alarmLock unlock];
-	      [_alarmLock lock];
 	    }
 	}
+      NS_HANDLER
+	{
+	  NSLog(@"Problem in housekeeping timeout: %@", localException);
+	}
+      NS_ENDHANDLER
+      _inTimeout = NO;
     }
   [_alarmLock unlock];
   now = time(0);
