@@ -96,8 +96,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary		*launchInfo;
   NSDictionary		*environment;
   NSMutableDictionary	*launches;
-  NSDate		*past;
-  NSDate		*future;
+  NSMutableSet		*launching;
   unsigned		pingPosition;
   NSTimer		*terminating;
   NSDate		*lastUnanswered;
@@ -662,7 +661,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			  r = [self findIn: clients byName: key];
 			  if (r == nil)
 			    {
-			      [launches setObject: past forKey: key];
+			      [launches setObject: [NSDate distantPast]							   forKey: key];
 			      m = @"Ok - I will launch that program "
 				  @"when I get a chance.\n";
 			    }
@@ -740,7 +739,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			  else if ([[inf objectForKey: @"Auto"] boolValue]==NO)
 			    {
 			      date = [launches objectForKey: key];
-			      if (date == nil || date == future)
+			      if (nil == date
+				|| [NSDate distantFuture] == date)
 				{
 				  m = [m stringByAppendingString: 
 				    @"may be launched manually\n"];
@@ -764,7 +764,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 				  date = now;
 				  [launches setObject: date forKey: key];
 				}
-			      if (date == future)
+			      if ([NSDate distantFuture] == date)
 				{
 				  m = [m stringByAppendingString: 
 				    @"manually suspended\n"];
@@ -879,7 +879,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 		      NS_DURING
 			{
-			  [launches setObject: future forKey: [c name]];
+			  [launches setObject: [NSDate distantFuture]
+				       forKey: [c name]];
 			  m = [m stringByAppendingFormat: 
 			    @"Sent 'quit' to '%@'\n", [c name]];
 			  m = [m stringByAppendingString:
@@ -907,8 +908,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			      NSDate	*when = [launches objectForKey: key];
 
 			      found = YES;
-			      [launches setObject: future forKey: key];
-			      if (when != future)
+			      [launches setObject: [NSDate distantFuture]
+					   forKey: key];
+			      if (when != [NSDate distantFuture])
 				{
 				  m = [m stringByAppendingFormat:
 				    @"Suspended %@\n", key];
@@ -1257,8 +1259,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       [timer invalidate];
     }
-  RELEASE(past);
-  RELEASE(future);
+  RELEASE(launching);
   RELEASE(launches);
   DESTROY(control);
   RELEASE(host);
@@ -1440,8 +1441,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       host = RETAIN([[NSHost currentHost] name]);
       clients = [[NSMutableArray alloc] initWithCapacity: 10];
       launches = [[NSMutableDictionary alloc] initWithCapacity: 10];
-      past = RETAIN([NSDate distantPast]);
-      future = RETAIN([NSDate distantFuture]);
+      launching = [[NSMutableSet alloc] initWithCapacity: 10];
 
       timer = [NSTimer scheduledTimerWithTimeInterval: 5.0
 					       target: self
@@ -1481,7 +1481,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      if (disabled == NO)
 		{
 		  date = [launches objectForKey: key];
-		  if (date == nil)
+		  if (nil == date)
 		    {
 		      if (autoLaunch == YES)
 			{
@@ -1522,7 +1522,32 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  NSDictionary	*addE = [taskInfo objectForKey: @"AddE"];
 	  NSDictionary	*setE = [taskInfo objectForKey: @"SetE"];
 
+	  /* Record time of launch start and the fact that this is launching.
+	   */
 	  [launches setObject: now forKey: key];
+	  if (nil == [launching member: key])
+	    {
+	      [launching addObject: key];
+	    }
+	  else
+	    {
+	      EcAlarm	*a;
+	      NSString	*s;
+
+	      /* We are re-attempting a launch of a program which never
+	       * contacted us and registered with us ... raise an alarm.
+	       */
+	      s = EcMakeManagedObject(host, key, nil);
+	      a = [EcAlarm alarmForManagedObject: s
+		at: nil
+		withEventType: EcAlarmEventTypeProcessingError
+		probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+		specificProblem: @"Process availability"
+		perceivedSeverity: EcAlarmSeverityCritical
+		proposedRepairAction: @"Check system status"
+		additionalText: @"failed to register after launch"];
+	      [control alarm: a];
+	    }
 
 	  if (prog != nil && [prog length] > 0)
 	    {
@@ -1676,7 +1701,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       enumerator = [launchInfo keyEnumerator];
       while ((key = [enumerator nextObject]) != nil)
 	{
-	  [launches setObject: future forKey: key];
+	  [launches setObject: [NSDate distantFuture] forKey: key];
 	}
     }
 
@@ -1705,7 +1730,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      NS_DURING
 		{
-		  [launches setObject: future forKey: n];
+		  [launches setObject: [NSDate distantFuture] forKey: n];
 		  [[c obj] cmdQuit: 0];
 		}
 	      NS_HANDLER
@@ -1739,7 +1764,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		{
 		  NS_DURING
 		    {
-		      [launches setObject: future forKey: n];
+		      [launches setObject: [NSDate distantFuture] forKey: n];
 		      [[c obj] cmdQuit: 0];
 		    }
 		  NS_HANDLER
@@ -1820,13 +1845,19 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       [clients addObject: obj];
       RELEASE(obj);
       [clients sortUsingSelector: @selector(compare:)];
+
+      /* This client has launched ... remove it from the set of launching
+       * clients.
+       */
+      [launching removeObject: n];
+
       /*
-       *	If this client is in the list of launchable clients, set
-       *	it's last launch time to now so that if it dies it will
-       *	be restarted.  This overrides any previous shutdown - we
-       *	assume that if it has been started by some process
-       *	external to the Command server then we really don't want
-       *	it shut down.
+       * If this client is in the list of launchable clients, set
+       * it's last launch time to now so that if it dies it will
+       * be restarted.  This overrides any previous shutdown - we
+       * assume that if it has been started by some process
+       * external to the Command server then we really don't want
+       * it shut down.
        */
       if ([launches objectForKey: n] != nil)
 	{
