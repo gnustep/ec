@@ -325,7 +325,7 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Return a short copyright notice ... subclasses should override.
  */
-- (NSString*) prcCopyright;
+- (NSString*) ecCopyright;
 
 /* Call these methods during initialisation of your instance
  * to set up automatic management of connections to servers. 
@@ -639,40 +639,40 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Records the timestamp of the latest significant input for this process.
  * If when is nil the current timestmp is used.
  */
-- (void) prcHadIP: (NSDate*)when;
+- (void) ecHadIP: (NSDate*)when;
 
 /** Records the timestamp of the latest significant output for this process.
  * If when is nil the current timestmp is used.
  */
-- (void) prcHadOP: (NSDate*)when;
+- (void) ecHadOP: (NSDate*)when;
 
 /** Called on the first timeout of a new day.<br />
  * The argument 'when' is the timestamp of the timeout.
  */
-- (void) prcNewDay: (NSCalendarDate*)when;
+- (void) ecNewDay: (NSCalendarDate*)when;
 
 /** Called on the first timeout of a new hour.<br />
  * The argument 'when' is the timestamp of the timeout.
  */
-- (void) prcNewHour: (NSCalendarDate*)when;
+- (void) ecNewHour: (NSCalendarDate*)when;
 
 /** Called on the first timeout of a new minute.<br />
  * The argument 'when' is the timestamp of the timeout.
  */
-- (void) prcNewMinute: (NSCalendarDate*)when;
+- (void) ecNewMinute: (NSCalendarDate*)when;
 
 /** Return heap memory known not to be leaked ... for use in internal
  * monitoring of memory usage.  You should override this ti add in any
  * heap store you have used and know is not leaked.
  */
-- (NSUInteger) prcNotLeaked;
+- (NSUInteger) ecNotLeaked;
 
 /** Establishes the receiver as a DO server and runs the runloop.<br />
  * Returns zero when the run loop completes.<br />
  * Returns one (immediately) if the receiver is transent.<br />
  * Returns two if unable to register as a DO server.
  */
-- (int) prcRun;
+- (int) ecRun;
 
 @end
 

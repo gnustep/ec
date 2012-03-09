@@ -1725,7 +1725,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   return self;
 }
 
-- (int) prcRun
+- (int) ecRun
 {
   int	result;
 
@@ -1733,7 +1733,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
    */
   sink = [[EcAlarmSinkSNMP alarmSinkSNMP] retain];
 
-  result = [super prcRun];
+  result = [super ecRun];
 
   [sink shutdown];
   DESTROY(sink);

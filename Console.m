@@ -50,7 +50,7 @@ inner_main()
       [arp release];
       arp = [NSAutoreleasePool new];
 
-      [EcProc prcRun];
+      [EcProc ecRun];
     }
   [arp release];
   exit(0);

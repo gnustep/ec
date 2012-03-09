@@ -56,7 +56,7 @@ inner_main()
       exit(1);
     }
 
-  [EcProc prcRun];
+  [EcProc ecRun];
 
   [arp release];
   exit(0);

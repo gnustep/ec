@@ -100,7 +100,7 @@
 
 /* Lock for controlling access to per-process singleton instance.
  */
-static NSRecursiveLock	*prcLock = nil;
+static NSRecursiveLock	*ecLock = nil;
 
 static BOOL		cmdFlagDaemon = NO;
 static BOOL		cmdFlagTesting = NO;
@@ -475,7 +475,7 @@ findAction(NSString *cmd)
 }
  
 static NSString*
-prcCommandHost()
+ecCommandHost()
 {
   NSString	*host;
 
@@ -488,7 +488,7 @@ prcCommandHost()
 }
 
 static NSString*
-prcCommandName()
+ecCommandName()
 {
   NSString	*name;
 
@@ -1317,16 +1317,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
-- (NSString*) prcCopyright
+- (NSString*) ecCopyright
 {
   return @"";
 }
 
 + (void) initialize
 {
-  if (nil == prcLock)
+  if (nil == ecLock)
     {
-      prcLock = [NSRecursiveLock new];
+      ecLock = [NSRecursiveLock new];
       dateClass = [NSDate class];
       cDateClass = [NSCalendarDate class];
       stringClass = [NSString class];
@@ -1649,8 +1649,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 	      NS_DURING
 		{
-		  host = prcCommandHost();
-		  name = prcCommandName();
+		  host = ecCommandHost();
+		  name = ecCommandName();
 
 		  proxy = [NSConnection
 		    rootProxyForConnectionWithRegisteredName: name
@@ -1767,7 +1767,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   va_end (ap);
 }
 
-- (void) prcNewDay: (NSCalendarDate*)when
+- (void) ecNewDay: (NSCalendarDate*)when
 {
   NSString		*sub;
 
@@ -1779,12 +1779,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   NSLog(@"%@", [self cmdArchive: sub]);
 }
 
-- (void) prcNewHour: (NSCalendarDate*)when
+- (void) ecNewHour: (NSCalendarDate*)when
 {
   return;
 }
 
-- (void) prcNewMinute: (NSCalendarDate*)when
+- (void) ecNewMinute: (NSCalendarDate*)when
 {
   struct mallinfo	info;
 
@@ -1795,7 +1795,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NSUInteger	notLeaked;
       int		i;
 
-      notLeaked = [self prcNotLeaked];
+      notLeaked = [self ecNotLeaked];
 
       /* Next slot to record in will be zero.
        */
@@ -1876,7 +1876,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   return;
 }
 
-- (void) prcHadIP: (NSDate*)when
+- (void) ecHadIP: (NSDate*)when
 {
   if (when == nil)
     {
@@ -1885,7 +1885,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   ASSIGN(lastIP, when);
 }
 
-- (void) prcHadOP: (NSDate*)when
+- (void) ecHadOP: (NSDate*)when
 {
   if (when == nil)
     {
@@ -1894,12 +1894,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   ASSIGN(lastOP, when);
 }
 
-- (NSUInteger) prcNotLeaked
+- (NSUInteger) ecNotLeaked
 {
   return 0;
 }
 
-- (int) prcRun
+- (int) ecRun
 {
   NSConnection *c;
 
@@ -2782,13 +2782,13 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (void) dealloc
 {
   [[NSNotificationCenter defaultCenter] removeObserver: self];
-  [prcLock lock];
+  [ecLock lock];
   if (self == EcProc)
     {
       EcProc = nil;
       cmdIsInitialised = NO;
     }
-  [prcLock unlock];
+  [ecLock unlock];
   [super dealloc];
 }
 
@@ -2821,17 +2821,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (id) initWithDefaults: (NSDictionary*) defs
 {
-  [prcLock lock];
+  [ecLock lock];
   if (nil != EcProc)
     {
       [self release];
-      [prcLock unlock];
+      [ecLock unlock];
       [NSException raise: NSGenericException
 		  format: @"EcProcess initialiser called more than once"];
     }
   if (nil == (self = [super init]))
     {
-      [prcLock unlock];
+      [ecLock unlock];
       return nil;
     }
   else
@@ -2882,15 +2882,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    prf, prf, prf, prf, prf, prf, prf, prf, prf, prf
 	    );
 	  RELEASE(self);
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  return nil;
 	}
 
       if ([[pinfo arguments] containsObject: @"--version"])
 	{
-	  NSLog(@"%@ %@", [self prcCopyright], cmdVersion(nil));
+	  NSLog(@"%@ %@", [self ecCopyright], cmdVersion(nil));
 	  RELEASE(self);
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  return nil;
 	}
 
@@ -2925,14 +2925,14 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 		{
 		  if (0 != setuid(uid))
 		    {
-		      [prcLock unlock];
+		      [ecLock unlock];
 		      NSLog(@"You must be '%@' to run this.", cmdUser);
 		      exit(1);
 		    }
 		}
 	      else
 		{
-		  [prcLock unlock];
+		  [ecLock unlock];
 		  NSLog(@"You must be '%@' to run this.", cmdUser);
 		  exit(1);
 		}
@@ -2940,7 +2940,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  GSSetUserName(cmdUser);
 	  if (NO == [cmdUser isEqualToString: NSUserName()])
 	    {
-	      [prcLock unlock];
+	      [ecLock unlock];
 	      NSLog(@"You must be '%@' to run this.", cmdUser);
 	      exit(1);
 	    }
@@ -3072,7 +3072,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
-		  [prcLock unlock];
+		  [ecLock unlock];
 		  NSLog(@"Unable to create directory - %@", str);
 		  exit(1);
 		}
@@ -3084,7 +3084,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       if (flag == NO)
 	{
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  NSLog(@"The path '%@' is not a directory", str);
 	  exit(1);
 	}
@@ -3165,7 +3165,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
-		  [prcLock unlock];
+		  [ecLock unlock];
 		  NSLog(@"Unable to create directory - %@", str);
 		  exit(1);
 		}
@@ -3177,14 +3177,14 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       if (flag == NO)
 	{
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  NSLog(@"The path '%@' is not a directory", str);
 	  exit(1);
 	}
 
       if ([mgr changeCurrentDirectoryPath: str] == NO)
 	{
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  NSLog(@"Unable to move to directory - %@", str);
 	  exit(1);
 	}
@@ -3194,7 +3194,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        */
       if ([self cmdDataDirectory] == nil)
 	{
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  NSLog(@"Unable to create/access data directory");
 	  exit(1);
 	}
@@ -3204,7 +3204,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        */
       if (cmdLogsDir(nil) == nil)
 	{
-	  [prcLock unlock];
+	  [ecLock unlock];
 	  NSLog(@"Unable to create/access logs directory");
 	  exit(1);
 	}
@@ -3235,7 +3235,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  hdl = [self cmdLogFile: cmdDebugName];
 	  if (hdl == nil)
 	    {
-	      [prcLock unlock];
+	      [ecLock unlock];
 	      exit(1);
 	    }
 	}
@@ -3272,12 +3272,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       if (YES == [self cmdIsClient] && nil == [self cmdNewServer])
 	{
 	  NSLog(@"Giving up - unable to contact '%@' server on '%@'",
-	    prcCommandName(), prcCommandHost());
+	    ecCommandName(), ecCommandHost());
 	  [self release];
 	  self = nil;
 	}
     }
-  [prcLock unlock];
+  [ecLock unlock];
 
   /*
    *  Finally, put self in background.
@@ -3651,15 +3651,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	  if (YES == newMinute)
 	    {
-	      [self prcNewMinute: now];
+	      [self ecNewMinute: now];
 	    }
 	  if (YES == newHour)
 	    {
-	      [self prcNewHour: now];
+	      [self ecNewHour: now];
 	    }
 	  if (YES == newDay)
 	    {
-	      [self prcNewDay: now];
+	      [self ecNewDay: now];
 	    }
 	  if (cmdTimSelector != 0)
 	    {

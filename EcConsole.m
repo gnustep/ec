@@ -729,7 +729,7 @@ static BOOL commandIsRepeat (NSString *string)
   return self;
 }
 
-- (int) prcRun
+- (int) ecRun
 {
   NSRunLoop	*loop;
 
