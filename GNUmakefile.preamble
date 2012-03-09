@@ -42,6 +42,11 @@ ADDITIONAL_LIB_DIRS +=
 # Additional directories to be created during installation
 #ADDITIONAL_INSTALL_DIRS +=
 
-EcAlarmSink_OBJCFLAGS  += $(shell net-snmp-config --cflags)
-LIBRARIES_DEPEND_UPON += $(shell net-snmp-config --agent-libs)
+#
+# Extras for when building with SNMP support
+#
+ifeq ($(WITH_NET_SNMP),yes)
+  EcAlarmSink_OBJCFLAGS  += $(shell net-snmp-config --cflags)
+  LIBRARIES_DEPEND_UPON += $(shell net-snmp-config --agent-libs)
+endif
 

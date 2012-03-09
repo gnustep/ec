@@ -35,6 +35,9 @@
 #import "EcProcess.h"
 
 static EcAlarmSinkSNMP	*alarmSink = nil;	// The singleton
+static NSLock		*classLock = nil;
+
+#if	defined(WITH_NET_SNMP)
 
 @interface	EcAlarmSinkSNMP (Private)
 
@@ -1005,8 +1008,6 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 
 
 
-static NSLock	*classLock = nil;
-
 @implementation	EcAlarmSinkSNMP
 
 + (EcAlarmSinkSNMP*) alarmSinkSNMP
@@ -1640,3 +1641,64 @@ static NSLock	*classLock = nil;
 
 @end
 
+#else
+
+@implementation	EcAlarmSinkSNMP
+
++ (EcAlarmSinkSNMP*) alarmSinkSNMP
+{
+  EcAlarmSinkSNMP	*sink;
+
+  [classLock lock];
+  sink = [alarmSink retain];
+  [classLock unlock];
+  if (nil == sink)
+    {
+      sink = [self new];
+    }
+  return [sink autorelease];
+}
+
++ (void) initialize
+{
+  if (nil == classLock)
+    {
+      classLock = [NSLock new];
+    }
+}
+
+- (id) init
+{
+  [classLock lock];
+  if (nil == alarmSink)
+    {
+      alarmSink = self = [super init];
+    }
+  else
+    {
+      [self release];
+      self = [alarmSink retain];
+    }
+  [classLock unlock];
+  return self;
+}
+
+- (id) initWithHost: (NSString*)host name: (NSString*)name
+{
+  [classLock lock];
+  if (nil == alarmSink)
+    {
+      alarmSink = self = [super initWithHost: host name: name];
+    }
+  else
+    {
+      [self release];
+      self = [alarmSink retain];
+    }
+  [classLock unlock];
+  return self;
+}
+
+@end
+
+#endif
