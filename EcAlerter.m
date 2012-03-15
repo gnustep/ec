@@ -363,8 +363,9 @@ replaceFields(NSDictionary *fields)
 
 - (NSString*) description
 {
-  return [NSString stringWithFormat: @"%@ -\nEmail:%@\nSms:%@",
-    [super description], email, sms];
+  return [NSString stringWithFormat:
+    @"%@ -\nConfigured with %u rules\nWith SMTP %@:%@ as %@\nPending Email:%@\nPending SMS:%@",
+    [rules count], eHost, ePort, eFrom, [super description], email, sms];
 }
 
 - (void) flushEmailForAddress: (NSString*)address
@@ -790,6 +791,7 @@ replaceFields(NSDictionary *fields)
 	selector: @selector(configure:)
 	name: NSUserDefaultsDidChangeNotification
 	object: [NSUserDefaults standardUserDefaults]];
+      [self configure: nil];
     }
   return self;
 }
