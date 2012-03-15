@@ -251,7 +251,6 @@ replaceFields(NSDictionary *fields)
 {
   NSUserDefaults	*d;
   NSDictionary		*c;
-  NSMutableDictionary	*m;
   NSMutableArray	*r;
   unsigned int		i;
 
@@ -266,8 +265,7 @@ replaceFields(NSDictionary *fields)
    * Cache a copy of the Rules with modifications to store information
    * so we don't need to regenerate it every time we check a message.
    */
-  r = [[[m objectForKey: @"Rules"] mutableCopy]autorelease];
-  [m removeObjectForKey: @"Rules"];
+  r = [[[c objectForKey: @"Rules"] mutableCopy] autorelease];
   for (i = 0; i < [r count]; i++)
     {
       NSMutableDictionary	*md;
