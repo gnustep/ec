@@ -2319,8 +2319,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   if ([mgr isReadableFileAtPath: path] == YES
     && (d = [NSDictionary dictionaryWithContentsOfFile: path]) != nil)
     {
+      d = [NSDictionary dictionaryWithObjectsAndKeys:
+	d, @"Alerter", nil];
       [[self cmdDefaults] setConfiguration: d];
-      if (alerter == nil)
+      if (nil == alerter)
         {
 	  alerter = [EcAlerter new];
 	}

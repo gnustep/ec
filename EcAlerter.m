@@ -361,9 +361,9 @@ replaceFields(NSDictionary *fields)
 
 - (NSString*) description
 {
-  return [NSString stringWithFormat:
-    @"%@ -\nConfigured with %u rules\nWith SMTP %@:%@ as %@\nPending Email:%@\nPending SMS:%@",
-    [rules count], eHost, ePort, eFrom, [super description], email, sms];
+  return [NSString stringWithFormat: @"%@ -\nConfigured with %u rules\n"
+    @"With SMTP %@:%@ as %@\nPending Email:%@\nPending SMS:%@",
+    [super description], [rules count], eHost, ePort, eFrom, email, sms];
 }
 
 - (void) flushEmailForAddress: (NSString*)address
