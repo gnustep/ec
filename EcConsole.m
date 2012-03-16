@@ -690,7 +690,12 @@ static BOOL commandIsRepeat (NSString *string)
   appDefaults = [NSDictionary dictionaryWithObjects: objects
 					    forKeys: keys
 					      count: NUMARGS];
-  self = [super initWithDefaults: appDefaults];
+  return [self initWithDefaults: appDefaults];
+}
+
+- (id) initWithDefaults: (NSDictionary*)defs
+{
+  self = [super initWithDefaults: defs];
   if (self)
     {
       NSUserDefaults	*defs = [self cmdDefaults];

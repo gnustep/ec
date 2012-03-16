@@ -47,6 +47,7 @@ inner_main()
   cmdVersion(@"$Date: 2012-02-13 08:11:49 +0000 (Mon, 13 Feb 2012) $ $Revision: 65934 $");
 
   defs = [NSDictionary dictionaryWithObjectsAndKeys:
+    @"NO", @"Daemon",
 #if	defined(EC_REGISTRATION_DOMAIN)
     EC_REGISTRATION_DOMAIN
 #endif

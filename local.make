@@ -29,7 +29,6 @@ ECCL_CPPFLAGS += \
 	'-DEC_DEFAULTS_PREFIX=@"BS"'\
 	'-DEC_DEFAULTS_STRICT=NO'\
 	'-DEC_EFFECTIVE_USER=@"brains99"'\
-	'-DEC_REGISTRATION_DOMAIN=@"1.3.6.1.4.1.39543.3.0.1",@"TrapOID",@"1.3.6.1.4.1.39543.1",@"AlarmsOID",@"1.3.6.1.4.1.39543.2",@"ObjectsOID",'\
 
 # Command_CPPFLAGS ...
 # Allow an alternative base class to be specified ...
@@ -49,6 +48,9 @@ Console_CPPFLAGS += \
 # Allow an alternative base class to be specified ...
 # The file containing that class will also need to be added to the build/link
 # flags if it's not in the standard libraries.
+# The Control server contains the SNMP alarming support, so we may want to
+# define the OID settings for that.
 Control_CPPFLAGS += \
 	'-DEC_BASE_CLASS=EcControl'\
+	'-DEC_REGISTRATION_DOMAIN=@"1.3.6.1.4.1.39543.3.0.1",@"TrapOID",@"1.3.6.1.4.1.39543.1",@"AlarmsOID",@"1.3.6.1.4.1.39543.2",@"ObjectsOID",'\
 
