@@ -681,7 +681,7 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdLostConnectionToServer: (NSString *)serverName;
 @end
 
-extern EcProcess	*EcProc;	/* Single instance ir nil */
+extern EcProcess	*EcProc;	/* Single instance or nil */
 
 extern	NSString*	cmdConnectDbg;	/* Debug connection attempts.	*/
 extern	NSString*	cmdDefaultDbg;	/* Debug normal stuff.		*/

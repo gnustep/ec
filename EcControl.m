@@ -450,7 +450,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 - (NSString*) description
 {
-  return [NSString stringWithFormat: @"Control server\n%@", alerter];
+  return [NSString stringWithFormat: @"Control server\n%@\n%@", alerter, sink];
 }
 
 - (oneway void) domanage: (NSString*)name

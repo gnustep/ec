@@ -29,6 +29,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import "config.h"
+
 #import "EcAlarm.h"
 #import	"EcAlarmDestination.h"
 #import	"EcAlarmSinkSNMP.h"
@@ -65,6 +67,9 @@ static NSString		*persistentStore = nil;
 static int32_t		notificationID = 0;
 static NSUInteger	managedObjectsCount = 0;
 static NSMutableArray	*managedObjects = nil;
+static NSString		*alarmsOID = nil;
+static NSString		*objectsOID = nil;
+static NSString		*trapOID = nil;
 
 static netsnmp_tdata	*alarmsTable = 0;
 static netsnmp_tdata	*objectsTable = 0;
@@ -450,11 +455,12 @@ init_EcAlarmSink(void)
   int					len;
   int					i;
 
-  defaults = [NSUserDefaults standardUserDefaults];
+  defaults = [EcProc cmdDefaults];
+
   /* First convert the trap OID from dotted integer format to an array
    * of net-snmp oid values.
    */
-  oidString = [defaults stringForKey: @"TrapOID"];
+  oidString = trapOID = [[defaults stringForKey: @"TrapOID"] copy];
   if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.3.0.1";
   array = [oidString componentsSeparatedByString: @"."];
   alarmTrap_len = [array count];
@@ -467,7 +473,7 @@ init_EcAlarmSink(void)
   /* Now use the dotted integer format 'alarms' OID as the basis to set up
    * all the alarm data OIDs.
    */
-  oidString = [defaults stringForKey: @"AlarmsOID"];
+  oidString = alarmsOID = [[defaults stringForKey: @"AlarmsOID"] copy];
   if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.1";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
@@ -550,7 +556,7 @@ init_EcAlarmSink(void)
   trendIndicator_oid[len+2] = 11;
 
   free(oids);
-  oidString = [defaults stringForKey: @"ObjectsOID"];
+  oidString = objectsOID = [[defaults stringForKey: @"ObjectsOID"] copy];
   if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.2";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
@@ -1030,6 +1036,14 @@ objectsTable_handler(netsnmp_mib_handler *handler,
     {
       classLock = [NSLock new];
     }
+}
+
+- (NSString*) description
+{
+  return [NSString stringWithFormat:
+    @"%@\n  AlarmsOID: %@\n  ObjectsOID:%@\n  TrapOID:%@\n  SNMP %@", 
+    [super description], alarmsOID, objectsOID, trapOID,
+    _isRunning ? @"running" : @"not running"];
 }
 
 - (id) init
