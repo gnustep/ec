@@ -3,32 +3,42 @@ Here's the sort of thing you might do to set up SNMP support on your
 system, assuming that you have net-snmp installed in the normal
 locations for something like RedHat Linux.
 
-0. Edit the example GNSTEP-MIB.txt to contain your own organisation's
-   Private Enterprise Number
+0. Edit the example GNUSTEP-MIB.txt to contain your own organisation's
+   Private Enterprise Number.  This stage is optional, you may use the
+   MIB 'as-is' with the GNUstep PEN if you wish.  You only need to use
+   an edited version if your organisation wishes to use its own MIB
+   with additional features not in the GNUstep one.
+   If you are using your own MIB, replace all ocurrances below of
+   GNUSTEP-MIB.txt with the name of your own MIB file.
 
 1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs
 
 2. edit '/etc/sysconfig/snmpd.options' to contain:
-OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmpd"
-export OPTIONS
-so that any debug for the gnustep module would be logged
-in /var/log/snmpd
+   OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmpd"
+   export OPTIONS
+   so that any debug for the gnustep module would be logged
+   in /var/log/snmpd
 
 3. edit '/etc/sysconfig/snmptrapd.options' to contain:
-OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmptrapd"
-export OPTIONS
-so that any debug for the gnustep module would be logged
-in /var/log/snmptrapd
+   OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmptrapd"
+   export OPTIONS
+   so that any debug for the gnustep module would be logged
+   in /var/log/snmptrapd
 
 4. edit /etc/snmp/snmpd.conf to get it to send traps to snmptrapd ...
 
 rwcommunity     public
 trap2sink       localhost public
 
-and to accept agentx connections via tcp ...
+   and to accept agentx connections via tcp ...
 
 agentxsocket    tcp:localhost:705
 master          agentx
+
+   having the snmp daemon listening on port 705 for agentx connections is
+   essential for the default setup of alarming, but you can use a different
+   host and port if you wish (see the EcAlarmSinkSNMP initialisation for
+   details).
 
 5. restart with '/etc/rc.d/init.d/snmpd restart'
 

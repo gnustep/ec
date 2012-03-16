@@ -48,6 +48,9 @@ inner_main()
   defs = [NSDictionary dictionaryWithObjectsAndKeys:
     @"Command", @"HomeDirectory",
     @"YES", @"Daemon",
+#if	defined(EC_REGISTRATION_DOMAIN)
+    EC_REGISTRATION_DOMAIN
+#endif
     nil];
     
   if (nil == [[EC_BASE_CLASS alloc] initWithDefaults: defs])

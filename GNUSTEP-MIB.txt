@@ -21,9 +21,9 @@ gnustep MODULE-IDENTITY
   ORGANIZATION "GNUstep"
   CONTACT-INFO "Developer GNUstep <gnustep-dev@gnu.org>"
   DESCRIPTION  "GNUstep MIB"
-  REVISION     "201202191200Z"
-  DESCRIPTION  "First revision of the MIB"
-::= { enterprises XXXXX }
+  REVISION     "201203161200Z"
+  DESCRIPTION  "First revision of the MIB with PEN"
+::= { enterprises 39543 }
 
 alarms OBJECT IDENTIFIER ::= { gnustep 1 }
 objects OBJECT IDENTIFIER ::= { gnustep 2 }

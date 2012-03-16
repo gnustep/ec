@@ -128,8 +128,11 @@
  * Then restart with '/etc/rc.d/init.d/snmpd restart'
  *
  * <p>All alarming is done a based on three OIDs which may be defined
- * within the user defaults system.  The EcAlarmSinkSNMP is responsible for
- * managing those OIDs (and anything below them in the OID hierarchy).
+ * within the user defaults system.  The EcAlarmSinkSNMP instance is
+ * responsible for managing those OIDs (and anything below them in the
+ * OID hierarchy).<br />
+ * By default the OIDs used are those specified in the GNUstep MIB
+ * (GNUSTEP-MIB.txt), but you may override them as specified below:
  * </p>
  * <deflist>
  *   <term>AlarmsOID</term>

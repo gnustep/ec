@@ -41,11 +41,18 @@ void
 inner_main()
 {
   NSAutoreleasePool	*arp;
+  NSDictionary		*defs;
 
   arp = [NSAutoreleasePool new];
   cmdVersion(@"$Date: 2012-02-13 08:11:49 +0000 (Mon, 13 Feb 2012) $ $Revision: 65934 $");
 
-  if (nil != [EC_BASE_CLASS new])
+  defs = [NSDictionary dictionaryWithObjectsAndKeys:
+#if	defined(EC_REGISTRATION_DOMAIN)
+    EC_REGISTRATION_DOMAIN
+#endif
+    nil];
+    
+  if (nil != [[EC_BASE_CLASS alloc] initWithDefaults: defs])
     {
       [arp release];
       arp = [NSAutoreleasePool new];

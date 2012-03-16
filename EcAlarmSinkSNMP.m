@@ -455,7 +455,7 @@ init_EcAlarmSink(void)
    * of net-snmp oid values.
    */
   oidString = [defaults stringForKey: @"TrapOID"];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.37374.3.0.1";
+  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.3.0.1";
   array = [oidString componentsSeparatedByString: @"."];
   alarmTrap_len = [array count];
   alarmTrap_oid = (oid*)malloc(sizeof(oid) * alarmTrap_len);
@@ -468,7 +468,7 @@ init_EcAlarmSink(void)
    * all the alarm data OIDs.
    */
   oidString = [defaults stringForKey: @"AlarmsOID"];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.37374.1";
+  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.1";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
   oids = (oid*)malloc(sizeof(oid) * (len + 2));
@@ -551,7 +551,7 @@ init_EcAlarmSink(void)
 
   free(oids);
   oidString = [defaults stringForKey: @"ObjectsOID"];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.37374.2";
+  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.2";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
   objectId_len = len + 3;

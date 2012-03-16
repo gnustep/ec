@@ -18,11 +18,18 @@
 # EC_EFFECTIVE_USER
 #   May be used to define an Objective-C string literal to be used to
 #   specify the name of the user to run all EcProcess programs.
+#
+# EC_REGISTRATION_DOMAIN
+#   May be used to define a comma separate dsequence of keys and values
+#   to be used to populate the NSUserDefaults registration domain for the
+#   tools built in this package.
+#
 
 ECCL_CPPFLAGS += \
 	'-DEC_DEFAULTS_PREFIX=@"BS"'\
 	'-DEC_DEFAULTS_STRICT=NO'\
 	'-DEC_EFFECTIVE_USER=@"brains99"'\
+	'-DEC_REGISTRATION_DOMAIN=@"1.3.6.1.4.1.39543.3.0.1",@"TrapOID",@"1.3.6.1.4.1.39543.1",@"AlarmsOID",@"1.3.6.1.4.1.39543.2",@"ObjectsOID",'\
 
 # Command_CPPFLAGS ...
 # Allow an alternative base class to be specified ...
