@@ -30,6 +30,7 @@
 #import <Foundation/Foundation.h>
 #import <GNUstepBase/GSMime.h>
 
+#import "EcHost.h"
 #import "EcProcess.h"
 #import "EcAlerter.h"
 #import "NSFileHandle+Printf.h"
@@ -393,7 +394,7 @@ replaceFields(NSDictionary *fields)
       if (nil == eFrom)
 	{
 	  eFrom = [NSString stringWithFormat: @"alerter@%@",
-	    [[NSHost currentHost] name]];
+	    [[NSHost currentHost] wellKnownName]];
 	  RETAIN(eFrom);
 	}
 

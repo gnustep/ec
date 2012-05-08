@@ -35,6 +35,7 @@
 #import <Foundation/NSObject.h>
 #import <Foundation/NSString.h>
 
+#import "EcHost.h"
 #import "EcProcess.h"
 #import "EcAlarm.h"
 
@@ -48,7 +49,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 
   if (nil == host)
     {
-      host = [[NSHost currentHost] name];
+      host = [[NSHost currentHost] wellKnownName];
     }
   else
     {

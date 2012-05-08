@@ -354,18 +354,24 @@ cmdLogKey(EcLogType t)
 NSString*
 cmdLogName()
 {
-  static NSString	*n = nil;
+  static NSString	*cmdLogName = nil;
 
-  if (n == nil)
+  if (nil == cmdLogName)
     {
-      n = [EcProc cmdName];
-      if (n == nil)
+      [ecLock lock];
+      if (nil == cmdLogName)
 	{
-	  n = [[NSProcessInfo processInfo] processName];
+	  NSString	*n = [EcProc cmdName];
+
+	  if (nil == n)
+	    {
+	      n = [[NSProcessInfo processInfo] processName];
+	    }
+	  cmdLogName = [n copy];
 	}
-      n = [n copy];
+      [ecLock unlock];
     }
-  return n;
+  return cmdLogName;
 }
 
 NSString*
@@ -381,7 +387,7 @@ cmdLogFormat(EcLogType t, NSString *fmt)
   
   if (h == nil)
     {
-      h = [[[NSHost currentHost] name] copy];
+      h = [[[NSHost currentHost] wellKnownName] copy];
     }
   if (l == nil)
     {
@@ -433,6 +439,16 @@ static NSMutableArray	*updateHandlers = nil;
 static NSMutableDictionary *servers = nil;
 
 static NSString		*hostName = nil;
+static NSString	*
+ecHostName()
+{
+  NSString	*name;
+
+  [ecLock lock];
+  name = [hostName retain];
+  [ecLock unlock];
+  return [name autorelease];
+}
 
 #define	DEFMEMALLOWED	50
 static int	memAllowed = DEFMEMALLOWED;
@@ -1064,6 +1080,7 @@ static NSString	*noFiles = @"No log files to archive";
   if (nil != dict)
     {
       [NSHost setWellKnownNames: dict];
+      ASSIGN(hostName, [[NSHost currentHost] wellKnownName]);
     }
 
   GSDebugAllocationActive([cmdDefs boolForKey: @"Memory"]);
@@ -1332,7 +1349,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       stringClass = [NSString class];
       cmdLogMap = [[NSMutableDictionary alloc] initWithCapacity: 4];
 
-      hostName = RETAIN([[NSHost currentHost] name]);
+      hostName = [[[NSHost currentHost] wellKnownName] retain];
 
       cmdDebugModes = [[NSMutableSet alloc] initWithCapacity: 4];
       cmdDebugKnown = [[NSMutableDictionary alloc] initWithCapacity: 4];
@@ -2534,7 +2551,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       else
 	{
 	  [self cmdPrintf: @"\n%@ on %@ running since %@\n\n",
-	    cmdLogName(), hostName, [self cmdStarted]];
+	    cmdLogName(), ecHostName(), [self cmdStarted]];
 
 	  if (NO == [cmdDefs boolForKey: @"Memory"])
 	    {
@@ -2560,7 +2577,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   else
     {
       [self cmdPrintf: @"\n%@ on %@ running since %@\n",
-	cmdLogName(), hostName, [self cmdStarted]];
+	cmdLogName(), ecHostName(), [self cmdStarted]];
       if ([self cmdLastIP] != nil)
 	{
 	  [self cmdPrintf: @"Last IP at %@\n", [self cmdLastIP]];
@@ -2795,7 +2812,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (NSString*) description
 {
   return [stringClass stringWithFormat: @"%@ (%@) on %@",
-    [super description], cmdLogName(), hostName];
+    [super description], cmdLogName(), ecHostName()];
 }
 
 - (id) init
