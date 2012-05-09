@@ -1339,6 +1339,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   return @"";
 }
 
+- (void) ecDoLock
+{
+  [ecLock lock];
+}
+
+- (void) ecUnLock
+{
+  [ecLock unlock];
+}
+
 + (void) initialize
 {
   if (nil == ecLock)

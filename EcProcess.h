@@ -327,6 +327,16 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (NSString*) ecCopyright;
 
+/** Obtain a lock on the shared EcProcess for thread-safe updates to
+ * process-wide variables.
+ */
+- (void) ecDoLock;
+
+/** Release a lock on the shared EcProcess after thread-safe updates to
+ * process-wide variables.
+ */
+- (void) ecUnLock;
+
 /* Call these methods during initialisation of your instance
  * to set up automatic management of connections to servers. 
  * You then access the servers by calling -(id)server: (NSString*)serverName.
