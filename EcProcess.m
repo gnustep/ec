@@ -1463,16 +1463,21 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   return self;
 }
 
-- (void) cmdAlert: (NSString*)fmt, ...
+- (void) cmdAlert: (NSString*)fmt arguments: (va_list)args
 {
-  va_list ap;
-
   if (nil == alertLogger)
     {
       alertLogger = [[EcLogger loggerForType: LT_ALERT] retain];
     }
+  [alertLogger log: fmt arguments: args];
+}
+
+- (void) cmdAlert: (NSString*)fmt, ...
+{
+  va_list ap;
+
   va_start (ap, fmt);
-  [alertLogger log: fmt arguments: ap];
+  [self cmdAlert: fmt arguments: ap];
   va_end (ap);
 }
 
@@ -1519,64 +1524,83 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   return status;
 }
 
-- (void) cmdAudit: (NSString*)fmt, ...
+- (void) cmdAudit: (NSString*)fmt arguments: (va_list)args
 {
-  va_list ap;
-
   if (nil == auditLogger)
     {
       auditLogger = [[EcLogger loggerForType: LT_AUDIT] retain];
     }
+  [auditLogger log: fmt arguments: args];
+}
+
+- (void) cmdAudit: (NSString*)fmt, ...
+{
+  va_list ap;
+
   va_start (ap, fmt);
-  [auditLogger log: fmt arguments: ap];
+  [self cmdAudit: fmt arguments: ap];
   va_end (ap);
 }
 
-- (void) cmdDbg: (NSString*)type msg: (NSString*)fmt, ...
+- (void) cmdDbg: (NSString*)type msg: (NSString*)fmt arguments: (va_list)args
 {
   if (nil != [cmdDebugModes member: type])
     {
-      va_list ap;
-
       if (nil == debugLogger)
 	{
 	  debugLogger = [[EcLogger loggerForType: LT_DEBUG] retain];
 	}
-      va_start (ap, fmt);
-      [debugLogger log: fmt arguments: ap];
-      va_end (ap);
+      [debugLogger log: fmt arguments: args];
+    }
+}
+
+- (void) cmdDbg: (NSString*)type msg: (NSString*)fmt, ...
+{
+  va_list ap;
+
+  va_start (ap, fmt);
+  [self cmdDbg: type msg: fmt arguments: ap];
+  va_end (ap);
+}
+
+- (void) cmdDebug: (NSString*)fmt arguments: (va_list)args
+{
+  if (nil != [cmdDebugModes member: cmdDefaultDbg])
+    {
+      if (nil == debugLogger)
+	{
+	  debugLogger = [[EcLogger loggerForType: LT_DEBUG] retain];
+	}
+      [debugLogger log: fmt arguments: args];
     }
 }
 
 - (void) cmdDebug: (NSString*)fmt, ...
 {
-  if (nil != [cmdDebugModes member: cmdDefaultDbg])
-    {
-      va_list ap;
+  va_list ap;
 
-      if (nil == debugLogger)
-	{
-	  debugLogger = [[EcLogger loggerForType: LT_DEBUG] retain];
-	}
-      va_start (ap, fmt);
-      [debugLogger log: fmt arguments: ap];
-      va_end (ap);
+  va_start (ap, fmt);
+  [self cmdDebug: fmt arguments: ap];
+  va_end (ap);
+}
+
+- (void) cmdError: (NSString*)fmt arguments: (va_list)args
+{
+  if (nil == errorLogger)
+    {
+      errorLogger = [[EcLogger loggerForType: LT_ERROR] retain];
     }
+  [errorLogger log: fmt arguments: args];
 }
 
 - (void) cmdError: (NSString*)fmt, ...
 {
   va_list ap;
 
-  if (nil == errorLogger)
-    {
-      errorLogger = [[EcLogger loggerForType: LT_ERROR] retain];
-    }
   va_start (ap, fmt);
-  [errorLogger log: fmt arguments: ap];
+  [self cmdError: fmt arguments: ap];
   va_end (ap);
 }
-
 
 - (void) cmdFlushLogs
 {
@@ -1781,16 +1805,21 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
-- (void) cmdWarn: (NSString*)fmt, ...
+- (void) cmdWarn: (NSString*)fmt arguments: (va_list)args
 {
-  va_list ap;
-
   if (nil == warningLogger)
     {
       warningLogger = [[EcLogger loggerForType: LT_WARNING] retain];
     }
+  [warningLogger log: fmt arguments: args];
+}
+
+- (void) cmdWarn: (NSString*)fmt, ...
+{
+  va_list ap;
+
   va_start (ap, fmt);
-  [warningLogger log: fmt arguments: ap];
+  [self cmdWarn: fmt arguments: ap];
   va_end (ap);
 }
 
@@ -2626,16 +2655,22 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [from cmdGnip: self sequence: num extra: nil];
 }
 
+- (void) cmdPrintf: (NSString*)fmt arguments: (va_list)args
+{
+  NSString	*tmp;
+
+  tmp = [[stringClass alloc] initWithFormat: fmt arguments: args];
+  [replyBuffer appendString: tmp];
+  [tmp release];
+}
+
 - (void) cmdPrintf: (NSString*)fmt, ...
 {
   va_list	ap;
-  NSString	*tmp;
 
   va_start(ap, fmt);
-  tmp = [[stringClass alloc] initWithFormat: fmt arguments: ap];
+  [self cmdPrintf: fmt arguments: ap];
   va_end(ap);
-  [replyBuffer appendString: tmp];
-  RELEASE(tmp);
 }
 
 - (void) cmdQuit: (int)status

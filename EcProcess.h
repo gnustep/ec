@@ -349,6 +349,10 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Send a SEVERE error message to the server.
  */
+- (void) cmdAlert: (NSString*)fmt arguments: (va_list)args;
+
+/** Send a SEVERE error message to the server.
+ */
 - (void) cmdAlert: (NSString*)fmt, ...;
 
 /** Archives debug log files into the specified subdirectory of the debug
@@ -357,6 +361,10 @@ extern NSString*	cmdVersion(NSString *ver);
  * necessary.
  */
 - (NSString*) cmdArchive: (NSString*)subdir;
+
+/** Send a log message to the server.
+ */
+- (void) cmdAudit: (NSString*)fmt arguments: (va_list)args;
 
 /** Send a log message to the server.
  */
@@ -374,7 +382,16 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Send a debug message - as long as the debug mode specified as 'type'
  * is currently set.
  */
+- (void) cmdDbg: (NSString*)type msg: (NSString*)fmt arguments: (va_list)args;
+
+/** Send a debug message - as long as the debug mode specified as 'type'
+ * is currently set.
+ */
 - (void) cmdDbg: (NSString*)type msg: (NSString*)fmt, ...;
+
+/** Send a debug message with debug mode 'defaultMode'.
+ */
+- (void) cmdDebug: (NSString*)fmt arguments: (va_list)args;
 
 /** Send a debug message with debug mode 'defaultMode'.
  */
@@ -386,6 +403,10 @@ extern NSString*	cmdVersion(NSString *ver);
  * to call the superclass implementation.
  */
 - (void) cmdDefaultsChanged: (NSNotification*)n;
+
+/** Send an error message to the server.
+ */
+- (void) cmdError: (NSString*)fmt arguments: (va_list)args;
 
 /** Send an error message to the server.
  */
@@ -483,6 +504,10 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Send a warning message to the server.
  */
+- (void) cmdWarn: (NSString*)fmt arguments: (va_list)args;
+
+/** Send a warning message to the server.
+ */
 - (void) cmdWarn: (NSString*)fmt, ...;
 
 /* Return interval between timeouts.
@@ -554,6 +579,11 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Retrurns the name by which this process is known to the Command server.
  */
 - (NSString*) cmdName;
+
+/** May be used withing cmdMesg... methods to return formatted text to
+ * the Console.
+ */
+- (void) cmdPrintf: (NSString*)fmt arguments: (va_list)args;
 
 /** May be used withing cmdMesg... methods to return formatted text to
  * the Console.
