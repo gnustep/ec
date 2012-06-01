@@ -388,6 +388,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     || EcAlarmSeverityMinor == severity)
     {
       NSString		*additional;
+      NSString		*component;
       NSString		*connector;
       NSString		*instance;
       NSString		*message;
@@ -405,6 +406,16 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  connector = @"-";
 	}
+
+      component = [alarm moComponent];
+      if (0 == [component length])
+        {
+          component = @"";
+        }
+      else
+        {
+          component = [NSString stringWithFormat: @"(%@)", component];
+        }
 
       additional = [alarm additionalText];
       if ([additional length] == 0)
@@ -432,17 +443,17 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       if (EcAlarmSeverityCritical == severity)
 	{
 	  message = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-	    @"%@%@%@%@%@ - '%@%@%@' on %@"),
+	    @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
 	    [alarm specificProblem], spacing1, additional, spacing2, repair,
-	    [alarm moProcess], connector, instance, [alarm moHost]];
+	    [alarm moProcess], connector, instance, component, [alarm moHost]];
 	  [self information: message type: LT_ALERT to: nil from: nil];
 	}
       else if (EcAlarmSeverityMajor == severity)
 	{
 	  message = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
-	    @"%@%@%@%@%@ - '%@%@%@' on %@"),
+	    @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
 	    [alarm specificProblem], spacing1, additional, spacing2, repair,
-	    [alarm moProcess], connector, instance, [alarm moHost]];
+	    [alarm moProcess], connector, instance, component, [alarm moHost]];
 	  [self information: message type: LT_ERROR to: nil from: nil];
 	}
     }
