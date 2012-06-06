@@ -2978,7 +2978,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	  else
 	    {
-	      uid = geteuid();
+              NSLog(@"This software is configured to run as the user '%@',"
+                @" but there does not appear to be any such user.", cmdUser);
+              if ([cmdUser isEqual: EC_EFFECTIVE_USER])
+                {
+                  NSLog(@"You may use the EffectiveUser user default setting"
+                    @" to override the user (setting this to an asterisk ('*')"
+                    @" allows the software to run as any user).  Alternatively"
+                    @" a different EC_EFFECTIVE_USER can be  defined when the"
+                    @" ec library is built.");
+                }
+	      exit(1);
 	    }
 
 	  if (uid != (int)geteuid())
