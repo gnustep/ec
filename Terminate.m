@@ -63,7 +63,7 @@ main()
       name = [defs stringForKey: @"CommandName"];
       if (name == nil)
 	{
-	  name = CMD_SERVER_NAME;
+	  name = @"Command";
 	}
     }
 

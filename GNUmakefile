@@ -58,6 +58,7 @@ TOOL_NAME = \
 	Command \
 	Console \
 	Control \
+	Terminate \
 
 
 Command_OBJC_FILES = Command.m EcCommand.m EcClientI.m NSFileHandle+Printf.m
@@ -71,6 +72,10 @@ Console_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 Control_OBJC_FILES = Control.m EcControl.m EcClientI.m NSFileHandle+Printf.m
 Control_TOOL_LIBS += -lECCL
 Control_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
+
+Terminate_OBJC_FILES = Terminate.m
+Terminate_TOOL_LIBS += -lECCL
+Terminate_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
 
 
