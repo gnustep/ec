@@ -1309,23 +1309,13 @@ static NSString	*noFiles = @"No log files to archive";
 {
   if (interval > 60.0)
     {
+NSLog(@"Ignored attempt to set timer interval to %g ... using 60.0", interval);
       interval = 60.0;
     }
   if (interval < 0.001)
     {
 NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       interval = 10.0;
-    }
-  if (interval < cmdTimInterval)
-    {
-      if (cmdTimInterval - interval < 0.001)
-	{
-	  interval = cmdTimInterval;
-	}
-    }
-  else if (interval - cmdTimInterval < 0.001)
-    {
-      interval = cmdTimInterval;
     }
   if (interval != cmdTimInterval)
     {
