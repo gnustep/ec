@@ -3341,8 +3341,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   [ecLock unlock];
 
-  /*
-   *  Finally, put self in background.
+  /* Put self in background.
    */
   if ([cmdDefs boolForKey: @"Daemon"] == YES)
     {
@@ -3366,6 +3365,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  exit(0);
 	}
     }
+
+  /* And make sure that regular timers run.
+   */
+  [self triggerCmdTimeout];
 
   return self;
 }
