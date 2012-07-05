@@ -621,12 +621,9 @@ extern NSString*	cmdVersion(NSString *ver);
 /*
  *	How commands sent to the client via cmdMesg: are invoked -
  *
- *	1. If there is an action registered using [-setCmdAction:name] whose
- *	   name unambiguously matches the command given, then the specified
- *	   selector is used.
- *
- *	2. If a method exists whose name is 'cmdMesgfoo:' where 'foo' is the
- *	   command given, then that method is registered and invoked.
+ *	If a method exists whose name is 'cmdMesgfoo:' where 'foo' is the
+ *	command given, then that method is registered when the receiver
+ *      is initialised (or -cmdMesgCache is called) and invoked.
  *
  *	The action methods should use the [-cmdPrintf:] method repeatedly to
  *	add text to be returned to the caller.
@@ -651,6 +648,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *
  *	'cmdMesgarchive:' forces an archive of the debug log.
  */
+- (void) cmdMesgCache;
 - (void) cmdMesgarchive: (NSArray*)msg;
 - (void) cmdMesgdebug: (NSArray*)msg;
 - (void) cmdMesghelp: (NSArray*)msg;

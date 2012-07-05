@@ -462,14 +462,15 @@ static int	memRoll[10];
 static NSString*
 findAction(NSString *cmd)
 {
+  NSString	*found = nil;
+
   cmd = [cmd lowercaseString];
-  if (NO == [cmdActions containsObject: cmd])
+  [ecLock lock];
+  if (nil == (found = [cmdActions member: cmd]))
     {
       NSEnumerator	*enumerator;
       NSString		*name;
-      NSString		*found;
 
-      found = nil;
       enumerator = [cmdActions objectEnumerator];
       while (nil != (name = [enumerator nextObject]))
 	{
@@ -481,13 +482,15 @@ findAction(NSString *cmd)
 		}
 	      else
 		{
-		  return nil;	// Ambiguous
+		  found = nil;	// Ambiguous
+                  break;
 		}
 	    }
 	}
-      cmd = found;
     }
-  return cmd;
+  cmd = [found retain];
+  [ecLock unlock];
+  return [cmd autorelease];
 }
  
 static NSString*
@@ -2129,6 +2132,40 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   return YES;
 }
 
+- (void) cmdMesgCache
+{
+  NSEnumerator  *enumerator;
+  NSString      *name;
+
+  /* The cmdActions set contains the names of all the commands this
+   * instance will accept from the Command server.  These are methods
+   * taking an array of strings as an argument and returning a string
+   * as their result.  All have names of the form cmdMesgXXX: where
+   * XXX is the (lowercase) command.
+   */
+  [ecLock lock];
+  if (nil == cmdActions)
+    {
+      cmdActions = [NSMutableSet new];
+    }
+  [cmdActions removeAllObjects];
+  enumerator = [GSObjCMethodNames(self, YES) objectEnumerator];
+  while (nil != (name = [enumerator nextObject]))
+    {
+      NSRange	r = [name rangeOfString: @":"];
+
+      if ([name hasPrefix: @"cmdMesg"] && 1 == r.length && r.location > 7)
+        {
+          name = [name substringWithRange: NSMakeRange(7, r.location - 7)];
+          if (YES == [name isEqual: [name lowercaseString]])
+            {
+              [cmdActions addObject: name];
+            }
+        }
+    }
+  [ecLock lock];
+}
+
 - (NSString*) cmdMesg: (NSArray*)msg
 {
   NSMutableString	*saved;
@@ -2313,10 +2350,13 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) cmdMesghelp: (NSArray*)msg
 {
-  NSEnumerator	*e = [cmdActions objectEnumerator];
+  NSEnumerator	*e;
   NSString	*cmd;
   SEL		sel;
 
+  [ecLock lock];
+  e = [cmdActions objectEnumerator];
+  [ecLock unlock];
   if ([msg count] == 0)
     {
       [self cmdPrintf: @"provides helpful information :-)"];
@@ -2892,7 +2932,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NSProcessInfo	*pinfo;
       NSFileManager	*mgr;
       NSEnumerator	*enumerator;
-      NSString		*name;
       NSString		*str;
       NSString		*dbg;
       NSString		*prf;
@@ -3302,27 +3341,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-      /* The cmdActions set contains the names of all the commands this
-       * instance will accept from the Command server.  These are methods
-       * taking an array of strings as an argument and returning a string
-       * as their result.  All have names of the form cmdMesgXXX: where
-       * XXX is the (lowercase) command.
-       */
-      cmdActions = [NSMutableSet new];
-      enumerator = [GSObjCMethodNames(self, YES) objectEnumerator];
-      while (nil != (name = [enumerator nextObject]))
-	{
-	  NSRange	r = [name rangeOfString: @":"];
-
-	  if ([name hasPrefix: @"cmdMesg"] && 1 == r.length && r.location > 7)
-	    {
-	      name = [name substringWithRange: NSMakeRange(7, r.location - 7)];
-	      if (YES == [name isEqual: [name lowercaseString]])
-		{
-		  [cmdActions addObject: name];
-		}
-	    }
-	}
+      [self cmdMesgCache];
 
       cmdIsTransient = [cmdDefs boolForKey: @"Transient"];
 
