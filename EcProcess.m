@@ -2163,7 +2163,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             }
         }
     }
-  [ecLock lock];
+  [ecLock unlock];
 }
 
 - (NSString*) cmdMesg: (NSArray*)msg
