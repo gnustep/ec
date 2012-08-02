@@ -1955,6 +1955,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if (YES == cmdIsTransient)
     {
       [self cmdWarn: @"Attempted to run transient  process."];
+      [self cmdFlushLogs];
       return 1;
     }
 
@@ -1967,6 +1968,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     {
       DESTROY(c);
       [self cmdError: @"Unable to register with name server."];
+      [self cmdFlushLogs];
       return 2;
     }
 
