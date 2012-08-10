@@ -243,7 +243,10 @@ cmdLogsDir(NSString *date)
 
   if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
     {
-      if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+      if ([mgr createDirectoryAtPath: str
+         withIntermediateDirectories: YES
+                          attributes: nil
+                               error: NULL] == NO)
 	{
 	  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	    {
@@ -265,7 +268,10 @@ cmdLogsDir(NSString *date)
   str = [str stringByAppendingPathComponent: @"Logs"];
   if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
     {
-      if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+      if ([mgr createDirectoryAtPath: str
+         withIntermediateDirectories: YES
+                          attributes: nil
+                               error: NULL] == NO)
 	{
 	  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	    {
@@ -289,7 +295,10 @@ cmdLogsDir(NSString *date)
       str = [str stringByAppendingPathComponent: date];
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
@@ -314,7 +323,10 @@ cmdLogsDir(NSString *date)
       str = [str stringByAppendingPathComponent: homeDir];
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
@@ -983,7 +995,10 @@ static NSString	*noFiles = @"No log files to archive";
 
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
@@ -1005,7 +1020,10 @@ static NSString	*noFiles = @"No log files to archive";
       str = [str stringByAppendingPathComponent: @"Data"];
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
@@ -1029,7 +1047,10 @@ static NSString	*noFiles = @"No log files to archive";
 	  str = [str stringByAppendingPathComponent: homeDir];
 	  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	    {
-	      if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	      if ([mgr createDirectoryAtPath: str
+                 withIntermediateDirectories: YES
+                                  attributes: nil
+                                       error: NULL] == NO)
 		{
 		  if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		    {
@@ -3171,7 +3192,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       str = cmdSetUserDirectory(str);
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
@@ -3264,7 +3288,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       str = [str stringByStandardizingPath];
       if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 	{
-	  if ([mgr createDirectoryAtPath: str attributes: nil] == NO)
+	  if ([mgr createDirectoryAtPath: str
+             withIntermediateDirectories: YES
+                              attributes: nil
+                                   error: NULL] == NO)
 	    {
 	      if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
 		{
