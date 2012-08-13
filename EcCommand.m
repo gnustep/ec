@@ -610,7 +610,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      else if (comp(wd, @"Launch") >= 0)
 		{
 		  m = @"Launch <name>\nAdds the named program to the list "
-		      @"of programs to be launched as soon as possible.\n";
+		      @"of programs to be launched as soon as possible.\n"
+		      @"Launch all\nAdds all unlaunched programs which do "
+		      @"not have autolaunch disabled.\n";
 		}
 	      else if (comp(wd, @"List") >= 0)
 		{
@@ -651,26 +653,61 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  BOOL		found = NO;
 
 		  enumerator = [launchInfo keyEnumerator];
-		  while ((key = [enumerator nextObject]) != nil)
-		    {
-		      if (comp(nam, key) >= 0)
-			{
-			  EcClientI	*r;
+                  if ([nam caseInsensitiveCompare: @"all"] == NSOrderedSame)
+                    {
+                      NSMutableArray  *names = [NSMutableArray array];
 
-			  found = YES;
-			  r = [self findIn: clients byName: key];
-			  if (r == nil)
-			    {
-			      [launches setObject: [NSDate distantPast]							   forKey: key];
-			      m = @"Ok - I will launch that program "
-				  @"when I get a chance.\n";
-			    }
-			  else
-			    {
-			      m = @"That program is already running\n";
-			    }
-			}
-		    }
+                      while ((key = [enumerator nextObject]) != nil)
+                        {
+                          EcClientI	*r;
+                          NSDictionary  *inf;
+
+                          inf = [launchInfo objectForKey: key];
+			  if ([[inf objectForKey: @"Auto"] boolValue]==NO)
+                            {
+                              continue;
+                            }
+                          r = [self findIn: clients byName: key];
+                          if (nil != r)
+                            {
+                              continue;
+                            }
+                          found = YES;
+                          [launches setObject: [NSDate distantPast]
+                                       forKey: key];
+                          [names addObject: key];
+                        }
+                      if (YES == found)
+                        {
+                          [names sortUsingSelector: @selector(compare:)];
+                          m = [NSString stringWithFormat:
+                            @"Ok - I will launch %@ when I get a chance.\n",
+                            names];
+                        }
+                    }
+                  else
+                    {
+                      while ((key = [enumerator nextObject]) != nil)
+                        {
+                          if (comp(nam, key) >= 0)
+                            {
+                              EcClientI	*r;
+
+                              found = YES;
+                              r = [self findIn: clients byName: key];
+                              if (r == nil)
+                                {
+                                  [launches setObject: [NSDate distantPast]							   forKey: key];
+                                  m = @"Ok - I will launch that program "
+                                      @"when I get a chance.\n";
+                                }
+                              else
+                                {
+                                  m = @"That program is already running\n";
+                                }
+                            }
+                        }
+                    }
 		  if (found == NO)
 		    {
 		      m = @"I don't know how to launch that program.\n";
