@@ -32,6 +32,7 @@
 #import "EcProcess.h"
 #import "EcAlarm.h"
 #import "EcClientI.h"
+#import "EcHost.h"
 #import "NSFileHandle+Printf.h"
 
 #import "config.h"
@@ -2053,8 +2054,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      ctlName = @"Control";
 	    }
-	  ctlHost = [defs stringForKey: @"ControlHost"];
-	  if (ctlHost == nil)
+	  ctlHost = [NSHost controlWellKnownName];
+	  if (nil == ctlHost)
 	    {
 	      ctlHost = @"*";
 	    }

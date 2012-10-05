@@ -30,6 +30,7 @@
 #import <Foundation/Foundation.h>
 
 #import "EcProcess.h"
+#import "EcHost.h"
 #import "NSFileHandle+Printf.h"
 
 #import "config.h"
@@ -706,8 +707,8 @@ static BOOL commandIsRepeat (NSString *string)
 	{
 	  name = @"Control";
 	}
-      host = [defs stringForKey: @"ControlHost"];
-      if (host == nil)
+      host = [NSHost controlWellKnownName];
+      if (nil == host)
 	{
 	  host = @"*";
 	}

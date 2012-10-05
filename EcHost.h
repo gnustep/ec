@@ -47,15 +47,16 @@
  * <p>The well known name methods are thread-safe, and on initial use the
  * NSUserDefaults system is queried to set up two well known names
  * automatically:<br />
- * The value of EcHostCurrentName specifies the well known name for the
+ * The value of EcCurrentHost specifies the well known name for the
  * current host (the machine on which the software is running).<br />
- * The value of EcHostControlName specifies the well known name for the
+ * The value of EcControlHost specifies the well known name for the
  * control host (the machine on which control functions for your software
- * are centralised).  If this is specified without EcHostControlDomain,
- * it is ignored and the well known name of the current host is used.<br />
- * The value of EcHostControlDomain specifies the fully qualified domain
- * name of the control host.  If it is specified without EcHostControlName,
- * then it is used as the well known name for the control host.<br />
+ * are centralised).  If this is specified without EcControlDomain,
+ * it is used as both the well known name and the domain name.<br />
+ * The value of EcControlDomain specifies the fully qualified domain
+ * name (ie the name provided by the operating system) of the control host.
+ * If it is specified without EcControlHost, then it is used as the
+ * well known name for the control host.<br />
  * NB. the defaults system is accessed via EcUserDefaults, so if a
  * defaults prefix other than Ec has been set, these keys will use that
  * alternative prefix. 
@@ -65,14 +66,11 @@
 
 /** Returns the well known name of the 'control' host as obtained from the
  * NSUserDefaults system.<br />
- * If EcHostControlName and EcHostControlDomain are both defined,
- * the well known name is the string specified by EcHostControlName.<br />
- * If EcHostControlDomain is defined, the well known name is the string
- * specified by it.<br />
- * If neither is defined, but EcHostCurrentName is defined, then the well
- * known name is the string specified by that default.<br />
- * Otherwise, the well known name is set to an arbitrarily selected name
- * of the current machine.
+ * If EcControlHost is defined, the well known name is the string specified
+ * by EcControlHost.<br />
+ * If EcControlHost is undefined but EcHostControlDomain is defined,
+ * the well known name is the value of EcHostControlDomain.<br />
+ * If neither is defined, this method returns nil.
  */
 + (NSString*) controlWellKnownName;
 

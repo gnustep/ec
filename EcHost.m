@@ -75,15 +75,16 @@ static NSString			*controlName = nil;
 	      defs = [NSUserDefaults userDefaultsWithPrefix: nil
 						     strict: NO];
 	    }
-	  name = [defs stringForKey: @"HostControlName"];
-	  if (nil != name && nil != [defs stringForKey: @"HostControlDomain"])
+	  name = [defs stringForKey: @"ControlHost"];
+	  if (nil != name)
 	    {
-	      /* Use mapping from domain name to well known name.
-	       */
-	      controlName = [name copy];
-	      name = [defs stringForKey: @"HostControlDomain"];
+              controlName = [name copy];
+
+              /* Use mapping from domain name to well known name.
+               */
+              name = [defs stringForKey: @"ControlDomain"];
 	    }
-	  else if (nil != (name = [defs stringForKey: @"HostControlDomain"]))
+	  else if (nil != (name = [defs stringForKey: @"ControlDomain"]))
 	    {
 	      /* Use domain name as the known name.
 	       */
@@ -106,7 +107,7 @@ static NSString			*controlName = nil;
 		}
 	    }
 	  host = [self currentHost];
-	  name = [defs stringForKey: @"HostCurrentName"];
+	  name = [defs stringForKey: @"CurrentHost"];
 	  if (nil == name)
 	    {
 	      /* If the current host is the control host, we may have the
@@ -116,12 +117,6 @@ static NSString			*controlName = nil;
 	      name = [host wellKnownName];
 	    }
 	  [host setWellKnownName: name];
-	  if (nil == controlName)
-	    {
-	      /* use current host as the control host.
-	       */
-	      controlName = [name copy];
-	    }
 	  [lock unlock];
 	}
       else
