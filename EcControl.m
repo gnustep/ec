@@ -2319,13 +2319,28 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary		*conf;
   NSDictionary		*d;
   NSArray		*a;
-  NSString		*base = [self cmdDataDirectory];
+  NSHost                *host;
+  NSString		*base;
   NSString		*path;
   NSString		*str;
   unsigned		count;
   unsigned		i;
   BOOL			changed = NO;
 
+  host = [NSHost currentHost];
+  str = [NSHost controlWellKnownName];
+  if (nil != str)
+    {
+      if (NO == [str isEqual: [host wellKnownName]])
+        {
+	  NSLog(@"Well known name of Control host (%@) does not match"
+            @" that of current host (%@)", str, [host wellKnownName]);
+	  [self cmdQuit: 1];
+	  return NO;
+        }
+    }
+
+  base = [self cmdDataDirectory];
   path = [base stringByAppendingPathComponent: @"AlertConfig.plist"];
   if ([mgr isReadableFileAtPath: path] == YES
     && (d = [NSDictionary dictionaryWithContentsOfFile: path]) != nil)

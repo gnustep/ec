@@ -457,6 +457,10 @@ ecHostName()
   NSString	*name;
 
   [ecLock lock];
+  if (nil == hostName)
+    {
+      hostName = [[[NSHost currentHost] wellKnownName] retain];
+    }
   name = [hostName retain];
   [ecLock unlock];
   return [name autorelease];
@@ -1104,7 +1108,9 @@ static NSString	*noFiles = @"No log files to archive";
   if (nil != dict)
     {
       [NSHost setWellKnownNames: dict];
+      [ecLock lock];
       ASSIGN(hostName, [[NSHost currentHost] wellKnownName]);
+      [ecLock unlock];
     }
 
   GSDebugAllocationActive([cmdDefs boolForKey: @"Memory"]);
@@ -1372,8 +1378,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       cDateClass = [NSCalendarDate class];
       stringClass = [NSString class];
       cmdLogMap = [[NSMutableDictionary alloc] initWithCapacity: 4];
-
-      hostName = [[[NSHost currentHost] wellKnownName] retain];
 
       cmdDebugModes = [[NSMutableSet alloc] initWithCapacity: 4];
       cmdDebugKnown = [[NSMutableDictionary alloc] initWithCapacity: 4];

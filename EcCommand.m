@@ -2054,7 +2054,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      ctlName = @"Control";
 	    }
-	  ctlHost = [NSHost controlWellKnownName];
+	  if (nil != (ctlHost = [NSHost controlWellKnownName]))
+            {
+              /* Map to operating system host name.
+               */
+              ctlHost = [[NSHost hostWithWellKnownName: ctlHost] name];
+            }
 	  if (nil == ctlHost)
 	    {
 	      ctlHost = @"*";

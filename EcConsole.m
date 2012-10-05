@@ -707,7 +707,10 @@ static BOOL commandIsRepeat (NSString *string)
 	{
 	  name = @"Control";
 	}
-      host = [NSHost controlWellKnownName];
+      if (nil != (host = [NSHost controlWellKnownName]))
+        {
+          host = [[NSHost hostWithWellKnownName: host] name];
+        }
       if (nil == host)
 	{
 	  host = @"*";
