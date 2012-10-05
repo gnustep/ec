@@ -22,8 +22,8 @@ include $(GNUSTEP_MAKEFILES)/common.make
 -include ../local.make
 
 PACKAGE_NAME=EnterpriseControlConfigurationLogging
-PACKAGE_VERSION=0.1.0
-Ec_INTERFACE_VERSION=0.1
+PACKAGE_VERSION=1.0.0
+Ec_INTERFACE_VERSION=1.0
 
 NEEDS_GUI=NO
 
