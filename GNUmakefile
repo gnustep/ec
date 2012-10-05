@@ -25,6 +25,9 @@ PACKAGE_NAME=EnterpriseControlConfigurationLogging
 PACKAGE_VERSION=1.0.0
 Ec_INTERFACE_VERSION=1.0
 
+SVN_BASE_URL=svn+ssh://svn.gna.org/svn/gnustep/libs
+SVN_MODULE_NAME=ec
+
 NEEDS_GUI=NO
 
 # The libraries to be compiled
