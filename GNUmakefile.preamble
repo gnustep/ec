@@ -42,6 +42,8 @@ ADDITIONAL_LIB_DIRS +=
 # Additional directories to be created during installation
 #ADDITIONAL_INSTALL_DIRS +=
 
+ADDITIONAL_LIBS += $(ECCL_LIBS)
+
 #
 # Extras for when building with SNMP support
 #
