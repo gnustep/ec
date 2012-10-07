@@ -19,6 +19,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `malloc' library (-lmalloc). */
+#undef HAVE_LIBMALLOC
+
 /* Define if you have libreadline */
 #undef HAVE_LIBREADLINE
 

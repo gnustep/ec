@@ -21,6 +21,8 @@ AC_TYPE_MODE_T
 
 AC_CHECK_FUNCS(getpid setpgid)
 
+AC_CHECK_LIB([malloc],[mallinfo])
+
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
     [support fancy command line editing @<:@default=check@:>@])],
