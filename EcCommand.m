@@ -2248,10 +2248,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if (o != nil)
     {
-      NSString	*m;
-      unsigned	i;
-      BOOL	transient = [o transient];
-      NSString	*name = [[[o name] retain] autorelease];
+      NSString	        *m;
+      NSUInteger	i;
+      BOOL	        transient = [o transient];
+      NSString	        *name = [[[o name] retain] autorelease];
 
       m = [NSString stringWithFormat: 
 	@"\n%@ removed (unregistered) server -\n  '%@' on %@\n",
@@ -2282,10 +2282,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if (o)
     {
-      NSString	*m;
-      unsigned	i;
-      BOOL	transient = [o transient];
-      NSString	*name = [[[o name] retain] autorelease];
+      NSString	        *m;
+      NSUInteger       	i;
+      BOOL	        transient = [o transient];
+      NSString	        *name = [[[o name] retain] autorelease];
 
       m = [NSString stringWithFormat: 
 	@"\n%@ removed (unregistered) server -\n  '%@' on %@\n",
