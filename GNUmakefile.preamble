@@ -46,7 +46,7 @@ ADDITIONAL_LIB_DIRS +=
 # Extras for when building with SNMP support
 #
 ifeq ($(WITH_NET_SNMP),yes)
-  EcAlarmSinkSNMP_OBJCFLAGS  += $(shell net-snmp-config --cflags)
+  ECCL_OBJCFLAGS  += $(shell net-snmp-config --cflags)
   LIBRARIES_DEPEND_UPON += $(shell net-snmp-config --agent-libs)
 endif
 
