@@ -95,7 +95,7 @@
 #define	EC_DEFAULTS_STRICT NO
 #endif
 #if	!defined(EC_EFFECTIVE_USER)
-#define	EC_EFFECTIVE_USER @"ecuser"
+#define	EC_EFFECTIVE_USER nil
 #endif
 
 /* Lock for controlling access to per-process singleton instance.
@@ -3017,11 +3017,21 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
 	  cmdUser = [[cmdDefs stringForKey: @"EffectiveUser"] retain];
 	}
-      if (0 == [cmdUser length] || YES == [cmdUser isEqual: @"*"]
+      if (YES == [cmdUser isEqual: @"*"]
         || YES == [cmdUser isEqualToString: NSUserName()])
 	{
 	  ASSIGN(cmdUser, NSUserName());
 	}
+      else if ([cmdUser length] == 0)
+        {
+          NSLog(@"This software is not configured to run as any user.\n"
+            @"You may use the EffectiveUser user default setting"
+            @" to specify the user (setting this to an asterisk ('*')"
+            @" allows the software to run as any user).  Alternatively"
+            @" an EC_EFFECTIVE_USER can be  defined when the ec library"
+            @" is built.");
+          exit(1);
+        }
       else
 	{
 	  const char	*user = [cmdUser UTF8String];
