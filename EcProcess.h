@@ -261,7 +261,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *   <desc>To tell the server to change to being this user on startup.
  *     defaults to 'ecuser', but the default can be overridden by specifying
  *     '-DEC_EFFECTIVE_USER+@"username"' in the local.make make file.<br />
- *     Set a value of '' or '*' to remain whoever runs the program
+ *     Set a value of '*' to remain whoever runs the program
  *     rather than changing.
  *   </desc>
  *   <term>EcInstance</term>

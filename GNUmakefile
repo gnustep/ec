@@ -18,7 +18,10 @@ endif
 
 include $(GNUSTEP_MAKEFILES)/common.make
 
+# Information produced by autoconf
 -include config.make
+
+# Site specific overrides
 -include ../local.make
 
 PACKAGE_NAME=EnterpriseControlConfigurationLogging
