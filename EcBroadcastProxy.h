@@ -36,6 +36,19 @@
 @class	NSMutableArray;
 @class	NSString;
 
+/** This type enumerates the possible error conditions occurring when
+ * sending a message to the proxy.
+ * <deflist>
+ *    <term>BCP_NO_ERROR</term>
+ *    <desc>A success</desc>
+ *    <term>BCP_COULD_NOT_CONNECT</term>
+ *    <desc>Unable to connect to the server</desc>
+ *    <term>BCP_CONNECTION_WENT_DOWN</term>
+ *    <desc>Lost connection while sending</desc>
+ *    <term>BCP_MESSAGING_TIMEOUT</term>
+ *    <desc>Timeout while waiting for response</desc>
+ * </deflist>
+ */
 enum EcBroadcastProxyError
 {
   BCP_NO_ERROR = 0,
@@ -60,31 +73,48 @@ enum EcBroadcastProxyError
  */
 @interface EcBroadcastProxy : NSObject
 {
-  /* The names of the receiver object */
+  /** The names of the receiver object */
   NSArray *receiverNames;
-  /* The hosts the receiver objects are on */
+
+  /** The hosts the receiver objects are on */
   NSArray *receiverHosts;
 
-  /* The [proxy to the] remote objects */
+  /** The [proxies to the] individual remote objects */
   NSMutableArray *receiverObjects;
 
-  /* The delegate (if any) */
+  /** The delegate (if any) */
   id delegate;
 
   /* The statistical info about what we did */
 
-  /* Messages returning void */
+  /** Count of completed messages returning void */
   int onewayFullySent; 
+
+  /** Count of partial messages returning void */
   int onewayPartiallySent;   
+
+  /** Count of failed messages returning void */
   int onewayFailed; 
-  /* Messages returning id */
+
+  /** Count of completed messages returning id */
   int idFullySent; 
+
+  /** Count of partial messages returning id */
   int idPartiallySent;   
+
+  /** Count of failed messages returning id */
   int idFailed; 
 }
 
-- (id) initWithReceiverNames: (NSArray *)names
-	       receiverHosts: (NSArray *)hosts;
+/** <init />
+ * Initializes the receiver creating connections to the specified
+ * distributed objects servers.  The names are the DO ports (server-names)
+ * and hosts are the names of the machines those servers are running on
+ * (may be '*' to find the server on any machine on the LAN, or an empty
+ * string to find the server on the local host).
+ */
+- (id) initWithReceiverNames: (NSArray*)names
+	       receiverHosts: (NSArray*)hosts;
 
 /** Configuration array contains a list of dictionaries (one for each
  * receiver) - each dictionary has two keys: `Name' and `Host', with
@@ -112,6 +142,8 @@ enum EcBroadcastProxyError
  */
 - (void) BCPsetDelegate: (id)object;
 
+/** Returns the delegate set using the -BCPsetDelegate: method.
+ */
 - (id) BCPdelegate;
 
 /* [Advanced stuff] 
@@ -123,30 +155,40 @@ enum EcBroadcastProxyError
    to get the single remote server(s) you want to talk to, and talk to
    it (each of them) directly. */
 
-/* Get the list of servers */
+/** Get the list of server names */
 - (NSArray *) BCPreceiverNames;
 
+/** Get the list of server hosts */
 - (NSArray *) BCPreceiverHosts;
 
-/* Get only the number of receivers */
+/** Get the number of receivers */
 - (int) BCPreceiverCount;
 
-/* Raise connection to server at index */
+/** Raise connection to server at index */
 - (void) BCPraiseConnection: (int)index;
 
-/* The following one gives you back the proxy to talk to.  
-   It automatically BCPraise[s]Connection to that server before sending 
-   you back a proxy.  It returns nil upon failure. */
+/** The following one gives you back the proxy to talk to.  
+ * It automatically calls -BCPraiseConnection: to that server before sending 
+ * you back a proxy.  It returns nil upon failure. */
 - (id) BCPproxy: (int)index;
 
 @end
 
+/** The informal protocol listing messages which will be sent to the
+ * EcBroadcastProxy's delegate if it responds to them.
+ */
 @interface NSObject (BCPdelegate)
 
+/** The method to notify the delegate that a connection to an individual
+ * server process has been lost.
+ */
 - (void) BCP: (EcBroadcastProxy *)proxy
   lostConnectionToServer: (NSString *)name
   host: (NSString *)host;
 
+/** The method to notify the delegate that a connection to an individual
+ * server process has been made.
+ */
 - (void) BCP: (EcBroadcastProxy *)proxy
   madeConnectionToServer: (NSString *)name
   host: (NSString *)host;
@@ -154,7 +196,4 @@ enum EcBroadcastProxyError
 @end
 
 #endif /* _BROADCASTPROXY_H */
-
-
-
 
