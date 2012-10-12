@@ -421,6 +421,7 @@ cmdLogFormat(EcLogType t, NSString *fmt)
 
 
 EcProcess		*EcProc = nil;
+static NSConnection     *EcProcConnection = nil;
 
 static EcAlarmDestination	*alarmDestination = nil;
 
@@ -845,7 +846,13 @@ findMode(NSDictionary* d, NSString* s)
   
   if ([connection isKindOfClass: [NSConnection class]])
     {
-      if (connection == [proxy connectionForProxy])
+      if (connection == EcProcConnection)
+        {
+          [EcProcConnection registerName: nil
+            withNameServer: [NSSocketPortNameServer sharedInstance]];
+          DESTROY(EcProcConnection);
+        }
+      else if (connection == [proxy connectionForProxy])
 	{
 	  [EcProc cmdDbg: cmdConnectDbg
 	    msg: @"lost connection - clearing %@.", 
@@ -1977,7 +1984,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (int) ecRun
 {
-  NSConnection *c;
+  NSConnection  *c;
 
   if (YES == cmdIsTransient)
     {
@@ -1986,8 +1993,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       return 1;
     }
 
+  NSAssert(nil == EcProcConnection, NSGenericException);
   c = [[NSConnection alloc] initWithReceivePort: (NSPort*)[NSSocketPort port]
-				       sendPort: nil];
+                                       sendPort: nil];
   [c setRootObject: self];
   
   if ([c registerName: [self cmdName]
@@ -2005,6 +2013,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     selector: @selector(connectionBecameInvalid:)
     name: NSConnectionDidDieNotification
     object: c];
+  EcProcConnection = [c retain];
   
   [self cmdAudit: @"Started `%@'", [self cmdName]];
   
@@ -2029,6 +2038,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   /* finish server */
 
   [self cmdQuit: 0];
+  DESTROY(EcProcConnection);
   return 0;
 }
 
@@ -2764,6 +2774,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdLogEnd: [keys objectAtIndex: index]];
 	}
     }
+
+  [EcProcConnection registerName: nil
+                  withNameServer: [NSSocketPortNameServer sharedInstance]];
 
   exit(status);
 }
