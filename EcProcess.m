@@ -846,13 +846,7 @@ findMode(NSDictionary* d, NSString* s)
   
   if ([connection isKindOfClass: [NSConnection class]])
     {
-      if (connection == EcProcConnection)
-        {
-          [EcProcConnection registerName: nil
-            withNameServer: [NSSocketPortNameServer sharedInstance]];
-          DESTROY(EcProcConnection);
-        }
-      else if (connection == [proxy connectionForProxy])
+      if (connection == [proxy connectionForProxy])
 	{
 	  [EcProc cmdDbg: cmdConnectDbg
 	    msg: @"lost connection - clearing %@.", 
@@ -2761,6 +2755,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [alarmDestination shutdown];
   [alarmDestination release];
 
+  [EcProcConnection invalidate];
+
     {
       NSArray	*keys;
       unsigned	index;
@@ -2774,9 +2770,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdLogEnd: [keys objectAtIndex: index]];
 	}
     }
-
-  [EcProcConnection registerName: nil
-                  withNameServer: [NSSocketPortNameServer sharedInstance]];
 
   exit(status);
 }
