@@ -78,7 +78,7 @@
 	    <desc>
 	      This boolean value determines whether the server is running in
 	      test mode (which may enable extra logging or prevent the server
-	      from comm,unicating with live systems etc ... the actual
+	      from communicating with live systems etc ... the actual
 	      behavior is server dependent).<br />
 	      This may be set on the command line or in Control.plist, but
 	      may be overridden by using the 'testing' command in the
@@ -342,8 +342,48 @@ extern NSString*	cmdVersion(NSString *ver);
  * You then access the servers by calling -(id)server: (NSString*)serverName.
  */
 
+/** This is a convenience method equivalent to calling
+ * -addServerToList:for: passing nil as the second argument.
+ */
 - (void) addServerToList: (NSString*)serverName;
+
+/** Adds the specified serverName to the list of named servers to which
+ * we make automatic distributed object connections.<br />
+ * By default the supplied serverName is taken as the name of the server to
+ * which the distributed objects connection is made, and the connection
+ * is to any host on the local network.  However configuration in the
+ * user defaults system (using keys derived from the serverName) may
+ * be used to modify this behavior:
+ * <deflist>
+ *  <term>serverNameName</term>
+ *  <desc>Specifies the actual distributed objects port name to which the
+ *  connection is made, instead of using serverName.</desc>
+ *  <term>serverNameHost</term>
+ *  <desc>Specifies the actual distributed objects host name to which the
+ *  connection is made, instead of using an asterisk (any host).</desc>
+ *  <term>serverNameBroadcast</term>
+ *  <desc>Specifies that the server should actually be configured to be
+ *  a broadcast proxy (see [EcBroadcastProxy]).<br />
+ *  The value of this field must be an array containing the configuration
+ *  information for the [EcBroadcastProxy] instance.<br />
+ *  If this is defined then the serverNameName and serverNameHost values
+ *  (if present) are ignored, and the connections are made to the
+ *  individual servers listed in the elements of this array.</desc>
+ * </deflist>
+ * The argument anObject is an object which will be messaged when the
+ * connection to the server is established (or lost).  The messages
+ * sent are those in the <em>RemoteServerDelegate</em> informal
+ * protocol.<br />
+ * If no object is specified, the receiver is used.<br />
+ * Once a server has been added to the list, it can be accessed using
+ * the -server: or -server:forNumber: method.
+ */
 - (void) addServerToList: (NSString*)serverName for: (id)anObject;
+
+/** Removes the serverName from the list of server processes for which
+ * we automatically maintain distributed object connections.<br />
+ * See the addServerToList:for: metho for more details.
+ */
 - (void) removeServerFromList: (NSString*)serverName;
 
 
@@ -656,19 +696,23 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdMesgnodebug: (NSArray*)msg;
 - (void) cmdMesgstatus: (NSArray*)msg;
 
-/*
- * Returns a proxy object to a[n automatically managed] server
+/**
+ * Returns a proxy object to a[n automatically managed] server process.<br />
+ * The serverName must previously have been registered using the
+ * -addServerToList:for: -addServerToList: method.
  */
 - (id) server: (NSString *)serverName;
 
-/*
- * Like server:, but if the configuration contains a multiple servers,
+/**
+ * Like -server:, but if the configuration contains a multiple servers,
  * this tries to locate the specific server that is set up to deal with
- * users where the last two digits of the phone number are as specified.
+ * cases where the last two digits of an identifer as as specified.<br />
+ * This mechanism permits work to be balanced/shared over up to 100 separate
+ * server processes.
  */
 - (id) server: (NSString *)serverName forNumber: (NSString*)num;
 
-/*
+/**
  * Standard servers return NO to the following.  But if we are using 
  * a multiple/broadcast server, this returns YES.
  */

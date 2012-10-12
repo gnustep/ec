@@ -93,6 +93,7 @@ ECCL_AGSDOC_FILES = \
 	EcAlarmDestination.h \
 	EcAlarmSinkSNMP.h \
 	EcAlerter.h \
+        EcBroadcastProxy.h \
 	EcHost.h \
 	EcLogger.h \
 	EcProcess.h \

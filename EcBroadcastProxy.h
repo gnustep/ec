@@ -45,12 +45,19 @@ enum EcBroadcastProxyError
 };
 
 /**
- * In this class, remote servers are always listed in the same order.
- * So, you can access them by their index; to get the host/name, you
+ * An EcBroadcastProxy instance forwards messages to multiple servers
+ * via distributed objects.  This is great if you want to send a task
+ * to be repeated by multiple servers in order to make a system more
+ * scalable.<br />
+ * You may also design your servers so that you pass some sort of
+ * identifier to let them know that  one of them (which recognises
+ * the identifier) should do one thing while the others ignore it.<br />
+ * Finally, remote servers are always listed in the same order,
+ * so you can access them by their index; to get the host/name, you
  * can get it by asking the receiverNames and receiverHosts and then 
- * looking up the one at the index you want.
+ * looking up the one at the index you want.  This allows you to send
+ * specific messages to specific servers.
  */
-
 @interface EcBroadcastProxy : NSObject
 {
   /* The names of the receiver object */
@@ -80,31 +87,30 @@ enum EcBroadcastProxyError
 	       receiverHosts: (NSArray *)hosts;
 
 /** Configuration array contains a list of dictionaries (one for each
-   receiver) - each dictionary has two keys: `Name' and `Host', with
-   the corresponding values set. */
-
+ * receiver) - each dictionary has two keys: `Name' and `Host', with
+ * the corresponding values set.
+ */
 - (id) initWithReceivers: (NSArray *)receivers;
 
 /* Methods specific to EcBroadcastProxy (which should not be forwarded 
-   to remote servers) are prefixed with `BCP' to avoid name clashes.  
-   Anything not prefixed with BCP is forwarded. */
+ * to remote servers) are prefixed with `BCP' to avoid name clashes.  
+ * Anything not prefixed with BCP is forwarded. */
 
 /** Create connections to the receivers if needed.  It is called
-   internally when a message to broadcast comes in; but you may want
-   to call this method in advance to raise the connections so that
-   when a message to broadcast comes in, the connections are already
-   up and ready. */
+ * internally when a message to broadcast comes in; but you may want
+ * to call this method in advance to raise the connections so that
+ * when a message to broadcast comes in, the connections are already
+ * up and ready. */
 - (void) BCPraiseConnections;
 
 /** Get a string describing the status of the broadcast object */
 - (NSString *) BCPstatus;
 
 /** Set a delegate.<br /> 
- * The delegate gets a -BCP:lostConnectionToServer:onHost: message
- * upon connection lost, and -BCP:madeConnectionToServer:onHost:
- * message upon connection made.
+ * The delegate object gets the messages from the BCPdelegate informal protocol
+ * upon connection loss and when a connection is made.
  */
-- (void) BCPsetDelegate: (id)delegate;
+- (void) BCPsetDelegate: (id)object;
 
 - (id) BCPdelegate;
 

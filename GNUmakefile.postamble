@@ -56,5 +56,7 @@ EcAlarmSink.m_FILE_FILTER_OUT_FLAGS = -O%
 # completely, wiping out any memory of specific configuration.
 config.make config.h: config.make.in config.h.in configure
 	./configure
+	touch config.h
+	touch config.make
 
 

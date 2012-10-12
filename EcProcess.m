@@ -693,10 +693,12 @@ findMode(NSDictionary* d, NSString* s)
 - (id) connectionBecameInvalid: (NSNotification*)notification;
 - (BOOL) connection: (NSConnection*)ancestor
   shouldMakeNewConnection: (NSConnection*)newConn;
-- (void) BCP: (EcBroadcastProxy *)proxy  lostConnectionToServer: (NSString *)name
-	host: (NSString *)host;
-- (void) BCP: (EcBroadcastProxy *)proxy  madeConnectionToServer: (NSString *)name
-	host: (NSString *)host;
+- (void) BCP: (EcBroadcastProxy *)proxy
+  lostConnectionToServer: (NSString *)name
+  host: (NSString *)host;
+- (void) BCP: (EcBroadcastProxy *)proxy
+  madeConnectionToServer: (NSString *)name
+  host: (NSString *)host;
 /*
  * Returns YES if the connection is ALIVE, NO if the connection is DEAD
  */
