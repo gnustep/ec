@@ -20,7 +20,7 @@
 #   specify the name of the user to run all EcProcess programs.
 #
 # EC_REGISTRATION_DOMAIN
-#   May be used to define a comma separate dsequence of keys and values
+#   May be used to define a comma separated sequence of keys and values
 #   to be used to populate the NSUserDefaults registration domain for the
 #   tools built in this package.
 #

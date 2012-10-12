@@ -1,0 +1,11 @@
+This software package is made available under the GNU
+Lesser General Public License (see COPYING.LESSER for details).
+
+However, please be aware that when configured with readline enabled, the
+command-line tools will be linked with libreadline, which will mean that
+they become licensed under the GNU General Public License
+(see COPYING for details).
+
+If you do not wish the command-line tools to be licensed under the GPL,
+you must configure this package using --with-readline=no
+

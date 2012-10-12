@@ -1,0 +1,12 @@
+Getting started
+===============
+
+1. Make sure you have GNUstep installed
+
+2. Type 'make' ... to build the code and the documentation
+
+3. Read the documentation (point your web browser at the ECCL subdirectory)
+
+4. Install it (type 'make install') and try it out, or customise your setup
+   first if you like (see local.make).
+

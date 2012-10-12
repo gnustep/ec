@@ -27,7 +27,7 @@ AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
     [support fancy command line editing @<:@default=check@:>@])],
     [],
-    [with_readline=no])
+    [with_readline=yes])
           
 LIBREADLINE=
   AS_IF([test "x$with_readline" = xyes],

@@ -4302,7 +4302,7 @@ fi
 if test "${with_readline+set}" = set; then
   withval=$with_readline;
 else
-  with_readline=no
+  with_readline=yes
 fi
 
 
