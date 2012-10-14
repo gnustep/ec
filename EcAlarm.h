@@ -590,9 +590,9 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
 	   problem: (NSString*)specificProblem;
 		
 
-/** Generates a new alarm event wuth minimal parameters.<br />
+/** Generates a new alarm event with minimal parameters.<br />
  * The componentName may be nil for a process-wide alarm.<br />
- * The probablCause must NOT be unknown ... it is used to infer
+ * The probableCause must NOT be unknown ... it is used to infer
  * the event type.<br />
  * The specificProblem is used to identify the event for which the
  * alarm is raised.<br />
