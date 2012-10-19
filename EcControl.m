@@ -1774,8 +1774,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [(NSDistantObject*)c setProtocolForProxy: @protocol(Command)];
   dict = [NSMutableDictionary dictionaryWithCapacity: 3];
 
-  h = [NSHost hostWithName: n];
-  if (h == nil)
+  h = [NSHost hostWithWellKnownName: n];
+  if (nil == h)
+    {
+      h = [NSHost hostWithName: n];
+    }
+  if (nil == h)
     {
       m = [NSString stringWithFormat: 
 	  @"Rejected new host with bad name '%@' at %@\n", n, [NSDate date]];
@@ -2463,7 +2467,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	      else
 		{
-		  hostKey = [NSHost hostWithName: o];
+		  hostKey = [NSHost hostWithWellKnownName: o];
+                  if (nil == hostKey)
+                    {
+                      hostKey = [NSHost hostWithName: o];
+                    }
 		}
 	      if (hostKey == nil)
 		{
@@ -2536,7 +2544,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		{
 		  [dict setObject: o forKey: @"*"];
 		}
-	      h = [NSHost hostWithName: [c name]];
+	      h = [NSHost hostWithWellKnownName: [c name]];
+              if (nil == h)
+                {
+                  h = [NSHost hostWithName: [c name]];
+                }
 	      o = [config objectForKey: h];
 	      if (o != nil)
 		{

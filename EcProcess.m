@@ -104,7 +104,6 @@ static NSRecursiveLock	*ecLock = nil;
 
 static BOOL		cmdFlagDaemon = NO;
 static BOOL		cmdFlagTesting = NO;
-static BOOL		cmdIsInitialised = NO;
 static BOOL		cmdIsQuitting = NO;
 static NSString		*cmdInst = nil;
 static NSString		*cmdName = nil;
@@ -2913,7 +2912,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if (self == EcProc)
     {
       EcProc = nil;
-      cmdIsInitialised = NO;
     }
   [ecLock unlock];
   [super dealloc];
