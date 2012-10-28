@@ -913,7 +913,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  for (i = 0; i < [a count]; i++)
 		    {
 		      EcClientI	*c = [a objectAtIndex: i];
-		      BOOL		found = NO;
 
 		      NS_DURING
 			{
@@ -956,7 +955,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			    }
 			}
 		    }
-		  if (found == NO)
+		  if (NO == found)
 		    {
 		      m = [NSString stringWithFormat: 
 			@"Nothing to shut down as '%@'\n", wd];

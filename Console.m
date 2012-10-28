@@ -35,7 +35,10 @@
 #define	EC_BASE_CLASS	EcConsole
 #endif
 
-@class EC_BASE_CLASS;
+/* Create a fake interface to satisfy compiler ...
+ */
+@interface	EC_BASE_CLASS : EcProcess
+@end
 
 void
 inner_main()

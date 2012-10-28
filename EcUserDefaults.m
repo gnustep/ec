@@ -27,6 +27,7 @@
 
    */
 
+#import	<Foundation/NSDictionary.h>
 #import	<Foundation/NSInvocation.h>
 #import	<Foundation/NSLock.h>
 #import	<Foundation/NSMethodSignature.h>
@@ -299,9 +300,9 @@ static NSLock 		*lock = nil;
 
 - (BOOL) setCommand: (id)val forKey: (NSString*)key
 {
-  NSDictionary	*old = [self volatileDomainForName: @"EcCommand"];
-  NSDictionary	*new = nil;
-  NSString	*pre = [self defaultsPrefix];
+  NSDictionary		*old = [self volatileDomainForName: @"EcCommand"];
+  NSMutableDictionary	*new = nil;
+  NSString		*pre = [self defaultsPrefix];
   
   /* Make sure prefix is used if we have one set.
    */
