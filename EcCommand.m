@@ -901,7 +901,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		    }
 		  else
 		    {
-		      m = @"Some clients did not been shut down.\n";
+		      m = @"Some clients did not shut down.\n";
 		    }
 		}
 	      else

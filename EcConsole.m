@@ -217,14 +217,16 @@ static BOOL commandIsRepeat (NSString *string)
 
   /* setup word array */
   
-  words     = [NSMutableArray arrayWithCapacity:16];
-  wordsEnum = [[_line componentsSeparatedByString:@" "] objectEnumerator];
+  words = [NSMutableArray arrayWithCapacity: 16];
+  wordsEnum = [[_line componentsSeparatedByString: @" "] objectEnumerator];
   while ((word = [wordsEnum nextObject]) != nil)
-    [words addObject:[word stringByTrimmingSpaces]];
+    {
+      [words addObject: [word stringByTrimmingSpaces]];
+    }
 
   /* invoke server */
   
-  [self doCommand:words];
+  [self doCommand: words];
 
   [arp release];
 }
@@ -774,11 +776,12 @@ static BOOL commandIsRepeat (NSString *string)
 /* readline callbacks have no context, so we need this one ... */
 static EcConsole *rlConsole = nil;
 
-static void readlineReadALine(char *_line)
+static void
+readlineReadALine(char *_line)
 {
-  NSString *s = _line ? [[NSString alloc] initWithCString:_line] : nil;
+  NSString *s = _line ? [[NSString alloc] initWithCString: _line] : nil;
   
-  [rlConsole processReadLine:s];
+  [rlConsole processReadLine: s];
   
   if (_line != NULL && strlen(_line) > 0)
     {
@@ -788,9 +791,10 @@ static void readlineReadALine(char *_line)
   DESTROY(s);
 }
 
-static char **consoleCompleter(const char *text, int start, int end)
+static char **
+consoleCompleter(const char *text, int start, int end)
 {
-  return [rlConsole complete:text range:NSMakeRange(start, end - start)];
+  return [rlConsole complete: text range: NSMakeRange(start, end - start)];
 }
 
 - (void) activateReadline
@@ -828,55 +832,64 @@ static char **consoleCompleter(const char *text, int start, int end)
 {
   while (self->server == nil)
     {
-      NSString *reject;
-      char lUser[128], *llUser;
+      NSString	*u;
+      NSString	*p;
+      NSString	*reject;
+      char 	buf[128], *line;
 
       /* read username */
       
       printf("Login: ");
       fflush(stdout);
       
-      llUser = fgets(lUser, sizeof(lUser), stdin);
-      if (llUser == NULL || strlen(llUser) == 0)
+      line = fgets(buf, sizeof(buf), stdin);
+      if (0 == line)
 	{
 	  /* user pressed ctrl-D, just exit */
 	  exit(0);
 	}
-      
-      llUser[strlen(llUser) - 1] = '\0';
-      if (strlen(llUser) < 1)
+      line[strlen(line) - 1] = '\0';
+
+      u = [[NSString stringWithCString: line] stringByTrimmingSpaces];
+      if ([u length] == 0)
 	{
 	  /* user just pressed enter, retry */
 	  continue;
 	}
+      if ([u caseInsensitiveCompare: @"quit"] == NSOrderedSame)
+	{
+	  [self cmdQuit: 0];
+	}
       
       /* read password (glibc documentation says not to use getpass?) */
       
-      const char *lPassword = getpass("Password: ");
-      if (lPassword == NULL) {
-	NSLog(@"Could not read password: %s", strerror(errno));
-	exit(1);
-      }
-      
-      
+      line = getpass("Password: ");
+      if (0 == line)
+	{
+	  NSLog(@"Could not read password: %s", strerror(errno));
+	  exit(1);
+	}
+      p = [[NSString stringWithCString: line] stringByTrimmingSpaces];
+      if ([p caseInsensitiveCompare: @"quit"] == NSOrderedSame)
+	{
+	  [self cmdQuit: 0];
+	}
+
       /* setup connection to server */
       
-      self->server =
-	[[NSConnection rootProxyForConnectionWithRegisteredName: name
-		       host: host
-		       usingNameServer:
-			 [NSSocketPortNameServer sharedInstance]] retain];
+      self->server = [[NSConnection
+	rootProxyForConnectionWithRegisteredName: name
+	host: host
+	usingNameServer: [NSSocketPortNameServer sharedInstance]] retain];
       if (self->server == nil)
 	{
 	  if ([host isEqual: @"*"])
 	    {
-	      [ochan printf: @"Unable to connect to %@ on any host.\n",
-		     name];
+	      [ochan printf: @"Unable to connect to %@ on any host.\n", name];
 	    }
 	  else
 	    {
-	      [ochan printf: @"Unable to connect to %@ on %@.\n",
-		     name, host];
+	      [ochan printf: @"Unable to connect to %@ on %@.\n", name, host];
 	    }
 	  
 	  [self cmdQuit: 0];
@@ -893,31 +906,32 @@ static char **consoleCompleter(const char *text, int start, int end)
       
       /* attempt login */
       
-      self->user = [[NSString alloc] initWithCString:lUser];
-      self->pass = [[NSString alloc] initWithCString:lPassword];
+      self->user = [u retain];
+      self->pass = [p retain];
       self->rnam = 
-	[[NSString alloc] initWithFormat:@"%@:%@", self->user, self->local];
+	[[NSString alloc] initWithFormat: @"%@:%@", self->user, self->local];
       
-      reject = [self->server registerConsole:self 
-		    name:self->rnam pass:self->pass];
+      reject = [self->server registerConsole: self 
+				        name: self->rnam
+					pass: self->pass];
       
       /* connection failed */
       
-      if (reject != nil) {
-	[ochan puts:
-		 [NSString stringWithFormat: 
-			     @"Connection attempt rejected - %@\n", reject]];
-	
-	[[NSNotificationCenter defaultCenter] 
-	  removeObserver:self
-	  name: NSConnectionDidDieNotification
-	  object: (id)[self->server connectionForProxy]];
-	
-	DESTROY(self->pass);
-	DESTROY(self->user);
-	DESTROY(self->rnam);
-	DESTROY(self->server);
-      }
+      if (reject != nil)
+	{
+	  [ochan puts: [NSString stringWithFormat: 
+	     @"Connection attempt rejected - %@\n", reject]];
+	  
+	  [[NSNotificationCenter defaultCenter] 
+	    removeObserver: self
+	    name: NSConnectionDidDieNotification
+	    object: (id)[self->server connectionForProxy]];
+	  
+	  DESTROY(self->pass);
+	  DESTROY(self->user);
+	  DESTROY(self->rnam);
+	  DESTROY(self->server);
+	}
     }
 }
 
