@@ -124,7 +124,7 @@ static NSArray          *modes;
 
 /* Should only be called on main thread.
  */
-- (oneway void) cmdQuit: (int)status
+- (oneway void) cmdQuit: (NSInteger)status
 {
   [EcProc cmdQuit: status];
 }

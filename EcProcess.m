@@ -2735,7 +2735,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   va_end(ap);
 }
 
-- (void) cmdQuit: (int)status
+- (void) cmdQuit: (NSInteger)status
 {
   cmdIsQuitting = YES;
 

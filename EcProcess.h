@@ -141,7 +141,7 @@ typedef enum    {
  */
 @protocol	CmdClient <CmdPing,CmdConfig>
 - (oneway void) cmdMesgData: (in bycopy NSData*)dat from: (NSString*)name;
-- (oneway void) cmdQuit: (int)status;
+- (oneway void) cmdQuit: (NSInteger)status;
 @end
 
 /** Messages a Command logging process can be expected to handle.
@@ -527,7 +527,7 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Used to tell your application to quit.
  */
-- (void) cmdQuit: (int)status;
+- (void) cmdQuit: (NSInteger)status;
 
 /** Returns non-zero (a signal) if the process has received a unix signal.
  */
@@ -633,7 +633,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Should be over-ridden to perform extra tidy up on shutdown of the
  * process - should call [super cmdQuit:...] at the end of the method.
  */
-- (void) cmdQuit: (int)status;
+- (void) cmdQuit: (NSInteger)status;
 
 /** Used to tell your application about configuration changes (the
  * default implementation merges the configuration change into the

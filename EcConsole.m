@@ -94,7 +94,7 @@ static BOOL commandIsRepeat (NSString *string)
   return NO;	// Not a client of the Command server
 }
 
-- (void) cmdQuit: (int)sig
+- (void) cmdQuit: (NSInteger)sig
 {
   [ochan puts: @"\nExiting\n"];
 
