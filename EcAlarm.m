@@ -51,11 +51,9 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
     {
       host = [[NSHost currentHost] wellKnownName];
     }
-  else
-    {
-      // No underscores permitted.
-      host = [host stringByReplacingString: @"_" withString: @"-"];
-    }
+  // No underscores permitted.
+  host = [host stringByTrimmingSpaces];
+  host = [host stringByReplacingString: @"_" withString: @"-"];
 
   if (nil == process)
     {
@@ -91,17 +89,17 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 	}
     }
   // No underscores permitted.
+  process = [process stringByTrimmingSpaces];
   process = [process stringByReplacingString: @"_" withString: @"-"];
 
   if (nil == component)
     {
       component = @"";
     }
-  else
-    {
-      // No underscores permitted.
-      component = [component stringByReplacingString: @"_" withString: @"-"];
-    }
+
+  // No underscores permitted.
+  component = [component stringByTrimmingSpaces];
+  component = [component stringByReplacingString: @"_" withString: @"-"];
 
   return [NSString stringWithFormat: @"%@_%@_%@_%@", 
     host, process, instance, component];
