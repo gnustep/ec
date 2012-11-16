@@ -2267,6 +2267,45 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
+- (void) cmdMesgalarms: (NSArray*)msg
+{
+  if ([msg count] == 0)
+    {
+      [self cmdPrintf: @"reports current alarms"];
+    }
+  else
+    {
+      if ([[msg objectAtIndex: 0] isEqualToString: @"help"])
+	{
+	  [self cmdPrintf: @"\nThe alarms command is used to report the"];
+	  [self cmdPrintf: @" alarms currently active for this process.\n"];
+	}
+      else
+	{
+	  NSArray	*a = [alarmDestination alarms];
+          
+
+	  if (0 == [a count])
+	    {
+              [self cmdPrintf: @"No alarms currently active.\n"];
+	    }
+	  else
+	    {
+	      int	i;
+
+	      a = [a sortedArrayUsingSelector: @selector(compare:)];
+	      [self cmdPrintf: @"Current alarms -\n"];
+	      for (i = 0; i < [a count]; i++)
+		{
+		  EcAlarm	*alarm = [a objectAtIndex: i];
+
+		  [self cmdPrintf: @"%@\n", [alarm description]];
+		}
+	    }
+	}
+    }
+}
+
 - (void) cmdMesgarchive: (NSArray*)msg
 {
   if ([msg count] == 0)
@@ -2275,7 +2314,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      if (strcmp([[msg objectAtIndex: 0] UTF8String], "help") == 0)
+      if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
+        == NSOrderedSame)
 	{
 	  [self cmdPrintf: @"\nThe archive command is used to archive the"];
 	  [self cmdPrintf: @" debug file to a subdirectory.\n"];
@@ -2289,6 +2329,88 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
+- (void) cmdMesgclear: (NSArray*)msg
+{
+  if ([msg count] == 0)
+    {
+      [self cmdPrintf: @"clears current alarms"];
+    }
+  else
+    {
+      if ([[msg objectAtIndex: 0] isEqualToString: @"help"])
+	{
+	  [self cmdPrintf: @"\nThe clear command is used to clear the"];
+	  [self cmdPrintf: @" alarms currently active for this process.\n"];
+	  [self cmdPrintf: @"You may use the ord 'all' or a space separated"];
+	  [self cmdPrintf: @" list of alarm notification IDs.\n"];
+	}
+      else
+	{
+	  NSArray	*a = [alarmDestination alarms];
+          NSUInteger    count = [msg count];
+
+          if (count < 2)
+            {
+	      [self cmdPrintf: @"The 'clear' command requires an alarm"
+                @" notificationID or the word all\n"];
+            }
+          else
+            {
+              NSUInteger        alarmCount = [a count];
+              EcAlarm	        *alarm;
+              NSUInteger        index;
+
+              for (index = 1; index < count; index++)
+                {
+                  NSString      *arg = [msg objectAtIndex: index];
+
+                  if ([arg caseInsensitiveCompare: _(@"all")]
+                    == NSOrderedSame)
+                    {
+                      NSUInteger        i;
+
+                      for (i = 0; i < alarmCount; i++)
+                        {
+                          alarm = [a objectAtIndex: i];
+                          [self cmdPrintf: @"Clearing %@\n", alarm];
+                          alarm = [alarm clear];
+                          [alarmDestination alarm: alarm];
+                        }
+                    }
+                  else
+                    {
+                      int	        n = [arg intValue];
+                      NSUInteger	i;
+
+                      alarm = nil;
+                      for (i = 0; i < alarmCount; i++)
+                        {
+                          alarm = [a objectAtIndex: i];
+                          if ([alarm notificationID] == n)
+                            {
+                              break;
+                            }
+                          alarm = nil;
+                        }
+                      if (nil == alarm)
+                        {
+                          [self cmdPrintf:
+                            @"No alarm found with the notificationID '%@'\n",
+                            arg];
+                        }
+                      else
+                        {
+                          [self cmdPrintf: @"Clearing %@\n", alarm];
+                          alarm = [alarm clear];
+                          [alarmDestination alarm: alarm];
+                        }
+                    }
+                }
+            }
+	}
+    }
+}
+
 - (void) cmdMesgdebug: (NSArray*)msg
 {
   if ([msg count] == 0)
@@ -2297,7 +2419,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      if (strcmp([[msg objectAtIndex: 0] UTF8String], "help") == 0)
+      if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
+        == NSOrderedSame)
 	{
 	  [self cmdPrintf: @"\nWithout parameters, the debug command is "];
 	  [self cmdPrintf: @"used to list the currently active "];
@@ -2474,7 +2597,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      if (strcmp([[msg objectAtIndex: 0] UTF8String], "help") == 0)
+      if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
+        == NSOrderedSame)
 	{
 	  [self cmdPrintf: @"\n"];
 	  [self cmdPrintf: @"Without parameters, the nodebug command is "];
@@ -2574,7 +2698,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      if (strcmp([[msg objectAtIndex: 0] UTF8String], "help") == 0)
+      if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
+        == NSOrderedSame)
 	{
 	  [self cmdPrintf: @"\n"];
 	  [self cmdPrintf: @"Without parameters, the memory command is "];

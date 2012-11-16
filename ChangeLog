@@ -2,6 +2,8 @@
 
         * EcControl.m: Record a change in the alerter configuration as an
         update of the overall configuration.
+        * EcProcess.m: Implement 'alarms' and 'clear' commands for local
+        process alarm state.
 
 2012-10-28  Richard Frith-Macdonald <rfm@gnu.org>
 
