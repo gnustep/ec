@@ -2349,9 +2349,15 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   if ([mgr isReadableFileAtPath: path] == YES
     && (d = [NSDictionary dictionaryWithContentsOfFile: path]) != nil)
     {
-      d = [NSDictionary dictionaryWithObjectsAndKeys:
-	d, @"Alerter", nil];
-      [[self cmdDefaults] setConfiguration: d];
+      NSDictionary      *o = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
+
+      if (nil == o || NO == [o isEqual: d])
+        {
+          d = [NSDictionary dictionaryWithObjectsAndKeys:
+            d, @"Alerter", nil];
+          [[self cmdDefaults] setConfiguration: d];
+          changed = YES;
+        }
       if (nil == alerter)
         {
 	  alerter = [EcAlerter new];
@@ -2359,7 +2365,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   else
     {
-      DESTROY(alerter);
+      if (nil != alerter)
+        {
+          changed = YES;
+          DESTROY(alerter);
+        }
     }
 
   path = [base stringByAppendingPathComponent: @"Operators.plist"];
