@@ -972,8 +972,25 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	      else if (comp(wd, @"Clear") >= 0)
 		{
-		  m = @"Clear\nInstructs the Control server to clear an "
-		      @"alarm (identified by numeric notificationID).\n";
+		  m = @"Clear\n\n"
+                      @"Instructs the Control server to clear "
+		      @"an alarm (identified by numeric\n"
+                      @"notificationID).\n\n"
+		      @"NB. This command clears the alarm in the "
+		      @"central records of the Control server,\n"
+                      @"NOT in the originating process.\n"
+                      @"This feature means that you can clear "
+                      @"an alarm centrally while the underlying\n"
+                      @"problem has not been corrected and, "
+                      @"because the originating process has\n"
+                      @"already forwarded the alarm it will "
+                      @"not re-raise it with the central system.\n"
+                      @"This can be useful where you wish to "
+                      @"suppress some sort of repeated nagging by\n"
+                      @"the central system.\n"
+                      @"To reset things so the alarm may be "
+                      @"raised again you must issue a 'clear'\n"
+                      @"command directly to the originatig process itsself.\n";
 		}
 	      else if (comp(wd, @"Config") >= 0)
 		{
