@@ -40,7 +40,11 @@ master          agentx
    host and port if you wish (see the EcAlarmSinkSNMP initialisation for
    details).
 
-5. restart with '/etc/rc.d/init.d/snmpd restart'
+5. restart with '/sbin/service snmpd restart'
+   If you are starting snmp for the first time on a RedHat system then:
+   # /sbin/chkconfig snmpd on
+   # /sbin/service snmpd start
+   should enable the snmp service and then start it.
 
 6. build/install/run the Control server
 
