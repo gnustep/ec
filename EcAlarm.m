@@ -467,19 +467,38 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 {
   Class	c = [self class];
 
-  return [NSString stringWithFormat:
-    @"Alarm %-8d %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
-    _notificationID,
-    _managedObject,
-    [c stringFromEventType: _eventType],
-    [c stringFromProbableCause: _probableCause],
-    [c stringFromSeverity: _perceivedSeverity],
-    [c stringFromTrend: _trendIndicator],
-    _eventDate,
-    _firstEventDate,
-    _specificProblem,
-    _proposedRepairAction,
-    _additionalText];
+  if (0 == _notificationID)
+    {
+      return [NSString stringWithFormat:
+        @"Alarm addr: %-16" PRIx64 " %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
+        (uint64_t)(uintptr_t)self,
+        _managedObject,
+        [c stringFromEventType: _eventType],
+        [c stringFromProbableCause: _probableCause],
+        [c stringFromSeverity: _perceivedSeverity],
+        [c stringFromTrend: _trendIndicator],
+        _eventDate,
+        _firstEventDate,
+        _specificProblem,
+        _proposedRepairAction,
+        _additionalText];
+    }
+  else
+    {
+      return [NSString stringWithFormat:
+        @"Alarm notification: %-8d %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
+        _notificationID,
+        _managedObject,
+        [c stringFromEventType: _eventType],
+        [c stringFromProbableCause: _probableCause],
+        [c stringFromSeverity: _perceivedSeverity],
+        [c stringFromTrend: _trendIndicator],
+        _eventDate,
+        _firstEventDate,
+        _specificProblem,
+        _proposedRepairAction,
+        _additionalText];
+    }
 }
 
 - (void) encodeWithCoder: (NSCoder*)aCoder

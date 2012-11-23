@@ -181,12 +181,16 @@ typedef enum    {
 		 from: (NSString*)c;
 /** Shut down the Command server and all its clients */
 - (oneway void) terminate;
-/** An exceptional method and can be used without registering first
- * (ie, can be used by anyone, not only clients of the Command server).
- * It's meant to be used remotely by java servlets, and all sort of
+
+/** This is an exceptional method which may be used without registering
+ * your process with a Command server first (ie, it can be used by anyone,
+ * not only clients of the Command server).<br />
+ * It's meant to be used remotely by Java servlets, and all sort of
  * software running on the machine and which is *not* a full Command
  * client (ie, a subclass of EcProcess) but which still wants to retrieve
- * configuration from a central location (the Control/Command servers).
+ * configuration from a central location (the Control/Command servers).<br />
+ * The returned value is a a serialized property list ... you need to
+ * deserialize using the standard GNUstep property list APIs.<br />
  * NB: The configuration might change later on, so you must not cache
  * the configuration after asking for it, but rather ask for it each
  * time your software needs it.
@@ -391,7 +395,8 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) cmdAlert: (NSString*)fmt arguments: (va_list)args;
 
-/** Send a SEVERE error message to the server.
+/** Send a SEVERE error message to the server by calling the
+ * -cmdAlert:arguments: method.
  */
 - (void) cmdAlert: (NSString*)fmt, ...;
 
@@ -406,7 +411,7 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) cmdAudit: (NSString*)fmt arguments: (va_list)args;
 
-/** Send a log message to the server.
+/** Send a log message to the server by calling the -cmdAudit:arguments: method.
  */
 - (void) cmdAudit: (NSString*)fmt, ...;
 
@@ -425,22 +430,29 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdDbg: (NSString*)type msg: (NSString*)fmt arguments: (va_list)args;
 
 /** Send a debug message - as long as the debug mode specified as 'type'
- * is currently set.
+ * is currently set.  Operates by calling the -cmdDbg:msg:arguments: method.
  */
 - (void) cmdDbg: (NSString*)type msg: (NSString*)fmt, ...;
 
-/** Send a debug message with debug mode 'defaultMode'.
+/** Send a debug message with debug mode 'defaultMode'.<br />
+ * Calls the -cmdDbg:msg:arguments: method.
  */
 - (void) cmdDebug: (NSString*)fmt arguments: (va_list)args;
 
-/** Send a debug message with debug mode 'defaultMode'.
+/** Send a debug message with debug mode 'defaultMode'.<br />
+ * Operates by calling the -cmdDebug:arguments: method.
  */
 - (void) cmdDebug: (NSString*)fmt, ...;
 
 /** Called whenever the user defaults are updated due to a central
  * configuration change (or another defaults system change).<br />
+ * This is also called by -cmdUpdate: even if no configuration
+ * actually changed ... in which case the notification argument
+ * is nil.<br />
  * If you override this to handle configuration changes, don't forget
- * to call the superclass implementation.
+ * to call the superclass implementation.<br />
+ * This method is provided to allow subclasses to control the order
+ * in which defaults changes are handled by them and their superclasses.
  */
 - (void) cmdDefaultsChanged: (NSNotification*)n;
 
@@ -448,11 +460,12 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) cmdError: (NSString*)fmt arguments: (va_list)args;
 
-/** Send an error message to the server.
+/** Send an error message to the server by calling the
+ * -cmdError:arguments: method.
  */
 - (void) cmdError: (NSString*)fmt, ...;
 
-/** Flush logging information
+/** Flush logging information.
  */
 - (void) cmdFlushLogs;
 
@@ -465,12 +478,13 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (BOOL) cmdIsClient;
 
-/** Returns a fag indicating whether this process is currently connected
+/** Returns a flag indicating whether this process is currently connected
  * it its Command server.
  */
 - (BOOL) cmdIsConnected;
 
-/** Returns YES is the process is running in test mode, NO otherwise.
+/** Returns YES is the process is running in test mode, NO otherwise.<br />
+ * Test mode is defined by the EcTesting user default.
  */
 - (BOOL) cmdIsTesting;
 
@@ -505,10 +519,10 @@ extern NSString*	cmdVersion(NSString *ver);
  * array).<br />
  * There are two special cases ... when the operator types 'help XXX' your
  * method will be called with 'help'as the first element of the array and
- * you should respond with some useful hep text, and when the operator
+ * you should respond with some useful help text, and when the operator
  * simply wants a short description of what the command does, the array
  * argument will be nil (and your method should respond with a short 
- * description of the cmmand).
+ * description of the command).
  */
 - (NSString*) cmdMesg: (NSArray*)msg;
 
@@ -525,7 +539,9 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (NSMutableDictionary*)cmdOperator: (NSString*)name password: (NSString*)pass;
 
-/** Used to tell your application to quit.
+/** Used to tell your application to quit.<br />
+ * Subclasses should override this method to perform any pre-shutdown cleanup
+ * before they call the superclass implementation.
  */
 - (void) cmdQuit: (NSInteger)status;
 
@@ -533,11 +549,32 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (int) cmdSignalled;
 
-/** Used to tell your application about configuration changes.
+/** Used to tell your application about configuration changes.<br />
+ * This is called before the NSUserDefaults system is updated with the
+ * changes, so you may use it to update internal state in the knowledge
+ * that code watching for user defaults change notifications will not
+ * have updated yet.<br />
+ * The base class implementation is responsible for updating the user
+ * defaults system ... so be sure that your implementation calls the
+ * superclass implementation (unless you wish to suppress the configuration
+ * update).<br />
+ * You may alter the info dictionary prior to passign it to the superclass
+ * implementation if you wish to adjust the new configuration before it
+ * takes effect.
  */
 - (void) cmdUpdate: (NSMutableDictionary*)info;
 
-
+/** Used to tell your application about configuration changes.<br />
+ * This is called after the NSUserDefaults system is updated with the
+ * changes, so you may use it to update internal state in the knowledge
+ * that code watching for user defaults change notifications will have
+ * updated already.<br />
+ * NB. This method will be called even if your implementation of
+ * -cmdUpdate: suppresses the actual update.  In this situation this
+ * method will find the configuration unchanged since the previous
+ * time that it was called.
+ */
+- (void) cmdUpdated;
 
 
 - (void) log: (NSString*)message type: (EcLogType)t;
@@ -572,25 +609,13 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) setCmdTimeout: (SEL)sel;
 
-/** Specify an object 'obj' to be sent a message 'sel' when the
- * network configuration information for this process has been changed.
- * If 'sel' is a nul selector, then the specified object is removed
- * from the list of objects to be notified.  The EcProces class will
- * retain the object given.
- */
-- (void) setCmdUpdate: (id)obj withMethod: (SEL)sel;
-
 /*
  * Trigger a timeout to go off as soon as possible ... subsequent timeouts
  * go off at the normal interval after that one.
  */
 - (void) triggerCmdTimeout;
 
-/** Obtains the configuration value for the specified key from the
- * NSUserDefaults system (as modified by the Command server).<br />
- * If you need more than one value, or if you want a typed values,
- * you should call -cmdDefaults to get the defaults object, and then
- * call methods of that object directly.
+/** Deprecated ... use -cmdDefaults instead.
  */
 - (id) cmdConfig: (NSString*)key;
 

@@ -433,7 +433,7 @@ static EcLogger	*warningLogger = nil;
 static NSMutableSet	*cmdActions = nil;
 static id		cmdServer = nil;
 static id		cmdPTimer = nil;
-static NSMutableDictionary	*cmdConf = nil;
+static NSDictionary	*cmdConf = nil;
 static NSDictionary	*cmdOperators = nil;
 static NSDate		*cmdFirst = nil;
 static NSDate		*cmdLast = nil;
@@ -445,8 +445,6 @@ static SEL		cmdTimSelector = 0;
 static NSTimeInterval	cmdTimInterval = 60.0;
 
 static NSMutableArray	*noNetConfig = nil;
-
-static NSMutableArray	*updateHandlers = nil;
 
 static NSMutableDictionary *servers = nil;
 
@@ -535,47 +533,6 @@ ecCommandName()
   return name;
 }
 
-
-@interface	UpdateHandler: NSObject
-{
-  id	obj;
-  SEL	sel;
-}
-- (id) initWithObj: (id)o andSel: (SEL)s;
-- (id) obj;
-- (SEL) sel;
-- (void) setSel: (SEL)s;
-@end
-
-@implementation	UpdateHandler
-- (void) dealloc
-{
-  RELEASE(obj);
-  [super dealloc];
-}
-- (id) initWithObj: (id)o andSel: (SEL)s;
-{
-  self = [super init];
-  if (self != nil)
-    {
-      obj = RETAIN(o);
-      sel = s;
-    }
-  return self;
-}
-- (id) obj
-{
-  return obj;
-}
-- (SEL) sel
-{
-  return sel;
-}
-- (void) setSel: (SEL)s
-{
-  sel = s;
-}
-@end
 
 NSString	*cmdDefaultDbg = @"defaultMode";
 NSString	*cmdConnectDbg = @"connectMode";
@@ -980,6 +937,7 @@ findMode(NSDictionary* d, NSString* s)
 - (void) cmdMesgtesting: (NSArray*)msg;
 - (NSString*) _moveLog: (NSString*)name to: (NSString*)sub;
 - (void) _timedOut: (NSTimer*)timer;
+- (void) _update: (NSMutableDictionary*)info;
 @end
 
 @implementation EcProcess
@@ -1088,10 +1046,12 @@ static NSString	*noFiles = @"No log files to archive";
 
 - (void) cmdDefaultsChanged: (NSNotification*)n
 {
-  NSEnumerator	*enumerator = [cmdDebugKnown keyEnumerator];
+  NSEnumerator	*enumerator;
   NSDictionary	*dict;
   NSString	*mode;
+  NSString	*str;
 
+  enumerator = [cmdDebugKnown keyEnumerator];
   while (nil != (mode = [enumerator nextObject]))
     {
       NSString	*key = [@"Debug-" stringByAppendingString: mode];
@@ -1118,6 +1078,34 @@ static NSString	*noFiles = @"No log files to archive";
   GSDebugAllocationActive([cmdDefs boolForKey: @"Memory"]);
   [NSObject enableDoubleReleaseCheck: [cmdDefs boolForKey: @"Release"]];
   cmdFlagTesting = [cmdDefs boolForKey: @"Testing"];
+
+  if ((str = [cmdDefs stringForKey: @"CmdInterval"]) != nil)
+    {
+      [self setCmdInterval: [str floatValue]];
+    }
+
+  str = [cmdDefs stringForKey: @"MemAllowed"];
+  if (nil != str)
+    {
+      memAllowed = [str intValue];
+      if (memAllowed <= 0)
+        {
+          memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
+        }
+    }
+
+  if (servers != nil)
+    {
+      NSEnumerator *e;
+      RemoteServer *server;
+
+      e = [servers objectEnumerator];
+
+      while ((server = [e nextObject])) 
+	{
+	  [server update];
+	}
+    }
 }
 
 - (NSString*) cmdDebugPath
@@ -1791,7 +1779,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 			   selector: @selector(cmdConnectionBecameInvalid:)
 			       name: NSConnectionDidDieNotification
 			     object: connection];
-		      [self cmdUpdate: r];
+		      [self _update: r];
 		    }
 		}
 	    }
@@ -2044,46 +2032,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 {
   cmdTimSelector = sel;
   [self triggerCmdTimeout];
-}
-
-- (void) setCmdUpdate: (id)obj withMethod: (SEL)sel
-{
-  UpdateHandler	*u;
-  unsigned	count = [updateHandlers count];
-  unsigned	i;
-
-  if (updateHandlers == nil)
-    {
-      updateHandlers = [[NSMutableArray alloc] initWithCapacity: 1];
-    }
-  for (i = 0; i < count; i++)
-    {
-      u = [updateHandlers objectAtIndex: i];
-      if ([u obj] == obj)
-	{
-	  break;
-	}
-    }
-  if (i == count)
-    {
-      if (sel != 0)
-	{
-	  u = [[UpdateHandler alloc] initWithObj: obj andSel: sel];
-	  [updateHandlers addObject: u];
-	  RELEASE(u);
-	}
-    }
-  else
-    {
-      if (sel == 0)
-	{
-	  [updateHandlers removeObjectAtIndex: i];
-	}
-      else
-	{
-	  [u setSel: sel];
-	}
-    }
 }
 
 - (void) triggerCmdTimeout
@@ -2341,8 +2289,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
 	  [self cmdPrintf: @"\nThe clear command is used to clear the"];
 	  [self cmdPrintf: @" alarms currently active for this process.\n"];
-	  [self cmdPrintf: @"You may use the ord 'all' or a space separated"];
-	  [self cmdPrintf: @" list of alarm notification IDs.\n"];
+	  [self cmdPrintf: @"You may use the word 'all' or a space separated"];
+	  [self cmdPrintf: @" list of alarm addreesses.\n"];
 	}
       else
 	{
@@ -2362,6 +2310,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
               for (index = 1; index < count; index++)
                 {
+                  uint64_t      addr;
                   NSString      *arg = [msg objectAtIndex: index];
 
                   if ([arg caseInsensitiveCompare: _(@"all")]
@@ -2377,16 +2326,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                           [alarmDestination alarm: alarm];
                         }
                     }
-                  else
+                  else if (1 == sscanf([arg UTF8String], "%" PRIx64, &addr))
                     {
-                      int	        n = [arg intValue];
                       NSUInteger	i;
 
                       alarm = nil;
                       for (i = 0; i < alarmCount; i++)
                         {
                           alarm = [a objectAtIndex: i];
-                          if ([alarm notificationID] == n)
+                          if ((uint64_t)(uintptr_t)alarm == addr)
                             {
                               break;
                             }
@@ -2395,7 +2343,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                       if (nil == alarm)
                         {
                           [self cmdPrintf:
-                            @"No alarm found with the notificationID '%@'\n",
+                            @"No alarm found with the address '%@'\n",
                             arg];
                         }
                       else
@@ -2404,6 +2352,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                           alarm = [alarm clear];
                           [alarmDestination alarm: alarm];
                         }
+                    }
+                  else
+                    {
+                      [self cmdPrintf: @"Not a hexadecimal address: '%@'\n",
+                        arg];
                     }
                 }
             }
@@ -2900,133 +2853,29 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) cmdUpdate: (NSMutableDictionary*)info
 {
-  NSMutableDictionary	*newConfig;
-  NSDictionary		*dict;
-  NSEnumerator		*enumerator;
-  NSString		*key;
-  BOOL			update = NO;
+  BOOL  defaultsChanged;
 
-  if (info == nil)
+  if (nil == info)
     {
-      update = YES;
+      defaultsChanged = NO;
     }
   else
     {
-      newConfig = [NSMutableDictionary dictionaryWithCapacity: 32];
-      /*
-       *	Put all values for this application in the cmdConf dictionary.
-       */
-      dict = [info objectForKey: cmdLogName()];
-      if (dict != nil)
-	{
-	  enumerator = [dict keyEnumerator];
-	  while ((key = [enumerator nextObject]) != nil)
-	    {
-	      id	obj;
-
-	      if ([noNetConfig containsObject: key])
-		{
-		  [self cmdWarn: @"Bad key '%@' in net config.", key];
-		  continue;
-		}
-	      obj = [dict objectForKey: key];
-	      [newConfig setObject: obj forKey: key];
-	    }
-	}
-      /*
-       *	Add any default values to the cmdConf
-       *	dictionary where we don't have application
-       *	specific values.
-       */
-      dict = [info objectForKey: @"*"];
-      if (dict)
-	{
-	  enumerator = [dict keyEnumerator];
-	  while ((key = [enumerator nextObject]) != nil)
-	    {
-	      if ([newConfig objectForKey: key] == nil)
-		{
-		  id	obj;
-
-		  if ([noNetConfig containsObject: key])
-		    {
-		      [self cmdWarn: @"Bad key '%@' in net config.", key];
-		      continue;
-		    }
-		  obj = [dict objectForKey: key];
-		  [newConfig setObject: obj forKey: key];
-		}
-	    }
-	}
-
-      dict = [info objectForKey: @"Operators"];
-      if (dict != nil && dict != cmdOperators)
-	{
-	  ASSIGNCOPY(cmdOperators, dict);
-	}
-      if (cmdConf == nil || [cmdConf isEqual: newConfig] == NO)
-	{
-	  ASSIGN(cmdConf, newConfig);
-	  update = [cmdDefs setConfiguration: newConfig];
-	}
+      ASSIGNCOPY(cmdConf, info);
+      defaultsChanged = [cmdDefs setConfiguration: cmdConf];
     }
-
-  /*
-   *	Now we update any settings which may be changed on the fly.
+  /* If the defaults did not actually change,
+   * trigger an update anyway.
    */
-
-  if (update == YES)
+  if (NO == defaultsChanged)
     {
-      NSString	*str;
-
-      if ((str = [self cmdConfig: @"CmdInterval"]) != nil)
-	{
-	  [self setCmdInterval: [str floatValue]];
-	}
-
-      str = [self cmdConfig: @"MemAllowed"];
-      if (nil != str)
-	{
-          memAllowed = [str intValue];
-	  if (memAllowed <= 0)
-	    {
-	      memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
-	    }
-	}
-
-      /*
-       *	Notify all interested parties of update.
-       */
-      if (updateHandlers != nil)
-	{
-	  NSArray	*a = [NSArray arrayWithArray: updateHandlers];
-	  unsigned	count = [a count];
-	  unsigned	i;
-
-	  for (i = 0; i < count; i++)
-	    {
-	      UpdateHandler	*u = [a objectAtIndex: i];
-
-	      if ([updateHandlers indexOfObjectIdenticalTo: u] != NSNotFound)
-		{
-		  [[u obj] performSelector: [u sel]];
-		}
-	    }
-	}
-    }  
-
-  if (servers != nil)
-    {
-      NSEnumerator *e;
-      RemoteServer *server;
-
-      e = [servers objectEnumerator];
-
-      while ((server = [e nextObject])) 
-	{
-	  [server update];
-	}
+      [self cmdDefaultsChanged: nil];
     }
+}
+
+- (void) cmdUpdated
+{
+  return;
 }
 
 
@@ -3602,7 +3451,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   if (nil != plist)
     {
-      [self cmdUpdate: plist];
+      [self _update: plist];
     }
 }
 
@@ -3947,6 +3796,81 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 					    repeats: NO];
 	}
       inProgress = NO;
+    }
+}
+
+- (void) _update: (NSMutableDictionary*)info
+{
+  NSMutableDictionary	*newConfig;
+  NSDictionary		*dict;
+  NSEnumerator		*enumerator;
+  NSString		*key;
+
+  newConfig = [NSMutableDictionary dictionaryWithCapacity: 32];
+  /*
+   *	Put all values for this application in the cmdConf dictionary.
+   */
+  dict = [info objectForKey: cmdLogName()];
+  if (dict != nil)
+    {
+      enumerator = [dict keyEnumerator];
+      while ((key = [enumerator nextObject]) != nil)
+        {
+          id	obj;
+
+          if ([noNetConfig containsObject: key])
+            {
+              [self cmdWarn: @"Bad key '%@' in net config.", key];
+              continue;
+            }
+          obj = [dict objectForKey: key];
+          [newConfig setObject: obj forKey: key];
+        }
+    }
+  /*
+   *	Add any default values to the cmdConf
+   *	dictionary where we don't have application
+   *	specific values.
+   */
+  dict = [info objectForKey: @"*"];
+  if (dict)
+    {
+      enumerator = [dict keyEnumerator];
+      while ((key = [enumerator nextObject]) != nil)
+        {
+          if ([newConfig objectForKey: key] == nil)
+            {
+              id	obj;
+
+              if ([noNetConfig containsObject: key])
+                {
+                  [self cmdWarn: @"Bad key '%@' in net config.", key];
+                  continue;
+                }
+              obj = [dict objectForKey: key];
+              [newConfig setObject: obj forKey: key];
+            }
+        }
+    }
+
+  dict = [info objectForKey: @"Operators"];
+  if (dict != nil && dict != cmdOperators)
+    {
+      ASSIGNCOPY(cmdOperators, dict);
+    }
+
+  if (nil == cmdConf || [cmdConf isEqual: newConfig] == NO)
+    {
+      NS_DURING
+        [self cmdUpdate: newConfig];
+      NS_HANDLER
+        [self cmdError: @"Problem before updating config: %@", localException];
+      NS_ENDHANDLER
+      NS_DURING
+        [self cmdUpdated];
+      NS_HANDLER
+        [self cmdError: @"Problem after updating config: %@", localException];
+      NS_ENDHANDLER
     }
 }
 

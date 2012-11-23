@@ -82,7 +82,12 @@ static NSArray          *modes;
       logger->interval = 10;
       logger->size = 8 * 1024;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
-      [EcProc setCmdUpdate: logger withMethod: @selector(update)];
+
+      [[NSNotificationCenter defaultCenter]
+	addObserver: self
+	selector: @selector(update)
+	name: NSUserDefaultsDidChangeNotification
+	object: [EcProc cmdDefaults]];
       [logger update];
       [loggers addObject: logger];
       RELEASE(logger);
@@ -133,6 +138,7 @@ static NSArray          *modes;
 {
   [self flush];
   [timer invalidate];
+  [[NSNotificationCenter defaultCenter] removeObserver: self];
   RELEASE(key);
   RELEASE(flushKey);
   RELEASE(serverKey);
@@ -479,13 +485,22 @@ static NSArray          *modes;
   [self _flush];
 }
 
-/* Should only be called on main thread.
+/* Should only execute on main thread.
  */
 - (void) update
 {
-  NSUserDefaults	*defs = [NSUserDefaults standardUserDefaults];
+  NSUserDefaults	*defs;
   NSString		*str;
 
+  if (NO == [NSThread isMainThread])
+    {
+      [self performSelectorOnMainThread: @selector(update)
+                             withObject: nil
+                          waitUntilDone: NO
+                                  modes: modes];
+      return;
+    }
+  defs = [EcProc cmdDefaults];
   /*
    * If there is a server specified for this debug logger, we want it
    * registered so we can use it - otherwise we will default to using
