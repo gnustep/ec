@@ -2227,6 +2227,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
 	  [self cmdPrintf: @"\nThe alarms command is used to report the"];
 	  [self cmdPrintf: @" alarms currently active for this process.\n"];
+	  [self cmdPrintf: @"NB. Each individual process identifies current"];
+	  [self cmdPrintf: @" alarms by address within the process.\n"];
+	  [self cmdPrintf: @"This differs from the Control server which"];
+	  [self cmdPrintf: @" uses a unique notification ID intended\n"];
+	  [self cmdPrintf: @"for working with external SNMP systems.\n"];
 	}
       else
 	{
@@ -2290,7 +2295,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdPrintf: @"\nThe clear command is used to clear the"];
 	  [self cmdPrintf: @" alarms currently active for this process.\n"];
 	  [self cmdPrintf: @"You may use the word 'all' or a space separated"];
-	  [self cmdPrintf: @" list of alarm addreesses.\n"];
+	  [self cmdPrintf: @" list of alarm addresses.\n"];
+	  [self cmdPrintf: @"NB. Each individual process identifies current"];
+	  [self cmdPrintf: @" alarms by address within the process.\n"];
+	  [self cmdPrintf: @"This differs from the Control server which"];
+	  [self cmdPrintf: @" uses a unique notification ID intended\n"];
+	  [self cmdPrintf: @"for working with external SNMP systems.\n"];
 	}
       else
 	{

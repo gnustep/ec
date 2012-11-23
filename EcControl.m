@@ -876,7 +876,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    }
 	  else
 	    {
-	      m = @"The 'clear' command requires an alarm notificationID\n";
+	      m = @"The 'clear' command requires an alarm notificationID\n"
+	        @"This is the unique identifier used for working with\n"
+	        @"external SNMP monitoring systems.\n";
 	    }
 	}
       else if (comp(wd, @"connect") >= 0)
@@ -961,7 +963,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      if (comp(wd, @"Alarms") >= 0)
 		{
 		  m = @"Alarms\nLists the currently active alarms ordered "
-		      @"by their notificationIDs.\n";
+		      @"by their notificationIDs.\n"
+                      @"The notification ID is the unique identifier used "
+                      @"for working with\n"
+                      @"external SNMP monitoring systems.\n";
 		}
 	      else if (comp(wd, @"Archive") >= 0)
 		{
