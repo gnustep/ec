@@ -470,7 +470,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
   if (0 == _notificationID)
     {
       return [NSString stringWithFormat:
-        @"Alarm addr: %-16" PRIx64 " %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
+        @"Alarm addr: %-16"PRIx64" %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
         (uint64_t)(uintptr_t)self,
         _managedObject,
         [c stringFromEventType: _eventType],
