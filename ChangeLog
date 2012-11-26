@@ -1,3 +1,8 @@
+2012-11-26  Wolfgang Lux  <wolfgang.lux@gmail.com>
+
+	* EcLogger.m (+loggerForType): Fix wrong receiver when registering
+	for notifications.
+
 2012-11-16  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcControl.m: Record a change in the alerter configuration as an

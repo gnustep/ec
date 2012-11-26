@@ -84,7 +84,7 @@ static NSArray          *modes;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
 
       [[NSNotificationCenter defaultCenter]
-	addObserver: self
+	addObserver: logger
 	selector: @selector(update)
 	name: NSUserDefaultsDidChangeNotification
 	object: [EcProc cmdDefaults]];
