@@ -1913,7 +1913,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	       * alerting threshold from 20 to 40 KB above the current
 	       * peak usage.
 	       */
-	      memPeak = ((memPeak / (20 * 1024)) + 2) * (50 * 1024);
+	      memPeak = ((memPeak / (20 * 1024)) + 2) * (20 * 1024);
 	    }
 	  else
 	    {
