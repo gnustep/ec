@@ -1154,8 +1154,22 @@ objectsTable_handler(netsnmp_mib_handler *handler,
       archive = [[d objectForKey: @"AlarmsActive"] mutableCopy];
       if (nil != archive)
 	{
-	  _alarmsActive
-	    = [[NSUnarchiver unarchiveObjectWithData: archive] retain];
+          NS_DURING
+            {
+              _alarmsActive
+                = [[NSUnarchiver unarchiveObjectWithData: archive] retain];
+              if (NO == [_alarmsActive isKindOfClass: [NSMutableSet class]])
+                {
+                  NSLog(@"%@ loaded as bad class: %@", [_alarmsActive class]);
+                  _alarmsActive = nil;
+                }
+            }
+          NS_HANDLER
+            {
+              _alarmsActive = nil;
+              NSLog(@"%@ failed to load: %@", localException);
+            }
+          NS_ENDHANDLER
 	}
       enumerator = [_alarmsActive objectEnumerator];
       while (nil != (alarm = [enumerator nextObject]))

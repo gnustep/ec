@@ -2357,13 +2357,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   str = [NSHost controlWellKnownName];
   if (nil != str)
     {
-      NSHost    *h;
-
-      h = [NSHost hostWithWellKnownName: str];
-      if ([h isEqual: host])
+      if (NO == [[host wellKnownName] isEqual: str]
+        && NO == [[host names] containsObject: str]
+        && NO == [[host addresses] containsObject: str])
         {
-	  NSLog(@"Host for Control well known name (%@) does not match"
-            @" the current host (%@)", str, [host wellKnownName]);
+	  NSLog(@"ControlHost well known name (%@) does not match"
+            @" the current host (%@)", str, host);
 	  [self cmdQuit: 1];
 	  return NO;
         }
