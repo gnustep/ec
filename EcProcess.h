@@ -327,6 +327,10 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 @interface EcProcess : NSObject <CmdClient,EcAlarmDestination>
 
+/** Returns the array of current alarms.
+ */
+- (NSArray*) alarms;
+
 /** Return a short copyright notice ... subclasses should override.
  */
 - (NSString*) ecCopyright;

@@ -1310,6 +1310,11 @@ static NSString	*noFiles = @"No log files to archive";
   return started;
 }
 
+- (NSArray*) alarms
+{
+  return [alarmDestination alarms];
+}
+
 - (oneway void) alarm: (in bycopy EcAlarm*)event
 {
   [alarmDestination alarm: event];
