@@ -27,9 +27,9 @@
 #
 
 ECCL_CPPFLAGS += \
-	'-DEC_DEFAULTS_PREFIX=@"BS"'\
+	'-DEC_DEFAULTS_PREFIX=@"XX"'\
 	'-DEC_DEFAULTS_STRICT=NO'\
-	'-DEC_EFFECTIVE_USER=@"brains99"'\
+	'-DEC_EFFECTIVE_USER=@"dummy"'\
 
 # Command_CPPFLAGS ...
 # Allow an alternative base class to be specified ...
