@@ -1970,12 +1970,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (int) ecRun
 {
-  NSConnection  *c;
+  NSAutoreleasePool     *arp;
+  NSConnection          *c;
+  NSRunLoop             *loop;
 
+  arp = [NSAutoreleasePool new];
   if (YES == cmdIsTransient)
     {
       [self cmdWarn: @"Attempted to run transient  process."];
       [self cmdFlushLogs];
+      [arp release];
       return 1;
     }
 
@@ -1990,6 +1994,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       DESTROY(c);
       [self cmdError: @"Unable to register with name server."];
       [self cmdFlushLogs];
+      [arp release];
       return 2;
     }
 
@@ -1999,19 +2004,24 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     selector: @selector(connectionBecameInvalid:)
     name: NSConnectionDidDieNotification
     object: c];
-  EcProcConnection = [c retain];
+  EcProcConnection = c;
   
   [self cmdAudit: @"Started `%@'", [self cmdName]];
   
-  while (YES == [c isValid])
+  loop = [NSRunLoop currentRunLoop];
+  while (YES == [EcProcConnection isValid])
     {
       NS_DURING
 	{
-	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
-				   beforeDate: nil];
-	  if (0 != [self cmdSignalled])
+          NSDate        *d = [loop limitDateForMode: NSDefaultRunLoopMode];
+
+	  [loop acceptInputForMode: NSDefaultRunLoopMode beforeDate: d];
+	  if (0 != cmdSignalled)
 	    {
-	      [self cmdQuit: [self cmdSignalled]];
+              int       sig = cmdSignalled;
+
+              cmdSignalled = 0;
+	      [self cmdQuit: sig];
 	    }
 	}
       NS_HANDLER
@@ -2019,7 +2029,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdAlert: @"Problem running server: %@", localException];
 	}
       NS_ENDHANDLER;
+      [arp drain];
     }
+
+  [arp release];
 
   /* finish server */
 
