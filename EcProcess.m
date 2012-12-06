@@ -2015,7 +2015,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
           NSDate        *d = [loop limitDateForMode: NSDefaultRunLoopMode];
 
-	  [loop acceptInputForMode: NSDefaultRunLoopMode beforeDate: d];
+	  if (0 == cmdSignalled)
+            {
+              [loop acceptInputForMode: NSDefaultRunLoopMode beforeDate: d];
+            }
 	  if (0 != cmdSignalled)
 	    {
               int       sig = cmdSignalled;
