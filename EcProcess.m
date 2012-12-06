@@ -2032,7 +2032,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdAlert: @"Problem running server: %@", localException];
 	}
       NS_ENDHANDLER;
-      [arp drain];
+      [arp emptyPool];
     }
 
   [arp release];
