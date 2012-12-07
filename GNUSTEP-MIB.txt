@@ -61,8 +61,8 @@ perceivedSeverity INTEGER,
 firstEventDate DisplayString,
 eventDate DisplayString,
 managedObject DisplayString,
-ideventType INTEGER,
-idprobableCause INTEGER,
+eventTypeID INTEGER,
+probabaleCauseID INTEGER,
 specificProblem DisplayString,
 proposedRepairAction DisplayString,
 additionalText DisplayString,
@@ -113,7 +113,7 @@ STATUS current
 DESCRIPTION "Single identifier of the alarm object"
 ::= { alarmsEntry 5 }
 
-ideventType OBJECT-TYPE
+eventTypeID OBJECT-TYPE
 SYNTAX INTEGER {
 communicationsAlarm(2),
 environmentalAlarm(3),
@@ -132,7 +132,7 @@ DESCRIPTION "Identifier of the type of event"
 -- For example the OID 'adapterError' {9.3.2.0.0.1} is represented as --
 -- the integer 1 and 'outOfMemory' {9.3.2.0.0.32} is represented as 32 --
 
-idprobableCause OBJECT-TYPE
+probabaleCauseID OBJECT-TYPE
 SYNTAX INTEGER
 MAX-ACCESS read-only
 STATUS current
@@ -223,7 +223,7 @@ SYNTAX  ObjectsEntry
 MAX-ACCESS  not-accessible
 STATUS  current
 DESCRIPTION "Index of the alarm object table"
-INDEX { objectId }
+INDEX { objectID }
 ::= { objectsTable 1 }
 
 -----------------------------------------------------------------------
@@ -232,9 +232,9 @@ INDEX { objectId }
 ObjectsEntry ::=
 SEQUENCE
 {
-  objectId     DisplayString
+  objectID     DisplayString
 }
-objectId OBJECT-TYPE
+objectID OBJECT-TYPE
 SYNTAX DisplayString  (SIZE (0..127) )
 MAX-ACCESS read-only
 STATUS current
@@ -251,9 +251,9 @@ notificationID,
 perceivedSeverity,
 firstEventDate,
 eventDate,
-objectId,
-ideventType,
-idprobableCause,
+objectID,
+eventTypeID,
+probabaleCauseID,
 specificProblem,
 proposedRepairAction,
 additionalText,

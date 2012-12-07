@@ -100,8 +100,8 @@ struct alarmsTable_entry
   size_t	eventDate_len;
   char		managedObject[128];
   size_t	managedObject_len;
-  int32_t	ideventType;
-  int32_t	idprobableCause;
+  int32_t	eventTypeID;
+  int32_t	probableCauseID;
   char		specificProblem[256];
   size_t	specificProblem_len;
   char		proposedRepairAction[256];
@@ -120,8 +120,8 @@ struct objectsTable_entry
 {
   /* Index
    */
-  char            objectId[128];
-  size_t          objectId_len;
+  char            objectID[128];
+  size_t          objectID_len;
 
   int             valid;
 };
@@ -150,7 +150,7 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
   netsnmp_request_info *requests);
 
 static netsnmp_tdata_row *
-objectsTable_createEntry(NSString *objectId);
+objectsTable_createEntry(NSString *objectID);
 
 /*
  * column number definitions for table alarmsTable
@@ -200,14 +200,14 @@ static oid	*eventType_oid = 0;
 static size_t	eventType_len = 0;
 static oid	*firstEventDate_oid = 0;
 static size_t	firstEventDate_len = 0;
-static oid	*ideventType_oid = 0;
-static size_t	ideventType_len = 0;
-static oid	*idprobableCause_oid = 0;
-static size_t	idprobableCause_len = 0;
+static oid	*eventTypeID_oid = 0;
+static size_t	eventTypeID_len = 0;
+static oid	*probableCauseID_oid = 0;
+static size_t	probableCauseID_len = 0;
 static oid	*notificationID_oid = 0;
 static size_t	notificationID_len = 0;
-static oid	*objectId_oid = 0;
-static size_t	objectId_len = 0;
+static oid	*objectID_oid = 0;
+static size_t	objectID_len = 0;
 static oid	*objectsTable_oid = 0;
 static size_t	objectsTable_len = 0;
 static oid	*perceivedSeverity_oid = 0;
@@ -309,20 +309,20 @@ heartbeat(time_t now)
 			    strlen(timestamp));
 
   snmp_varlist_add_variable(&var_list,
-			    objectId_oid, objectId_len,
+			    objectID_oid, objectID_len,
 			    ASN_OCTET_STR,
 			    0,	/* not required */
 			    0);
 
   snmp_varlist_add_variable(&var_list,
-			    ideventType_oid, ideventType_len,
+			    eventTypeID_oid, eventTypeID_len,
 			    ASN_INTEGER,
 			    (u_char*)&eventType,	/* heartbeat */
 			    sizeof(eventType));
 
   snmp_varlist_add_variable(&var_list,
-			    idprobableCause_oid,
-			    idprobableCause_len, ASN_INTEGER,
+			    probableCauseID_oid,
+			    probableCauseID_len, ASN_INTEGER,
 			    (u_char*)&cause,
 			    sizeof(cause));
 
@@ -389,9 +389,9 @@ setAlarmTableEntry(netsnmp_tdata_row *row, EcAlarm *alarm)
   strcpy(e->managedObject, s);
   e->managedObject_len = strlen(s);
 
-  e->ideventType = [alarm eventType];
+  e->eventTypeID = [alarm eventType];
 
-  e->idprobableCause = [alarm probableCause];
+  e->probableCauseID = [alarm probableCause];
 
   s = [[alarm specificProblem] UTF8String];
   strcpy(e->specificProblem, s);
@@ -529,10 +529,10 @@ init_EcAlarmSink(void)
   memcpy(eventType_oid, oids, sizeof(oid) * (len + 2));
   eventType_oid[len+2] = 6;
 
-  idprobableCause_len = len + 3;
-  idprobableCause_oid = (oid*)malloc(sizeof(oid) * idprobableCause_len);
-  memcpy(idprobableCause_oid, oids, sizeof(oid) * (len + 2));
-  idprobableCause_oid[len+2] = 7;
+  probableCauseID_len = len + 3;
+  probableCauseID_oid = (oid*)malloc(sizeof(oid) * probableCauseID_len);
+  memcpy(probableCauseID_oid, oids, sizeof(oid) * (len + 2));
+  probableCauseID_oid[len+2] = 7;
 
   specificProblem_len = len + 3;
   specificProblem_oid = (oid*)malloc(sizeof(oid) * specificProblem_len);
@@ -560,19 +560,19 @@ init_EcAlarmSink(void)
   if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.2";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
-  objectId_len = len + 3;
-  objectId_oid = (oid*)malloc(sizeof(oid) * objectId_len);
+  objectID_len = len + 3;
+  objectID_oid = (oid*)malloc(sizeof(oid) * objectID_len);
   for (i = 0; i < len; i++)
     {
-      objectId_oid[i] = [[array objectAtIndex: i] intValue];
+      objectID_oid[i] = [[array objectAtIndex: i] intValue];
     }
-  objectId_oid[len] = 1;	// objectsTable
-  objectId_oid[len+1] = 1;	// objectsEntry
-  objectId_oid[len+2] = 1;	// objectId
+  objectID_oid[len] = 1;	// objectsTable
+  objectID_oid[len+1] = 1;	// objectsEntry
+  objectID_oid[len+2] = 1;	// objectID
 
   objectsTable_len = len + 1;
   objectsTable_oid = (oid*)malloc(sizeof(oid) * objectsTable_len);
-  memcpy(objectsTable_oid, objectId_oid, sizeof(oid) * (len + 1));
+  memcpy(objectsTable_oid, objectID_oid, sizeof(oid) * (len + 1));
 
   /* Create the managed objects table as a read-only item for SNMP.
    */
@@ -585,7 +585,7 @@ init_EcAlarmSink(void)
   objectsTable = netsnmp_tdata_create_table("objectsTable", 0);
   tinfo = SNMP_MALLOC_TYPEDEF(netsnmp_table_registration_info);
   netsnmp_table_helper_add_indexes(tinfo,
-    ASN_OCTET_STR, /* index: objectId */
+    ASN_OCTET_STR, /* index: objectID */
     0);
   tinfo->min_column = COLUMN_OBJECTID;
   tinfo->max_column = COLUMN_OBJECTID;
@@ -853,7 +853,7 @@ alarmsTable_handler(netsnmp_mib_handler *handler,
 		      continue;
 		    }
 		  snmp_set_var_typed_integer(request->requestvb, ASN_INTEGER,
-					     table_entry->ideventType);
+					     table_entry->eventTypeID);
 		  break;
 
 		case COLUMN_IDPROBABLECAUSE:
@@ -864,7 +864,7 @@ alarmsTable_handler(netsnmp_mib_handler *handler,
 		      continue;
 		    }
 		  snmp_set_var_typed_integer(request->requestvb, ASN_INTEGER,
-					     table_entry->idprobableCause);
+					     table_entry->probableCauseID);
 		  break;
 
 		case COLUMN_SPECIFICPROBLEM:
@@ -935,7 +935,7 @@ alarmsTable_handler(netsnmp_mib_handler *handler,
  * create a new row in the table
  */
 static netsnmp_tdata_row *
-objectsTable_createEntry(NSString *objectId)
+objectsTable_createEntry(NSString *objectID)
 {
   struct objectsTable_entry	*entry;
   netsnmp_tdata_row		*row;
@@ -953,11 +953,11 @@ objectsTable_createEntry(NSString *objectId)
       return NULL;
     }
   row->data = entry;
-  str = [objectId UTF8String];
-  entry->objectId_len = strlen(str);
-  strcpy(entry->objectId, str);
+  str = [objectID UTF8String];
+  entry->objectID_len = strlen(str);
+  strcpy(entry->objectID, str);
   netsnmp_tdata_row_add_index(row, ASN_OCTET_STR,
-    entry->objectId, entry->objectId_len);
+    entry->objectID, entry->objectID_len);
   netsnmp_tdata_add_row(objectsTable, row);
   return row;
 }
@@ -996,8 +996,8 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 		      continue;
 		    }
 		  snmp_set_var_typed_value(request->requestvb, ASN_OCTET_STR,
-					   (u_char *) table_entry->objectId,
-					   table_entry->objectId_len);
+					   (u_char *) table_entry->objectID,
+					   table_entry->objectID_len);
 		  break;
 
 		default:
@@ -1337,24 +1337,24 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   s = [[alarm managedObject] UTF8String];
   snmp_varlist_add_variable(
     &var_list,
-    objectId_oid,
-    objectId_len,
+    objectID_oid,
+    objectID_len,
     ASN_OCTET_STR,
     (u_char*)s, strlen(s));
 
   i = (int32_t)[alarm eventType];
   snmp_varlist_add_variable(
     &var_list,
-    ideventType_oid,
-    ideventType_len,
+    eventTypeID_oid,
+    eventTypeID_len,
     ASN_INTEGER,
     (u_char*)&i, sizeof(i));
 
   i = (int32_t)[alarm probableCause];
   snmp_varlist_add_variable(
     &var_list,
-    idprobableCause_oid,
-    idprobableCause_len,
+    probableCauseID_oid,
+    probableCauseID_len,
     ASN_INTEGER,
     (u_char*)&i, sizeof(i));
 
@@ -1609,7 +1609,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 				  struct objectsTable_entry *entry;
 
 				  entry = (struct objectsTable_entry *)row->data;
-				  if (0 == strcmp(entry->objectId, str))
+				  if (0 == strcmp(entry->objectID, str))
 				    {
 				      netsnmp_tdata_remove_and_delete_row
 					(objectsTable, row);
