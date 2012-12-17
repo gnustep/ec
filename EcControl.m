@@ -839,7 +839,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  yy = [when yearOfCommonEra];
 	  mm = [when monthOfYear];
 	  dd = [when dayOfMonth];
-	  
+
 	  sub = [NSString stringWithFormat: @"%04d-%02d-%02d", yy, mm, dd];
 	  m = [NSString stringWithFormat: @"\n%@\n\n", [self cmdArchive: sub]];
 	}
@@ -1140,12 +1140,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      c = (ConsoleInfo*)[consoles objectAtIndex: i];
 		      if (c == console)
 			{
-			  m = [m stringByAppendingFormat: 
+			  m = [m stringByAppendingFormat:
 			      @"%2d.   your console\n", i];
 			}
 		      else
 			{
-			  m = [m stringByAppendingFormat: 
+			  m = [m stringByAppendingFormat:
 			      @"%2d.   %s\n", i, [[c name] cString]];
 			}
 		    }
@@ -1174,11 +1174,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      CommandInfo*	c;
 
 		      c = (CommandInfo*)[commands objectAtIndex: i];
-		      m = [m stringByAppendingFormat: 
+		      m = [m stringByAppendingFormat:
 			  @"%2d. %-32.32s\n", i, [[c name] cString]];
 		      if ([c servers] == nil || [[c servers] count] == 0)
 			{
-			  m = [m stringByAppendingString: 
+			  m = [m stringByAppendingString:
 				  @"    no servers connected\n"];
 			}
 		      else
@@ -1188,7 +1188,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 			  for (j = 0; j < [svrs count]; j++)
 			    {
-			      m = [m stringByAppendingFormat: 
+			      m = [m stringByAppendingFormat:
 				  @"    %2d. %@\n", j,
 				      [svrs objectAtIndex: j]];
 			    }
@@ -1473,7 +1473,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       if ([m length] > 0)
 	{
-	  [self information: m 
+	  [self information: m
 		       type: LT_AUDIT
 			 to: nil
 		       from: nil];
@@ -1764,7 +1764,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   /* Start the SNMP alarm sink before entering run loop.
    */
-  sink = [[EcAlarmSinkSNMP alarmSinkSNMP] retain];
+  NSDictionary *alertConf = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
+  NSString *host = [alertConf objectForKey: @"SNMPMasterAgentHost"];
+  NSString *port = [alertConf objectForKey: @"SNMPMasterAgentPort"];
+  sink = [[EcAlarmSinkSNMP alloc] initWithHost: host name: port];
 
   result = [super ecRun];
 
@@ -1803,7 +1806,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   if (nil == h)
     {
-      m = [NSString stringWithFormat: 
+      m = [NSString stringWithFormat:
 	  @"Rejected new host with bad name '%@' at %@\n", n, [NSDate date]];
       [self information: m
 		   type: LT_AUDIT
@@ -1822,7 +1825,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   if (old != nil && [[old name] isEqual: n])
     {
       obj = old;
-      m = [NSString stringWithFormat: 
+      m = [NSString stringWithFormat:
 	  @"Re-registered new host with name '%@' at %@\n",
 	      n, [NSDate date]];
       [self information: m
@@ -1856,7 +1859,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       if ((old = (CommandInfo*)[self findIn: commands byName: n]) != nil)
 	{
 	  RELEASE(obj);
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	      @"Rejected new host with name '%@' at %@\n",
 		  n, [NSDate date]];
 	  [self information: m
@@ -1876,7 +1879,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  RELEASE(obj);
 	  [commands sortUsingSelector: @selector(compare:)];
 	  [self domanage: EcMakeManagedObject(n, @"Command", nil)];
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	      @"Registered new host with name '%@' at %@\n",
 		  n, [NSDate date]];
 	  [self information: m
@@ -1933,7 +1936,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   obj = [self findIn: consoles byName: n];
   if (obj != nil)
     {
-      m = [NSString stringWithFormat: 
+      m = [NSString stringWithFormat:
 	@"%@ rejected console with info '%@' (already registered by name)\n",
 	[NSDate date], n];
       [self information: m
@@ -1945,7 +1948,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   obj = [self findIn: consoles byObject: c];
   if (obj != nil)
     {
-      m = [NSString stringWithFormat: 
+      m = [NSString stringWithFormat:
 	@"%@ rejected console with info '%@' (already registered)\n",
 	[NSDate date], n];
       [self information: m
@@ -1963,7 +1966,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       if (info == nil)
 	{
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	    @"%@ rejected console with info '%@' (unknown operator)\n",
 	    [NSDate date], n];
 	  [self information: m
@@ -1974,7 +1977,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	}
       else if (passwd && [passwd length] && [passwd isEqual: p] == NO)
 	{
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	    @"%@ rejected console with info '%@' (bad password)\n",
 	    [NSDate date], n];
 	  [self information: m
@@ -2046,7 +2049,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  EcClientI	*r = [commands objectAtIndex: count];
 	  NSDate	*d = [r lastUnanswered];
-	  
+
 	  if (d != nil && [d timeIntervalSinceDate: now] < -pingDelay)
 	    {
 	      EcAlarm	*a;
@@ -2075,7 +2078,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  EcClientI	*r = [consoles objectAtIndex: count];
 	  NSDate	*d = [r lastUnanswered];
-	  
+
 	  if (d != nil && [d timeIntervalSinceDate: now] < -pingDelay)
 	    {
 	      NSString	*m;
@@ -2312,12 +2315,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       o = [self findIn: consoles byObject: obj];
       if (o == nil)
 	{
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	    @"%@ unregister by unknown host/console\n", [NSDate date]];
 	}
       else
 	{
-	  m = [NSString stringWithFormat: 
+	  m = [NSString stringWithFormat:
 	    @"%@ removed (unregistered) console - '%@'\n",
 	    [NSDate date], [o name]];
 	  [o setUnregistered: YES];
@@ -2328,7 +2331,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       [self unmanage: EcMakeManagedObject([o name], @"Command", nil)];
 
-      m = [NSString stringWithFormat: 
+      m = [NSString stringWithFormat:
 	@"%@ removed (unregistered) host - '%@'\n", [NSDate date], [o name]];
       [o setUnregistered: YES];
       [commands removeObjectIdenticalTo: o];
@@ -2473,7 +2476,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       rootEnum = [conf keyEnumerator];
       while ((hostKey = [rootEnum nextObject]) != nil)
 	{
-	  NSDictionary		*rootObj;	
+	  NSDictionary		*rootObj;
 	  NSMutableDictionary	*host;
 	  NSEnumerator		*hostEnum;
 	  NSString		*appKey;
@@ -2519,12 +2522,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	    }
 
-	  host = [NSMutableDictionary dictionaryWithCapacity: 
+	  host = [NSMutableDictionary dictionaryWithCapacity:
 	    [rootObj count]];
 	  hostEnum = [rootObj keyEnumerator];
 	  while ((appKey = [hostEnum nextObject]) != nil)
 	    {
-	      NSDictionary		*hostObj;	
+	      NSDictionary		*hostObj;
 	      NSMutableDictionary	*app;
 
 	      hostObj = [rootObj objectForKey: appKey];

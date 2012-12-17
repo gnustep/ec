@@ -111,12 +111,14 @@
   [super dealloc];
 }
 
-- (id) init
+- (id) initWithHost: (NSString*)host name: (NSString*)name
 {
   if (nil != (self = [super init]))
     {
       NSDate	*begin;
 
+       _host = [host copy];
+       _name = [name copy];
       _alarmLock = [NSRecursiveLock new];
       _alarmQueue = [NSMutableArray new];
       _alarmsActive = [NSMutableSet new];
@@ -171,14 +173,9 @@
     }
 }
 
-- (id) initWithHost: (NSString*)host name: (NSString*)name
+- (id) init
 {
-  /* We set the host namd name before calling -init, so that subclasses
-   * which override -init may make use of the values we have set.
-   */
-  _host = [host copy];
-  _name = [name copy];
-  return [self init];
+  return [self initWithHost: nil name: nil];
 }
 
 - (BOOL) isRunning
@@ -354,7 +351,7 @@
 		      if (nil == _host)
 			{
 			  proxy = [NSConnection
-			    rootProxyForConnectionWithRegisteredName: _name 
+			    rootProxyForConnectionWithRegisteredName: _name
 								host: _host
 			    usingNameServer:
 			      [NSMessagePortNameServer sharedInstance]];
@@ -362,7 +359,7 @@
 		      else
 			{
 			  proxy = [NSConnection
-			    rootProxyForConnectionWithRegisteredName: _name 
+			    rootProxyForConnectionWithRegisteredName: _name
 								host: _host
 			    usingNameServer:
 			      [NSSocketPortNameServer sharedInstance]];
@@ -371,7 +368,7 @@
 		      if (proxy != nil)
 			{
 			  id connection = [proxy connectionForProxy];
-		      
+
 			  [connection setDelegate: self];
 			  [[NSNotificationCenter defaultCenter]
 			    addObserver: self
