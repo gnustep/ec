@@ -1,0 +1,40 @@
+{
+  /* The main configuration file.
+   */
+  * = {
+    /* Common section for any/all hosts
+     */
+    * = {
+      /* Common section for all processes on any/all hosts.
+       */
+    };
+    Foo = {
+      /* Section for the process Foo on any/all hosts.
+       */
+    };
+  };
+  localhost = {
+    /* Section for the host named localhost
+     */
+    * = {
+      /* Common section for any/all processses on localhost.
+       */
+    };
+    Foo = {
+      /* Section for process Foo on localhost
+       */
+    };
+    Command = {
+      /* Section for Command server on localhost
+       */
+      Launch = {
+	Foo = {
+	  Prog = "/usr/GNUstep/Local/Tools/Foo";	// Path to binary
+	  Home = "~xxx/Test";				// Directory to run in
+	  Args = ("-Debug", "YES");			// Args to launch with
+	  Auto = NO;					// Auto-launch?
+	};
+      };
+    };
+  };
+}

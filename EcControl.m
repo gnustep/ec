@@ -2373,8 +2373,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   base = [self cmdDataDirectory];
   path = [base stringByAppendingPathComponent: @"AlertConfig.plist"];
-  if ([mgr isReadableFileAtPath: path] == YES
-    && (d = [NSDictionary dictionaryWithContentsOfFile: path]) != nil)
+  if ([mgr isReadableFileAtPath: path] == NO
+    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil)
+    {
+      [[self cmdLogFile: logname]
+	printf: @"Failed to load %@\n", path];
+      return NO;
+    }
+  else
     {
       NSDictionary      *o = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
 
@@ -2390,21 +2396,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  alerter = [EcAlerter new];
 	}
     }
-  else
-    {
-      if (nil != alerter)
-        {
-          changed = YES;
-          DESTROY(alerter);
-        }
-    }
 
   path = [base stringByAppendingPathComponent: @"Operators.plist"];
-  d = [NSDictionary dictionaryWithContentsOfFile: path];
-  if (d == nil)
+  if ([mgr isReadableFileAtPath: path] == NO
+    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil)
     {
       [[self cmdLogFile: logname]
 	printf: @"Failed to load %@\n", path];
+      return NO;
     }
   else
     {
@@ -2418,8 +2417,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   DESTROY(configIncludeFailed);
   path = [base stringByAppendingPathComponent: @"Control.plist"];
-  str = [NSString stringWithContentsOfFile: path];
-  if (str == nil)
+  if ([mgr isReadableFileAtPath: path] == NO
+    || (str = [NSString stringWithContentsOfFile: path]) == nil)
     {
       NSString	*e;
 
@@ -2428,6 +2427,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       [[self cmdLogFile: logname] printf: @"%@", configFailed];
       return NO;
     }
+
   NS_DURING
     {
       conf = [str propertyList];

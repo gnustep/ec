@@ -7,7 +7,19 @@ Getting started
 
 3. Read the documentation (point your web browser at the ECCL subdirectory)
 
-4. (optinal) Customise (see local.make) and do 'make clean'.
+4. (optional) Customise (see local.make) and do 'make clean'.
 
-4. Install it (type 'make install') and try it out.
+5. Install it (type 'make install') and try it out.
+
+Key points ...
+
+1. You may want to use 'defaults write NSGlobalDomain EcvEffectiveUser xxx'
+where 'xxx' is your username, to tell the system it should be running as you.
+
+2. Debug files are written in ~xxx/Logs ... look there to diagnose problems.
+
+3. Configuration is in ~xxx/Data.  Specifically, you need to configure
+~xxx/Data/Command/Control.plist, ~xxx/Data/Command/Operators.plist, and
+~xxx/Data/Command/AlertConfig.plist before the Control server will start.
+There are examples in thee same directory as this README
 

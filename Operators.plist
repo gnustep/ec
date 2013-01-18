@@ -1,0 +1,9 @@
+{
+  /* This file configures the names/passwords of the people allowed to use
+   * the Console program to control the system.
+   * Just add a definition for yourself as below:
+   */
+  richard = {
+    Password = richard;
+  };
+}
