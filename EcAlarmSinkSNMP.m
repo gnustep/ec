@@ -1195,7 +1195,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   // snmp_log(LOG_INFO,"EcAlarmSinkSNMP startup.\n");
 
   _isRunning = YES;
-  while (NO == _shouldStop)
+  while (YES == _isRunning)
     {
       agent_check_and_process(1); /* 0 == don't block */
       [pool release];
@@ -1206,7 +1206,6 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   // snmp_log(LOG_INFO,"EcAlarmSinkSNMP shutdown.\n");
   /* at shutdown time */
   snmp_shutdown("EcAlarmSink");
-  _isRunning = NO;
   SOCK_CLEANUP;
 }
 
@@ -1461,7 +1460,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   DEBUGMSGTL(("EcAlarmSink", "Housekeeping timer called.\n"));
 
   [_alarmLock lock];
-  if (NO == _inTimeout && YES == _isRunning && NO == _shouldStop)
+  if (NO == _inTimeout && YES == _isRunning)
     {
       _inTimeout = YES;
       NS_DURING
@@ -1654,6 +1653,10 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 	}
       NS_ENDHANDLER
       _inTimeout = NO;
+    }
+  if (YES == _shouldStop)
+    {
+      _isRunning = NO;
     }
   [_alarmLock unlock];
   now = time(0);

@@ -201,13 +201,11 @@
 					  userInfo: nil
 					   repeats: YES];
 
-  while (NO == _shouldStop)
+  while (YES == _isRunning)
     {
       [loop runMode: NSDefaultRunLoopMode beforeDate: future];
     }
   [pool release];
-
-  _isRunning = NO;
 }
 
 - (void) setBackups: (NSArray*)backups
@@ -335,7 +333,7 @@
 - (void) _timeout: (NSTimer*)t
 {
   [_alarmLock lock];
-  if (NO == _inTimeout && YES == _isRunning && NO == _shouldStop)
+  if (NO == _inTimeout && YES == _isRunning)
     {
       _inTimeout = YES;
       NS_DURING
@@ -485,11 +483,19 @@
 		}
 	    }
 	  _inTimeout = NO;
+	  if (YES == _shouldStop)
+	    {
+	      _isRunning = NO;
+	    }
 	  [_alarmLock unlock];
 	}
       NS_HANDLER
 	{
 	  _inTimeout = NO;
+	  if (YES == _shouldStop)
+	    {
+	      _isRunning = NO;
+	    }
 	  [_alarmLock unlock];
 	  NSLog(@"%@ %@", NSStringFromClass([self class]), localException);
 	}
