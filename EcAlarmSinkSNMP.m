@@ -1160,14 +1160,15 @@ objectsTable_handler(netsnmp_mib_handler *handler,
                 = [[NSUnarchiver unarchiveObjectWithData: archive] retain];
               if (NO == [_alarmsActive isKindOfClass: [NSMutableSet class]])
                 {
-                  NSLog(@"%@ loaded as bad class: %@", [_alarmsActive class]);
+                  NSLog(@"AlarmsActive loaded as bad class: %@",
+		    [_alarmsActive class]);
                   _alarmsActive = nil;
                 }
             }
           NS_HANDLER
             {
               _alarmsActive = nil;
-              NSLog(@"%@ failed to load: %@", localException);
+              NSLog(@"AlarmsActive failed to load: %@", localException);
             }
           NS_ENDHANDLER
 	}

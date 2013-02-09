@@ -337,8 +337,8 @@ static NSNull *null;
 	  object: self]; 
     }
 
-  NSLog (@"Broadcasted oneway message to %d (out of %@PRIuPTR@) targets",
-	 sent, [receiverObjects count]);     
+  NSLog (@"Broadcasted oneway message to %d (out of %"PRIuPTR") targets",
+    sent, [receiverObjects count]);     
 }
 
 - (void) BCPforwardIdInvocation: (NSInvocation*)anInvocation
@@ -444,7 +444,7 @@ static NSNull *null;
 	  object: self]; 
     }
   
-  NSLog (@"Broadcasted Id message to %d (out of %@PRIuPTR@) targets",
+  NSLog (@"Broadcasted Id message to %d (out of %"PRIuPTR") targets",
 	 sent, [receiverObjects count]);     
 }
 
