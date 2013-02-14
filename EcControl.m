@@ -936,6 +936,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      @"Flush\tHost\tList\tMemory\tOn\t"
 	      @"Password\tRepeat\tQuit\tSet\tStatus\tTell\tUnset\n\n"
 	      @"Type 'help' followed by a command word for details.\n"
+	      @"Use 'tell xxx help' to get help for a specific process.\n"
 	      @"A command line consists of a sequence of words, "
 	      @"the first of which is the command to be executed. "
 	      @"A word can be a simple sequence of non-space characters, "
@@ -1037,7 +1038,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	      else if (comp(wd, @"On") >= 0)
 		{
-		  m = @"On host ...\nSends a command to the named host.\n";
+		  m = @"On host ...\nSends a command to the named host.\n"
+                      @"eg. 'on remotehost tell myserver help'.\n";
 		}
 	      else if (comp(wd, @"Password") >= 0)
 		{
@@ -1087,7 +1089,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      else if (comp(wd, @"Tell") >= 0)
 		{
 		  m = @"Tell 'name' 'command'\n"
-		      @"Sends the command to the named client.\n";
+		      @"Sends the command to the named client.\n"
+		      @"eg. 'tell myserver help'.\n";
 		}
 	      else if (comp(wd, @"UnSet") >= 0)
 		{
