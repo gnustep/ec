@@ -63,6 +63,17 @@
 	      may be overridden by using the 'release' command in the
 	      Console program.
 	    </desc>
+	    <term>EcMemoryIncrement</term>
+	    <desc>
+	      This integer value controls the (KBytes) increment in process
+              memory usage after which an alert is generated.<br />
+              If this is not set (or is set to a value less than 1) then
+              a value of 500 is used unless EcMemory is set (in which case
+              the lower value of 20 is used).<br />
+              Setting a higher value make memory leak detection less
+              sensitive (but reduces unnecessary alerts).<br />
+	      This may be set on the command line or in Control.plist
+	    </desc>
 	    <term>EcRelease</term>
 	    <desc>
 	      This boolean value determines whether checks for memory problems
@@ -448,15 +459,19 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) cmdDebug: (NSString*)fmt, ...;
 
-/** Called whenever the user defaults are updated due to a central
- * configuration change (or another defaults system change).<br />
- * This is also called by -cmdUpdate: even if no configuration
- * actually changed ... in which case the notification argument
- * is nil.<br />
+/** Called whenever the user defaults are updated (which may be due to a
+ * central configuration in additions to other defaults system changes).<br />
+ * This is automatically called by -cmdUpdate: (even if the user defaults
+ * database has not actually changed), in this case the notification
+ * argument is nil.<br />
  * If you override this to handle configuration changes, don't forget
  * to call the superclass implementation.<br />
  * This method is provided to allow subclasses to control the order
- * in which defaults changes are handled by them and their superclasses.
+ * in which defaults changes are handled by them and their superclasses.<br />
+ * Generally, this method is for use handling changes in the local
+ * NSUserDefaults database; to handle explict configuration changes from
+ * the central configuration in the Control server, you should usually
+ * override the -cmdUpdated method instead.
  */
 - (void) cmdDefaultsChanged: (NSNotification*)n;
 
@@ -562,9 +577,30 @@ extern NSString*	cmdVersion(NSString *ver);
  * defaults system ... so be sure that your implementation calls the
  * superclass implementation (unless you wish to suppress the configuration
  * update).<br />
- * You may alter the info dictionary prior to passign it to the superclass
+ * You may alter the info dictionary prior to passing it to the superclass
  * implementation if you wish to adjust the new configuration before it
- * takes effect.
+ * takes effect.<br />
+ * The order of execution of a configuration update is therefore as follows:
+ * <list>
+ *  <item>Any subclass implementation of -cmdUpdate: is entered.
+ *  </item>
+ *  <item>The base implementation of -cmdUpdate: is entered, the stored
+ *    configuration is changed as necessary, the user defaults database is
+ *    updated.
+ *  </item>
+ * <item>The -cmdDefaultsChanged: method is called (either as a result of
+ *   a user defaults update, or directly by the base -cmdUpdate: method.
+ * </item>
+ * <item>The base implementation of the -cmdDefaults: method ends.
+ * </item>
+ * <item>Any subclass implementation of the -cmdDefaults: method ends.
+ * </item>
+ * <item>The -cmdUpdated method is called.
+ * </item>
+ * </list>
+ * You should usually override the -cmdUpdated method to handle configuration
+ * changes, using this method only when you want to check/override changes
+ * before they take effect.
  */
 - (void) cmdUpdate: (NSMutableDictionary*)info;
 
@@ -576,10 +612,16 @@ extern NSString*	cmdVersion(NSString *ver);
  * NB. This method will be called even if your implementation of
  * -cmdUpdate: suppresses the actual update.  In this situation this
  * method will find the configuration unchanged since the previous
- * time that it was called.
+ * time that it was called.<br />
+ * The base implementation of this method does nothing and return nil.<br />
+ * The return value of this method is used to control automatic generation
+ * of alarms for fatal configuration errors.  If the return value is nil
+ * (the default), then any configuration error alarm is cleared.
+ * Otherwise, a configuration error alarm will be raised (using the
+ * returned string as the 'additional text' of the alarm), and the
+ * process will be terminated by a call to -cmdQuit: with an argument of 1.
  */
-- (void) cmdUpdated;
-
+- (NSString*) cmdUpdated;
 
 - (void) log: (NSString*)message type: (EcLogType)t;
 

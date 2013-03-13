@@ -1891,6 +1891,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       average = ((average / 1024) + 1) * 1024;
       if (average > memPeak)
 	{
+          int   inc;
+
 	  /* Alert if the we have peaked above the allowed size.
 	   */
 	  if (average > (memAllowed * 1024 * 1024))
@@ -1912,24 +1914,29 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 		  memPeak = size;
 		}
 	    }
-	  if (YES == [cmdDefs boolForKey: @"Memory"])
-	    {
-	      /* We want detailed memory information, so we set the next
-	       * alerting threshold from 20 to 40 KB above the current
-	       * peak usage.
-	       */
-	      memPeak = ((memPeak / (20 * 1024)) + 2) * (20 * 1024);
-	    }
-	  else
-	    {
-	      /* We do not want detailed memory information,
-	       * so we set the next alerting threshold from
-	       * 500 to 1000 KB above the current peak usage,
-	       * ensuring that only serious increases
-	       * in usage will generate an alert.
-	       */
-	      memPeak = ((memPeak / (500 * 1024)) + 2) * (500 * 1024);
-	    }
+          inc = (int)[cmdDefs integerForKey: @"MemoryIncrement"];
+          if (inc < 1)
+            {
+              if (YES == [cmdDefs boolForKey: @"Memory"])
+                {
+                  /* We want detailed memory information, so we set the next
+                   * alerting threshold from 20 to 40 KB above the current
+                   * peak usage.
+                   */
+                  inc = 20;
+                }
+              else
+                {
+                  /* We do not want detailed memory information,
+                   * so we set the next alerting threshold from
+                   * 500 to 1000 KB above the current peak usage,
+                   * ensuring that only serious increases
+                   * in usage will generate an alert.
+                   */
+                  inc = 500;
+                }
+            }
+          memPeak = ((memPeak / (inc * 1024)) + 2) * (inc * 1024);
 	}
     }
   /* Record the latest memory usage.
@@ -2904,9 +2911,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
-- (void) cmdUpdated
+- (NSString*) cmdUpdated
 {
-  return;
+  return nil;
 }
 
 
@@ -3892,16 +3899,49 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   if (nil == cmdConf || [cmdConf isEqual: newConfig] == NO)
     {
+      NSString  *err;
+
       NS_DURING
         [self cmdUpdate: newConfig];
       NS_HANDLER
         [self cmdError: @"Problem before updating config: %@", localException];
       NS_ENDHANDLER
       NS_DURING
-        [self cmdUpdated];
+        err = [self cmdUpdated];
       NS_HANDLER
+        err = nil;
         [self cmdError: @"Problem after updating config: %@", localException];
       NS_ENDHANDLER
+      if (nil != err)
+        {
+          EcAlarm       *a;
+
+          a = [EcAlarm alarmForManagedObject: nil
+            at: nil
+            withEventType: EcAlarmEventTypeProcessingError
+            probableCause: EcAlarmConfigurationOrCustomizationError
+            specificProblem: @"fatal configuration error"
+            perceivedSeverity: EcAlarmSeverityMajor
+            proposedRepairAction: _(@"Correct config (check log for details).")
+            additionalText: err];
+          [self alarm: a];
+          [alarmDestination shutdown];
+          [self cmdQuit: 1];
+        }
+      else
+        {
+          EcAlarm       *a;
+
+          a = [EcAlarm alarmForManagedObject: nil
+            at: nil
+            withEventType: EcAlarmEventTypeProcessingError
+            probableCause: EcAlarmConfigurationOrCustomizationError
+            specificProblem: @"fatal configuration error"
+            perceivedSeverity: EcAlarmSeverityCleared
+            proposedRepairAction: nil
+            additionalText: nil];
+          [self alarm: a];
+        }
     }
 }
 
