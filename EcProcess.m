@@ -3912,17 +3912,29 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         err = nil;
         [self cmdError: @"Problem after updating config: %@", localException];
       NS_ENDHANDLER
-      if (nil != err)
+      if ([err length] > 0)
         {
           EcAlarm       *a;
 
+          /* Truncate additional text to fit if necessary.
+           */
+          err = [err stringByTrimmingSpaces];
+          if ([err length] > 255)
+            {
+              err = [err substringToIndex: 255];
+              while (255 < strlen([err UTF8String]))
+                {
+                  err = [err substringToIndex: [err length] - 1];
+                }
+            }
           a = [EcAlarm alarmForManagedObject: nil
             at: nil
             withEventType: EcAlarmEventTypeProcessingError
             probableCause: EcAlarmConfigurationOrCustomizationError
             specificProblem: @"fatal configuration error"
             perceivedSeverity: EcAlarmSeverityMajor
-            proposedRepairAction: _(@"Correct config (check log for details).")
+            proposedRepairAction:
+            _(@"Correct config (check additional text and/or log for details).")
             additionalText: err];
           [self alarm: a];
           [alarmDestination shutdown];

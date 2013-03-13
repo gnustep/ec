@@ -615,7 +615,7 @@ extern NSString*	cmdVersion(NSString *ver);
  * time that it was called.<br />
  * The base implementation of this method does nothing and return nil.<br />
  * The return value of this method is used to control automatic generation
- * of alarms for fatal configuration errors.  If the return value is nil
+ * of alarms for fatal configuration errors.  If the return value is empty/nil
  * (the default), then any configuration error alarm is cleared.
  * Otherwise, a configuration error alarm will be raised (using the
  * returned string as the 'additional text' of the alarm), and the
