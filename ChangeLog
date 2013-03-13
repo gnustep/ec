@@ -1,11 +1,15 @@
 2013-03-13  Richard Frith-Macdonald <rfm@gnu.org>
 
+        * GNUmakefile: 1.0.2 release
+
+2013-03-13  Richard Frith-Macdonald <rfm@gnu.org>
+
 	* EcProcess.h:
 	* EcProcess.m:
         Improve documentation of sequence of calls of configuration update
         methods and add convenience functionality to support alarming for
         fatal configuration errors.
-        Add Ecmemoryincrement config to adjust alerting about potential leaks.
+        Add EcMemoryIncrement config to adjust alerting about potential leaks.
 
 2013-01-26  Richard Frith-Macdonald <rfm@gnu.org>
 
