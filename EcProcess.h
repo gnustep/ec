@@ -613,13 +613,16 @@ extern NSString*	cmdVersion(NSString *ver);
  * -cmdUpdate: suppresses the actual update.  In this situation this
  * method will find the configuration unchanged since the previous
  * time that it was called.<br />
- * The base implementation of this method does nothing and return nil.<br />
  * The return value of this method is used to control automatic generation
- * of alarms for fatal configuration errors.  If the return value is empty/nil
- * (the default), then any configuration error alarm is cleared.
+ * of alarms for fatal configuration errors.  If the return value is nil
+ * (the default), then any configuration error alarm is cleared.<br />
  * Otherwise, a configuration error alarm will be raised (using the
- * returned string as the 'additional text' of the alarm), and the
- * process will be terminated by a call to -cmdQuit: with an argument of 1.
+ * returned string as the 'additional text' of the alarm), and the process
+ * will be terminated by a call to -cmdQuit: with an argument of 1.<br />
+ * When you implement this method, you must ensure that your implementation
+ * calls the superclass implementation, and if that returns a non-nil
+ * result, you should pass that on as the return value from your own
+ * implementation.
  */
 - (NSString*) cmdUpdated;
 
@@ -718,14 +721,23 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdUpdate: (NSMutableDictionary*)info;
 
 /** [-initWithDefaults:] is the Designated initialiser<br />
- * It adds the defaults specified to the defaults system.
+ * It adds the defaults specified to the defaults system.<br />
  * It sets the process name to be that specified in the
  * 'EcProgramName' default with an '-id' affix if EcInstance is used
- * to provide an instance id.
+ * to provide an instance id.<br />
  * Moves to the directory (relative to the current user's home directory)
- * given in 'EcHomeDirectory'.
+ * given in 'EcHomeDirectory'.<br />
  * If 'EcHomeDirectory' is not present in the defaults system (or is
- * an empty string) then no directory change is done.
+ * an empty string) then no directory change is done.<br />
+ * Please note, that the base implementation of this method may
+ * cause other methods (eg -cmdUpdated and -cmdDefaultsChaned) to be called,
+ * so you must take care that when you override those methods, your own
+ * implementations do not depend on initialisation having completed.
+ * It's therefore recommended that you use 'lazy' initialisation of subclass
+ * instance variables as/when they are needed, rather than initialising
+ * them in the -initWithDefaults: method.<br />
+ * An alternative strategy is to perform subclass initialisaton before
+ * calling the superclass implementation.
  */
 - (id) initWithDefaults: (NSDictionary*)defs;
 
