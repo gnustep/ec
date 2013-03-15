@@ -1,3 +1,9 @@
+2013-03-15  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h: Document EcCoreSize
+	* EcProcess.m: Change so that if no value is set, we don't use any
+        limit, and so that if a negative value is set we use 1GB
+
 2013-03-13  Richard Frith-Macdonald <rfm@gnu.org>
 
         * GNUmakefile: 1.0.2 release

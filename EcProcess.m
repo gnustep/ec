@@ -3109,32 +3109,36 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-
       i = [cmdDefs integerForKey: @"CoreSize"];
-      if (i <= 0)
+      if (i < 0)
 	{
-	  i = 250000000;
+	  i = 1024 * 1024 * 1024;       // 1 GB default
 	}
-      if (getrlimit(RLIMIT_CORE, &rlim) < 0)
-	{
-	  NSLog(@"Unable to get core file size limit: %d", errno);
-	}
-      else
-	{
-	  if (rlim.rlim_max < i)
-	    {
-	      NSLog(@"Hard limit for core file size (%lu) less than desired",
-		rlim.rlim_max);
-	    }
-	  else
-	    {
-	      rlim.rlim_cur = i;
-	      if (setrlimit(RLIMIT_CORE, &rlim) < 0)
-		{
-		  NSLog(@"Unable to set core file size limit: %d", errno);
-		}
-	    }
-	}
+      if (i > 0)
+        {
+          if (getrlimit(RLIMIT_CORE, &rlim) < 0)
+            {
+              NSLog(@"Unable to get core file size limit: %d", errno);
+            }
+          else
+            {
+              if (rlim.rlim_max < i)
+                {
+                  NSLog(@"Hard limit for core file size (%"PRIuPTR
+                    @") less than requested (%"PRIdPTR,
+                    (NSUInteger)rlim.rlim_max, i);
+                }
+              else
+                {
+                  rlim.rlim_cur = i;
+                  if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+                    {
+                      NSLog(@"Unable to set core file size limit to %"PRIdPTR
+                        @", errno: %d", i, errno);
+                    }
+                }
+            }
+        }
 
       if (nil == noNetConfig)
 	{

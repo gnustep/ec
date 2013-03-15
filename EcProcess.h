@@ -50,6 +50,13 @@
 	<subsect>
 	  <heading>startup settings</heading>
 	  <deflist>
+	    <term>EcCoreSize</term>
+	    <desc>
+	      Specifies the maximum size (in bytes) for any core-dump of the
+              process.
+              If this is negative, the default size of 1GB is used.<br />
+	      If this is zero (or no value is set) then no limit is set.
+	    </desc>
 	    <term>EcDebug-</term>
 	    <desc>
 	      Any key of the form EcDebug-xxx turns on the xxx debug level
