@@ -1,3 +1,9 @@
+2013-03-18  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Add test logging methods ([-ecTestLog:...])
+
 2013-03-15  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h: Document EcCoreSize

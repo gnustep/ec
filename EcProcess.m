@@ -2008,7 +2008,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [c setDelegate: self];
   [[NSNotificationCenter defaultCenter] 
     addObserver: self
-    selector: @selector(connectionBecameInvalid:)
+    selector: @selector(cmdConnectionBecameInvalid:)
     name: NSConnectionDidDieNotification
     object: c];
   EcProcConnection = c;
@@ -2049,6 +2049,26 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [self cmdQuit: 0];
   DESTROY(EcProcConnection);
   return 0;
+}
+
+- (void) ecTestLog: (NSString*)fmt arguments: (va_list)args
+{
+  if (YES == cmdFlagTesting)
+    {
+      NSLogv(fmt, args);
+    }
+}
+
+- (void) ecTestLog: (NSString*)fmt, ...
+{
+  if (YES == cmdFlagTesting)
+    {
+      va_list ap;
+
+      va_start (ap, fmt);
+      [self ecTestLog: fmt arguments: ap];
+      va_end (ap);
+    }
 }
 
 - (void) setCmdDebug: (NSString*)mode withDescription: (NSString*)desc

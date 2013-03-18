@@ -846,6 +846,16 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (int) ecRun;
 
+/** Logs a message iff the process is running in test mode
+ * (that is, when EcTesting is set).
+ */
+- (void) ecTestLog: (NSString*)fmt arguments: (va_list)args;
+
+/** Logs a message iff the process is running in test mode.<br />
+ * Operates by calling the -ecTestLog:arguments: method.
+ */
+- (void) ecTestLog: (NSString*)fmt, ...;
+
 @end
 
 @interface NSObject (RemoteServerDelegate)
