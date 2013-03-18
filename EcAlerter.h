@@ -49,6 +49,7 @@
   GSMimeSMTPClient	*smtp;
 }
 - (BOOL) configure: (NSNotification*)n;
+- (BOOL) configureWithDefaults: (NSDictionary*)c;
 - (void) handleInfo: (NSString*)str;
 - (void) flushEmail;
 - (void) flushSms;
@@ -56,5 +57,6 @@
 - (void) mail: (NSMutableDictionary*)m to: (NSArray*)destinations;
 - (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations;
 - (void) timeout: (NSTimer*)t;
+- (BOOL) setRules: (NSArray*)ra;
 @end
 

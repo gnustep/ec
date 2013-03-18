@@ -1,3 +1,12 @@
+2013-03-18: Niels Grewe <niels.grewe@halbordnung.de>
+	* EcAlerter.h
+	* EcAlerter.m:
+	Rearrange and expose a few methods so that subclasses can
+	easily inject alert rules.
+	* EcControl.m:
+	Allow dynamically loading the alerter class based on the
+	AlerterBundle key in AlertConfig.plist
+
 2013-03-18  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

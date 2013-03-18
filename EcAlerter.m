@@ -252,21 +252,28 @@ replaceFields(NSDictionary *fields)
 {
   NSUserDefaults	*d;
   NSDictionary		*c;
-  NSMutableArray	*r;
-  unsigned int		i;
 
   d = [EcProc cmdDefaults];
   c = [d dictionaryForKey: @"Alerter"];
+  return [self configureWithDefaults: c];
+}
 
+- (BOOL) configureWithDefaults: (NSDictionary*)c
+{
   ASSIGNCOPY(eHost, [c objectForKey: @"EmailHost"]);
   ASSIGNCOPY(eFrom, [c objectForKey: @"EmailFrom"]);
   ASSIGNCOPY(ePort, [c objectForKey: @"EmailPort"]);
+  return [self setRules: [c objectForKey: @"Rules"]];
+}
 
-  /*
-   * Cache a copy of the Rules with modifications to store information
-   * so we don't need to regenerate it every time we check a message.
-   */
-  r = [[[c objectForKey: @"Rules"] mutableCopy] autorelease];
+/*
+ * Cache a copy of the Rules with modifications to store information
+ * so we don't need to regenerate it every time we check a message.
+ */
+- (BOOL)setRules: (NSArray*)ra
+{
+  NSUInteger i = 0;
+  NSMutableArray *r = AUTORELEASE([ra mutableCopy]); 
   for (i = 0; i < [r count]; i++)
     {
       NSMutableDictionary	*md;

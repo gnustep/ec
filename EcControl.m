@@ -2345,6 +2345,40 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	       from: nil];
 }
 
+
+- (Class)_loadClassFromBundle: (NSString*)bundleName
+{
+  NSString *path = nil;
+  Class c = Nil;
+  NSBundle *bundle = nil;
+  path = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
+    NSLocalDomainMask, YES) lastObject];
+  path = [path stringByAppendingPathComponent: @"Bundles"];
+  path = [path stringByAppendingPathComponent: bundleName];
+  path = [path stringByAppendingPathExtension: @"bundle"];
+  bundle = [NSBundle bundleWithPath: path];
+
+  if (nil == bundle)
+    {
+      [[self cmdLogFile: logname] printf: 
+       @"Couldn't load bundle '%@'", bundleName];
+    }
+  else if (Nil == (c = [bundle principalClass]))
+    {
+      [[self cmdLogFile: logname] printf: 
+        @"Couldn't load principal class from %@"
+        @" at %@.", bundleName, path];
+    }
+  else if (NO == [c isSubclassOfClass: [EcAlerter class]])
+    {
+      [[self cmdLogFile: logname] printf: 
+        @"%@ is not a subclass of EcAlerter", 
+        NSStringFromClass(c)];
+      c = Nil;
+    }
+  return c;
+}
+
 - (BOOL) update
 {
   NSMutableDictionary	*dict;
@@ -2358,6 +2392,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   unsigned		count;
   unsigned		i;
   BOOL			changed = NO;
+  Class			alerterClass = Nil;
 
   host = [NSHost currentHost];
   str = [NSHost controlWellKnownName];
@@ -2393,10 +2428,40 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
             d, @"Alerter", nil];
           [[self cmdDefaults] setConfiguration: d];
           changed = YES;
+	 
         }
+      NSString *alerterDef = [[d objectForKey: @"Alerter"] 
+        objectForKey: @"AlerterBundle"];
+      if (nil == alerterDef)
+	{
+	  alerterClass = [EcAlerter class];
+	}
+      else
+	{
+	  // First, let's try whether this corresponds to
+	  // a class we already loaded.
+	  alerterClass = NSClassFromString(alerterDef);
+	  if (Nil == alerterClass)
+	    {
+	      // We didn't link the class. Try to load it 
+	      // from a bundle.
+	      alerterClass = 
+	        [self _loadClassFromBundle: alerterDef];
+	    }
+
+	}
+      if (Nil == alerterClass)
+	{
+	  NSLog(@"Could not load alerter class '%@'", alerterDef);
+	}
+      else if ([alerter class] != alerterClass)
+	{
+	  DESTROY(alerter);
+	}
+
       if (nil == alerter)
         {
-	  alerter = [EcAlerter new];
+	  alerter = [alerterClass new];
 	}
     }
 
