@@ -2427,42 +2427,42 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           d = [NSDictionary dictionaryWithObjectsAndKeys:
             d, @"Alerter", nil];
           [[self cmdDefaults] setConfiguration: d];
+	  NSString *alerterDef = [d valueForKeyPath: @"Alerter.AlerterBundle"]; 
+	  if (nil == alerterDef)
+	    {
+	      alerterClass = [EcAlerter class];
+	    }
+	  else
+	    {
+	      // First, let's try whether this corresponds to
+	      // a class we already loaded.
+	      alerterClass = NSClassFromString(alerterDef);
+	      if (Nil == alerterClass)
+		{
+		  // We didn't link the class. Try to load it 
+		  // from a bundle.
+		  alerterClass = 
+		    [self _loadClassFromBundle: alerterDef];
+		}
+
+	    }
+	  if (Nil == alerterClass)
+	    {
+	      NSLog(@"Could not load alerter class '%@'", alerterDef);
+	    }
+	  else if ([alerter class] != alerterClass)
+	    {
+	      DESTROY(alerter);
+	    }
+
+	  if (nil == alerter)
+	    {
+	      alerter = [alerterClass new];
+	    }
+
           changed = YES;
 	 
         }
-      NSString *alerterDef = [[d objectForKey: @"Alerter"] 
-        objectForKey: @"AlerterBundle"];
-      if (nil == alerterDef)
-	{
-	  alerterClass = [EcAlerter class];
-	}
-      else
-	{
-	  // First, let's try whether this corresponds to
-	  // a class we already loaded.
-	  alerterClass = NSClassFromString(alerterDef);
-	  if (Nil == alerterClass)
-	    {
-	      // We didn't link the class. Try to load it 
-	      // from a bundle.
-	      alerterClass = 
-	        [self _loadClassFromBundle: alerterDef];
-	    }
-
-	}
-      if (Nil == alerterClass)
-	{
-	  NSLog(@"Could not load alerter class '%@'", alerterDef);
-	}
-      else if ([alerter class] != alerterClass)
-	{
-	  DESTROY(alerter);
-	}
-
-      if (nil == alerter)
-        {
-	  alerter = [alerterClass new];
-	}
     }
 
   path = [base stringByAppendingPathComponent: @"Operators.plist"];

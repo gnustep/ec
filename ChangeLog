@@ -1,3 +1,7 @@
+2013-03-22: Niels Grewe <niels.grewe@halbordnung.de>
+	* EcControl.m: Fix bug that could remove a alerter when it was still
+	needed.
+
 2013-03-18: Niels Grewe <niels.grewe@halbordnung.de>
 	* EcAlerter.h
 	* EcAlerter.m:
