@@ -124,6 +124,33 @@ replaceFields(NSDictionary *fields)
 
 @implementation	EcAlerter : NSObject
 
+- (void) _setEFrom: (NSString*)s
+{
+  if (nil == s)
+    {
+      /* Can't have a nil sender ... use (generate if needed) default.
+       */
+      if (nil == eDflt)
+        {
+          eDflt = [[NSString alloc] initWithFormat: @"alerter@%@",
+            [[NSHost currentHost] wellKnownName]];
+        }
+      s = eDflt;
+    }
+  if (s != eFrom && NO == [s isEqual: eFrom])
+    {
+      NSRange   r;
+
+      ASSIGNCOPY(eFrom, s);
+      r = [s rangeOfString: @"@"];
+      if (r.length > 0)
+        {
+          s = [s substringFromIndex: NSMaxRange(r)];
+        }
+      ASSIGNCOPY(eBase, s);
+    }
+}
+
 - (BOOL) configure: (NSNotification*)n
 {
   NSUserDefaults	*d;
@@ -136,8 +163,8 @@ replaceFields(NSDictionary *fields)
 
 - (BOOL) configureWithDefaults: (NSDictionary*)c
 {
+  [self _setEFrom: [c objectForKey: @"EmailFrom"]];
   ASSIGNCOPY(eHost, [c objectForKey: @"EmailHost"]);
-  ASSIGNCOPY(eFrom, [c objectForKey: @"EmailFrom"]);
   ASSIGNCOPY(ePort, [c objectForKey: @"EmailPort"]);
   return [self setRules: [c objectForKey: @"Rules"]];
 }
@@ -251,50 +278,31 @@ replaceFields(NSDictionary *fields)
 		      subject: (NSString*)subject
 		      	 text: (NSString*)text
 {
-  GSMimeHeader		*hdr;
-  GSMimeDocument	*doc;
-
   NS_DURING
     {
+      GSMimeDocument	*doc;
+
       if (smtp == nil)
 	{
 	  smtp = [GSMimeSMTPClient new];
 	}
-
       if (nil != eHost)
 	{
 	  [smtp setHostname: eHost];
 	}
-
       if (nil != ePort)
 	{
 	  [smtp setPort: ePort];
 	}
-
       if (nil == eFrom)
 	{
-	  eFrom = [NSString stringWithFormat: @"alerter@%@",
-	    [[NSHost currentHost] wellKnownName]];
-	  RETAIN(eFrom);
+          [self _setEFrom: nil];
 	}
 
       doc = AUTORELEASE([GSMimeDocument new]);
-      hdr = [[GSMimeHeader alloc] initWithName: @"subject"
-					 value: subject
-				    parameters: nil];
-      [doc setHeader: hdr];
-      RELEASE(hdr);
-      hdr = [[GSMimeHeader alloc] initWithName: @"to"
-					 value: address
-				    parameters: nil];
-      [doc setHeader: hdr];
-      RELEASE(hdr);
-      hdr = [[GSMimeHeader alloc] initWithName: @"from"
-					 value: eFrom
-				    parameters: nil];
-      [doc setHeader: hdr];
-      RELEASE(hdr);
-
+      [doc setHeader: @"subject" value: subject parameters: nil];
+      [doc setHeader: @"to" value: address parameters: nil];
+      [doc setHeader: @"from" value: eFrom parameters: nil];
       [doc setContent: text type: @"text/plain" name: nil];
       [smtp send: doc];
     }
@@ -721,12 +729,27 @@ replaceFields(NSDictionary *fields)
 {
   NSEnumerator	*e = [destinations objectEnumerator];
   NSString	*d;
-  NSString	*s;
-  NSString	*subject = [m objectForKey: @"Subject"];
+  NSString	*text;
+  NSString	*subject;
 
-  if (subject == nil)
+  subject = [m objectForKey: @"Subject"];
+  if (nil == subject)
     {
-      subject = @"system alert";
+      if ([identifier length] > 0)
+        {
+          if (YES == isClear)
+            {
+              subject = [NSString stringWithFormat: @"Clear %@", identifier];
+            }
+          else
+            {
+              subject = [NSString stringWithFormat: @"Alarm %@", identifier];
+            }
+        }
+      else
+        {
+          subject = @"system alert";
+        }
     }
   else
     {
@@ -737,47 +760,116 @@ replaceFields(NSDictionary *fields)
   /*
    * Perform {field-name} substitutions ...
    */
-  s = replaceFields(m);
-  if (email == nil)
+  text = replaceFields(m);
+
+  /* If we need to send immediately, don't buffer the message.
+   */
+  if (nil != identifier)
     {
-      email = [NSMutableDictionary new];
+      GSMimeDocument    *doc;
+
+      if (nil == smtp)
+	{
+	  smtp = [GSMimeSMTPClient new];
+	}
+      if (nil == eFrom)
+	{
+          [self _setEFrom: nil];
+	}
+      if (nil != eHost)
+	{
+	  [smtp setHostname: eHost];
+	}
+      if (nil != ePort)
+	{
+	  [smtp setPort: ePort];
+	}
+
+      doc = AUTORELEASE([GSMimeDocument new]);
+      [doc setHeader: @"subject" value: subject parameters: nil];
+      [doc setContent: text type: @"text/plain" name: nil];
+      [doc setHeader: @"from" value: eFrom parameters: nil];
+
+      if ([identifier length] > 0)
+        {
+          NSString      *mID;
+
+          mID = [NSString stringWithFormat: @"<alrm%@@%@>", identifier, eBase];
+
+          if (YES == isClear)
+            {
+              /* Set all the headers likely to be used by clients.
+               */
+              [doc setHeader: @"Obsoletes" value: mID parameters: nil];
+              [doc setHeader: @"Replaces" value: mID parameters: nil];
+              [doc setHeader: @"Supersedes" value: mID parameters: nil];
+            }
+          else if ([identifier length] > 0)
+            {
+              [doc setHeader: @"Message-ID" value: mID parameters: nil];
+            }
+        }
+
+      while ((d = [e nextObject]) != nil)
+        {
+          NS_DURING
+            {
+              GSMimeDocument    *msg;
+
+              msg = AUTORELEASE([doc copy]);
+              [doc setHeader: @"to" value: d parameters: nil];
+              [smtp send: msg];
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Problem flushing email for address: %@, subject: %@, %@",
+                d, subject, localException);
+            }
+          NS_ENDHANDLER
+        }
     }
-  while ((d = [e nextObject]) != nil)
+  else
     {
-      NSMutableDictionary	*md = [email objectForKey: d];
-      NSString			*msg;
-
-      if (md == nil)
-	{
-	  md = [NSMutableDictionary new];
-	  [email setObject: md forKey: d];
-	  RELEASE(md);
-	}
-
-      msg = [md objectForKey: subject];
-
-      /*
-       * If adding the new text would take an existing message over the
-       * size limit, send the existing stuff first.
-       */
-      if ([msg length] > 0 && [msg length] + [s length] + 2 > 20*1024)
-	{
-	  AUTORELEASE(RETAIN(msg));
-	  [md removeObjectForKey: subject];
-	  [self flushEmailForAddress: d 
-			     subject: subject
-				text: msg];
-	  msg = nil;
-	}
-      if (msg == nil)
+      if (email == nil)
         {
-	  msg = s;
-	}
-      else
+          email = [NSMutableDictionary new];
+        }
+      while ((d = [e nextObject]) != nil)
         {
-	  msg = [msg stringByAppendingFormat: @"\n\n%@", s];
-	}
-      [md setObject: msg forKey: subject];
+          NSMutableDictionary	*md = [email objectForKey: d];
+          NSString		*msg;
+
+          if (md == nil)
+            {
+              md = [NSMutableDictionary new];
+              [email setObject: md forKey: d];
+              RELEASE(md);
+            }
+
+          msg = [md objectForKey: subject];
+
+          /* If adding the new text would take an existing message over the
+           * size limit, send the existing stuff first.
+           */
+          if ([msg length] > 0 && [msg length] + [text length] + 2 > 20*1024)
+            {
+              AUTORELEASE(RETAIN(msg));
+              [md removeObjectForKey: subject];
+              [self flushEmailForAddress: d 
+                                 subject: subject
+                                    text: msg];
+              msg = nil;
+            }
+          if (msg == nil)
+            {
+              msg = text;
+            }
+          else
+            {
+              msg = [msg stringByAppendingFormat: @"\n\n%@", text];
+            }
+          [md setObject: msg forKey: subject];
+        }
     }
 }
 

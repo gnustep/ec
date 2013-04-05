@@ -1,3 +1,15 @@
+2013-04-06  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcControl.m:
+	* EcAlerter.h:
+	* EcAlerter.m:
+        Restructure for better integration of alrm system with alert system.
+        Send critical alarms as alerts and major alarms as errors.
+        Repeat delivery of outstanding critical/major alarms periodically
+        (still need to make this period configurable).
+        Send clear message when a major/critical alarm is cleared, trying
+        to get mail clients to replace original email with the clear so the             recipient can tell a problem has gone away.
+
 2013-04-05  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcControl.m: Fix to get 'control on <host> ...' to work while

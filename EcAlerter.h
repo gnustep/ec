@@ -155,14 +155,16 @@
  */
 @interface	EcAlerter : NSObject
 {
-  NSArray		*rules;
-  NSMutableDictionary	*email;
-  NSMutableDictionary	*sms;
-  NSTimer		*timer;
-  NSString		*eFrom;
-  NSString		*eHost;
-  NSString		*ePort;
-  GSMimeSMTPClient	*smtp;
+  NSArray		*rules; /** Rules for handling alerts */
+  NSMutableDictionary	*email; /** Batching Email alerts */
+  NSMutableDictionary	*sms;   /** Batching SMS alerts */
+  NSTimer		*timer; /** Timer for batch flush */
+  NSString		*eBase; /** Sender host name for message ID */
+  NSString		*eDflt; /** Default sender address */
+  NSString		*eFrom; /** Sender address in use */
+  NSString		*eHost; /** Host with SMTP MTA */
+  NSString		*ePort; /** Port of SMTP MTA */
+  GSMimeSMTPClient	*smtp;  /** client connection to MTA */
 }
 
 /** Called when user defaults are updated, this fetches the dictionary

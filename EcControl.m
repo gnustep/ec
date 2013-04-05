@@ -48,7 +48,9 @@
 }
 @end
 
-static EcAlarmSinkSNMP	*sink = nil;
+static EcAlarmSinkSNMP	        *sink = nil;
+
+static NSMutableDictionary      *lastAlerted = nil;
 
 static NSTimeInterval	pingDelay = 240.0;
 
@@ -352,12 +354,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		type: (EcLogType)t
 		  to: (NSString*)to
 		from: (NSString*)from;
+- (void) mailAlarm: (EcAlarm*)alarm clear: (BOOL)clear;
 - (NSData*) registerCommand: (id<Command>)c
 		       name: (NSString*)n;
 - (NSString*) registerConsole: (id<Console>)c
 		         name: (NSString*)n
 			 pass: (NSString*)p;
 - (void) reply: (NSString*) msg to: (NSString*)n from: (NSString*)c;
+- (void) reportAlarms;
 - (void) servers: (NSData*)d
 	      on: (id<Command>)s;
 - (void) timedOut: (NSTimer*)t;
@@ -375,88 +379,39 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 {
   EcAlarmSeverity	severity;
 
-  /* First, send the alarm to the alarm sink.
-   */
-  [sink alarm: alarm];
-
   /* Now, for critical and major alarms, generate a corresponding old style
    * alert.
    */
   severity = [alarm perceivedSeverity];
-  if (EcAlarmSeverityCritical == severity
-    || EcAlarmSeverityMajor == severity
-    || EcAlarmSeverityMinor == severity)
+  if (EcAlarmSeverityCleared == severity)
     {
-      NSString		*additional;
-      NSString		*component;
-      NSString		*connector;
-      NSString		*instance;
-      NSString		*message;
-      NSString		*repair;
-      NSString		*spacing1;
-      NSString		*spacing2;
+      NSArray           *a = [sink alarms];
+      NSUInteger        index = [a indexOfObject: alarm];
 
-      instance = [alarm moInstance];
-      if ([instance length] == 0)
-	{
-	  instance = @"";
-	  connector = @"";
-	}
-      else
-	{
-	  connector = @"-";
-	}
-
-      component = [alarm moComponent];
-      if (0 == [component length])
+      if (NSNotFound != index)
         {
-          component = @"";
+          EcAlarm       *old = [a objectAtIndex: index];
+         
+          severity = [old perceivedSeverity];
+          if (EcAlarmSeverityCritical == severity
+            || EcAlarmSeverityMajor == severity)
+            {
+              NSString  *key;
+
+              key = [NSString stringWithFormat: @"%d", [old notificationID]];
+
+              if (nil != [lastAlerted objectForKey: key])
+                {
+                  [lastAlerted removeObjectForKey: key];
+                  [self mailAlarm: old clear: YES];
+                }
+            }
         }
-      else
-        {
-          component = [NSString stringWithFormat: @"(%@)", component];
-        }
-
-      additional = [alarm additionalText];
-      if ([additional length] == 0)
-	{
-	  additional = @"";
-	  spacing1 = @"";
-	}
-      else
-	{
-	  spacing1 = @": ";
-	}
-
-      repair = [alarm proposedRepairAction];
-      if ([repair length] == 0)
-	{
-	  repair = @"";
-	  spacing2 = @"";
-	}
-      else
-	{
-	  spacing2 = @", ";
-	}
-
-      severity = [alarm perceivedSeverity];
-      if (EcAlarmSeverityCritical == severity)
-	{
-	  message = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-	    @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
-	    [alarm specificProblem], spacing1, additional, spacing2, repair,
-	    [alarm moProcess], connector, instance, component, [alarm moHost]];
-	  [self information: message type: LT_ALERT to: nil from: nil];
-	}
-      else if (EcAlarmSeverityMajor == severity)
-	{
-	  message = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
-	    @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
-	    [alarm specificProblem], spacing1, additional, spacing2, repair,
-	    [alarm moProcess], connector, instance, component, [alarm moHost]];
-	  [self information: message type: LT_ERROR to: nil from: nil];
-	}
     }
+
+  /* Now, send the alarm to the alarm sink.
+   */
+  [sink alarm: alarm];
 }
 
 - (NSString*) description
@@ -1768,6 +1723,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary *alertConf = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
   NSString *host = [alertConf objectForKey: @"SNMPMasterAgentHost"];
   NSString *port = [alertConf objectForKey: @"SNMPMasterAgentPort"];
+  lastAlerted = [NSMutableDictionary new];
   sink = [[EcAlarmSinkSNMP alloc] initWithHost: host name: port];
 
   result = [super ecRun];
@@ -1776,6 +1732,99 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   DESTROY(sink);
 
   return result;
+}
+
+- (void) mailAlarm: (EcAlarm*)alarm clear: (BOOL)clear
+{
+  NSString      *additional;
+  NSString	*component;
+  NSString	*connector;
+  NSString	*identifier;
+  NSString	*instance;
+  NSString	*message;
+  NSString	*repair;
+  NSString	*spacing1;
+  NSString	*spacing2;
+
+  instance = [alarm moInstance];
+  if ([instance length] == 0)
+    {
+      instance = @"";
+      connector = @"";
+    }
+  else
+    {
+      connector = @"-";
+    }
+
+  component = [alarm moComponent];
+  if (0 == [component length])
+    {
+      component = @"";
+    }
+  else
+    {
+      component = [NSString stringWithFormat: @"(%@)", component];
+    }
+
+  additional = [alarm additionalText];
+  if ([additional length] == 0)
+    {
+      additional = @"";
+      spacing1 = @"";
+    }
+  else
+    {
+      spacing1 = @": ";
+    }
+
+  repair = [alarm proposedRepairAction];
+  if ([repair length] == 0)
+    {
+      repair = @"";
+      spacing2 = @"";
+    }
+  else
+    {
+      spacing2 = @", ";
+    }
+
+  identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
+
+  if (YES == clear)
+    {
+      message = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
+        [alarm specificProblem], spacing1,
+        additional, spacing2, repair,
+        [alarm moProcess], connector, instance,
+        component, [alarm moHost]];
+    }
+  else if (EcAlarmSeverityCritical == [alarm perceivedSeverity])
+    {
+      message = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
+        [alarm specificProblem], spacing1,
+        additional, spacing2, repair,
+        [alarm moProcess], connector, instance,
+        component, [alarm moHost]];
+    }
+  else
+    {
+      message = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
+        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
+        [alarm specificProblem], spacing1,
+        additional, spacing2, repair,
+        [alarm moProcess], connector, instance,
+        component, [alarm moHost]];
+    }
+
+  [alerter handleEvent: message
+              withHost: [alarm moHost]
+             andServer: [alarm moProcess]
+             timestamp: [[alarm eventDate] description]
+            identifier: identifier
+               isClear: clear];
 }
 
 - (NSData*) registerCommand: (id<Command>)c
@@ -2006,6 +2055,54 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [self information: msg type: LT_AUDIT to: n from: c];
 }
 
+- (void) reportAlarms
+{
+  NSMutableDictionary           *current;
+  NSEnumerator                  *enumerator;
+  EcAlarm                       *alarm;
+  NSDate                        *now;
+  NSString                      *key;
+  NSArray	                *a;
+
+  now = [NSDate date];
+  a = [sink alarms];
+  current = [NSMutableDictionary dictionaryWithCapacity: [a count]];
+  enumerator = [a objectEnumerator];
+  while (nil != (alarm = [enumerator nextObject]))
+    {
+      int               notificationID = [alarm notificationID];
+      EcAlarmSeverity	severity = [alarm perceivedSeverity];
+
+      if (notificationID > 0
+        && (EcAlarmSeverityCritical == severity
+          || EcAlarmSeverityMajor == severity))
+        {
+          NSDate        *when;
+
+          key = [NSString stringWithFormat: @"%d", notificationID];
+          [current setObject: alarm forKey: key];
+          when = [lastAlerted objectForKey: key];
+          if (nil == when || [now timeIntervalSinceDate: when] > 900)
+            {
+              [self mailAlarm: alarm clear: NO];
+              [lastAlerted setObject: now forKey: key];
+            }
+        }
+    }
+
+  /* Remove any alarms which no longer exist.
+   */
+  enumerator = [[lastAlerted allKeys] objectEnumerator];
+  while (nil != (key = [enumerator nextObject]))
+    {
+      alarm = [current objectForKey: key];
+      if (nil == alarm)
+        {
+          [lastAlerted removeObjectForKey: key];
+        }
+    }
+}
+
 - (void) requestConfigFor: (id<CmdConfig>)c
 {
   return;
@@ -2126,6 +2223,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  [self cmdName]]
 	atomically: YES];
     }
+  [self reportAlarms];
   inTimeout = NO;
 }
 
