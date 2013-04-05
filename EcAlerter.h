@@ -189,9 +189,14 @@
 - (void) flushSms;
 
 /** <p>This method handles an error/alert event (an 'error' is one which may
- * be buffered, while an 'alert' must be sent immediately).
+ * be buffered, while an 'alert' must be sent immediately).<br />
+ * If the identifier field is non-nil then the event is an alert which is
+ * identified by the value of the field and may be 'cleared' by a later
+ * event with the same identfier and with the isClear flag set.  The use
+ * of an empty string as an identifier is permitted for events which should
+ * not be buffered, but which will never be matched by a clear.
  * </p>
- * <p>Each event must consist of text associated with a host anme,
+ * <p>Each event must consist of text associated with a host name,
  * server name (usually the process on the host) and timestamp.
  * </p>
  * <p>Each message is matched against each rule in the <em>Rules</em>
@@ -205,7 +210,8 @@
             withHost: (NSString*)hostName
            andServer: (NSString*)serverName
            timestamp: (NSString*)timestamp
-           immediate: (BOOL)immediate;
+          identifier: (NSString*)identifier
+             isClear: (BOOL)isClear;
 
 /** <p>This method handles error/alert messages.  It is able to handle
  * multiple (newline separated messages.
@@ -214,33 +220,55 @@
  * serverName(hostName): YYYY-MM-DD hh:mm:ss.mmm szzzz type - text
  * </p>
  * <p>Each message is parsed an then the components are passed to
- * the -handleEvent:withHost:andServer:timestamp:immediate: method.
+ * the -handleEvent:withHost:andServer:timestamp:identifier:isClear: method.
  * </p>
  */
 - (void) handleInfo: (NSString*)str;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:immediate:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
  * to log a message to an array of destinations.
+ */
+- (void) log: (NSMutableDictionary*)m
+  identifier: (NSString*)identifier
+     isClear: (BOOL)isClear
+          to: (NSArray*)destinations;
+
+/** Calls -log:identifier:isClear:to: with a nil identifier.
  */
 - (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:immediate:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
  * to pass a message to an array of destinations.
  * The message is actually appended to any cached messages for those
  * destinations ... and the cache is periodically flushed.
  */
-- (void) mail: (NSMutableDictionary*)m to: (NSArray*)destinations;
+- (void) mail: (NSMutableDictionary*)m
+   identifier: (NSString*)identifier
+      isClear: (BOOL)isClear
+           to: (NSArray*)destinations;
+
+/** Calls -mail:identifier:isClear:to: with a nil identifier.
+ */
+- (void) mail: (NSMutableDictionary*)m
+           to: (NSArray*)destinations;
 
 /** Cache a copy of the Rules with modifications to store information
  * so we don't need to regenerate it every time we check a message.
  */
 - (BOOL) setRules: (NSArray*)ra;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:immediate:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
  * to pass a message to an array of destinations.
  * The message replaces any cached messages for those
  * destinations (and has a count of the lost messages noted) ... and
  * the cache is periodically flushed.
+ */
+- (void) sms: (NSMutableDictionary*)m
+  identifier: (NSString*)identifier
+     isClear: (BOOL)isClear
+          to: (NSArray*)destinations;
+
+/** Calls -sms:identifier:isClear:to: with a nil identifier.
  */
 - (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations;
 

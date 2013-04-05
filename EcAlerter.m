@@ -359,8 +359,13 @@ replaceFields(NSDictionary *fields)
             withHost: (NSString*)hostName
            andServer: (NSString*)serverName
            timestamp: (NSString*)timestamp
-           immediate: (BOOL)immediate
+          identifier: (NSString*)identifier
+             isClear: (BOOL)isClear
 {
+  if (nil == identifier)
+    {
+      isClear = NO;
+    }
   NS_DURING
     {
       NSUInteger                i;
@@ -368,7 +373,7 @@ replaceFields(NSDictionary *fields)
       NSMutableDictionary	*m;
 
 
-      if (YES == immediate)
+      if (nil != identifier)
         {
           type = @"Alert";
         }
@@ -470,8 +475,7 @@ replaceFields(NSDictionary *fields)
                       s = @"{Message}";
                     }
                   [m setObject: s forKey: @"Replacement"];
-                  
-                  [self log: m to: o];
+                  [self log: m identifier: identifier isClear: isClear to: o];
                 }
             }
           NS_HANDLER
@@ -511,8 +515,7 @@ replaceFields(NSDictionary *fields)
                       s = @"{Server}({Host}): {Timestamp} {Type} - {Message}";
                     }
                   [m setObject: s forKey: @"Replacement"];
-
-                  [self mail: m to: o];
+                  [self mail: m identifier: identifier isClear: isClear to: o];
                 }
             }
           NS_HANDLER
@@ -546,8 +549,7 @@ replaceFields(NSDictionary *fields)
                       s = @"{Server}({Host}):{Timestamp} {Type}-{Message}";
                     }
                   [m setObject: s forKey: @"Replacement"];
-
-                  [self sms: m to: o];
+                  [self sms: m identifier: identifier isClear: isClear to: o];
                 }
             }
           NS_HANDLER
@@ -658,7 +660,8 @@ replaceFields(NSDictionary *fields)
                    withHost: hostName
                   andServer: serverName
                   timestamp: timestamp
-                  immediate: immediate];
+                 identifier: (YES == immediate) ? (id)@"" : (id)nil
+                    isClear: NO];
 	}
     }
   NS_HANDLER
@@ -687,7 +690,10 @@ replaceFields(NSDictionary *fields)
   return self;
 }
 
-- (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations
+- (void) log: (NSMutableDictionary*)m
+  identifier: (NSString*)identifier
+     isClear: (BOOL)isClear
+          to: (NSArray*)destinations
 {
   NSEnumerator	*e = [destinations objectEnumerator];
   NSString	*d;
@@ -703,7 +709,15 @@ replaceFields(NSDictionary *fields)
     }
 }
 
-- (void) mail: (NSMutableDictionary*)m to: (NSArray*)destinations
+- (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations
+{
+  [self log: m identifier: nil isClear: NO to: destinations];
+}
+
+- (void) mail: (NSMutableDictionary*)m
+   identifier: (NSString*)identifier
+      isClear: (BOOL)isClear
+           to: (NSArray*)destinations
 {
   NSEnumerator	*e = [destinations objectEnumerator];
   NSString	*d;
@@ -767,7 +781,16 @@ replaceFields(NSDictionary *fields)
     }
 }
 
-- (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations
+- (void) mail: (NSMutableDictionary*)m to: (NSArray*)destinations
+{
+  [self mail: m identifier: nil isClear: NO to: destinations];
+}
+
+
+- (void) sms: (NSMutableDictionary*)m
+  identifier: (NSString*)identifier
+     isClear: (BOOL)isClear
+          to: (NSArray*)destinations
 {
   NSEnumerator	*e = [destinations objectEnumerator];
   NSString	*d;
@@ -816,6 +839,11 @@ replaceFields(NSDictionary *fields)
 	}
       [sms setObject: msg forKey: d];
     }
+}
+
+- (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations
+{
+  [self sms: m identifier: nil isClear: NO to: destinations];
 }
 
 - (void) timeout: (NSTimer*)t
