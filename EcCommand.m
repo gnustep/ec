@@ -1099,8 +1099,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  NSString	*m;
 
-	  m = cmdLogFormat(LT_ERROR, @"command to unregistered client");
-	  [self information: m
+	  m = [NSString stringWithFormat:
+            @"command to unregistered client '%@'", t];
+	  [self information: cmdLogFormat(LT_ERROR, m)
 		       from: nil
 			 to: f
 		       type: LT_ERROR];

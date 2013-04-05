@@ -1,8 +1,15 @@
+2013-04-05  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcControl.m: Fix to get 'control on <host> ...' to work while
+        connected to a specific server.
+
 2013-03-22: Niels Grewe <niels.grewe@halbordnung.de>
+
 	* EcControl.m: Fix bug that could remove a alerter when it was still
 	needed.
 
 2013-03-18: Niels Grewe <niels.grewe@halbordnung.de>
+
 	* EcAlerter.h
 	* EcAlerter.m:
 	Rearrange and expose a few methods so that subclasses can

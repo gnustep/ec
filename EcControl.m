@@ -592,9 +592,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  connected = YES;
 	}
-      /*
-       *	If we have a 'control' command - act as if the console was not
-       *	connected to a host or server.
+      /* If we have a 'control' command - act as if the console was not
+       * connected to a host or server.
        */
       if (comp(wd, @"control") == 0)
 	{
@@ -694,9 +693,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  NSArray	*hosts;
 
-	  /*
-	   *	Make an array of hosts to work with - the connected host
-	   *	or all hosts.  If the connected host has gone away - disconnect.
+	  /* Make an array of hosts to work with - the connected host
+	   * or all hosts.  If the connected host has gone away - disconnect.
 	   */
 	  if (hname == nil)
 	    {
@@ -734,10 +732,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      BOOL	foundServer = NO;
 	      int	i;
 
-	      m = nil;	/* Let connected host generate messages. */
-	      /*
-	       *	Perform operation on connected host (or all hosts if
-	       *	not connected to a host).
+	      m = nil;	/* Let remote host generate messages. */
+
+	      /* Perform operation on connected host (or all hosts if
+	       * not connected to a host).
 	       */
 	      for (i = 0; i < [hosts count]; i++)
 		{
@@ -745,7 +743,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 		  if ([commands indexOfObjectIdenticalTo: c] != NSNotFound)
 		    {
-		      if ([console cserv] == nil)
+		      if (NO == connected || [console cserv] == nil)
 			{
 			  foundServer = YES;
 			  NS_DURING
