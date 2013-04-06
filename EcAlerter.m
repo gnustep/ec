@@ -825,7 +825,7 @@ replaceFields(NSDictionary *fields)
               GSMimeDocument    *msg;
 
               msg = AUTORELEASE([doc copy]);
-              [doc setHeader: @"to" value: d parameters: nil];
+              [msg setHeader: @"to" value: d parameters: nil];
               [smtp send: msg];
             }
           NS_HANDLER
