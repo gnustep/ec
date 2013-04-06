@@ -143,7 +143,7 @@
  *
  * </p>
  * <p>The <em>Sms</em> array lists phone numbers to which Sms alerts are
- * to be sent.
+ * to be sent (if the alerter has been subclassed to implement SMS delivery).
  * </p>
  * <p>The <em>Email</em> array lists email addresses to which email alerts are
  * to be sent.<br />
@@ -152,6 +152,56 @@
  * <em>defeats</em> batching of messages in that only messages with the
  * same subject may be batched in the same email.
  * </p>
+ *
+ * <p>Configuration of the alerter is done by the 'Alerter' key in the user
+ * defaults system.  The value for this key must be a dictionary configuring
+ * the Email setup and the rules as follows:
+ * </p>
+ * <deflist>
+ *   <term>Debug</term>
+ *   <desc>A boolean saying whether extra debug data should be logged.
+ *     If YES, all outgoing Email messages are logged.</desc>
+ *   <term>EmailFrom</term>
+ *   <desc>The sender address to use for outgoing alert Email messages.
+ *     By default 'alerter@host' where 'host' is the value defined in
+ *     the EmailHost config, or any name of the local host.</desc>
+ *   <term>EmailHost</term>
+ *   <desc>The name or address of the host to use as an Email gateway.
+ *     By default the local host.</desc>
+ *   <term>EmailPort</term>
+ *   <desc>The port number of the MTA to connect to on the EmailHost.
+ *     By default this is port 25.</desc>
+ *   <term>Rules</term>
+ *   <desc>An array of rule dictionaries as defined above.</desc>
+ * </deflist>
+ *
+ * <p>When an ExAlerter instance is used by a Control server process,
+ *  The 'Alerter' configuration dictionary may contain some extra
+ *  configuration used to define the way the Control server uses the
+ *  alerter.<br />
+ *  The Control server integrates the alarm system (EcAlarm etc) with
+ *  the alerting system (used by alert and error level logging from
+ *  EcProcess) by generating alerter events when major and critical
+ *  severity alarms are raised, and sending alerter 'clear' messages
+ *  when the alarms are cleared.<br />
+ *  The Control server may also be configured to generate reminder
+ *  alerts when alarms have not been dealt with (cleared) in a timely
+ *  manner.  
+ * </p>
+ * <deflist>
+ *   <term>AlertBundle</term>
+ *   <desc>An optional class/bundle name for a subclass of EcAlerter
+ *     to be loaded into the Control server instead of the standard
+ *     EcAlerter class.</desc>
+ *   <term>AlertCritical</term>
+ *   <desc>An integer number of minutes between generating alerts
+ *     reminding about critical alarms.  If this is not set then
+ *     the value for AlertMajor is used.</desc>
+ *   <term>AlertMajor</term>
+ *   <desc>An integer number of minutes between generating alerts
+ *     reminding about major alarms.  If this is not set then it
+ *     defaults to zero ... meaning that no reminders are sent.</desc>
+ * </deflist>
  */
 @interface	EcAlerter : NSObject
 {
@@ -165,6 +215,8 @@
   NSString		*eHost; /** Host with SMTP MTA */
   NSString		*ePort; /** Port of SMTP MTA */
   GSMimeSMTPClient	*smtp;  /** Client connection to MTA */
+  int                   aCrit;  /** Interval between critical alarm reminders */
+  int                   aMaj;   /** Interval between major alarm reminders */
   BOOL                  debug;  /** Debug enabled in config */
 }
 

@@ -54,6 +54,9 @@ static NSMutableDictionary      *lastAlerted = nil;
 
 static NSTimeInterval	pingDelay = 240.0;
 
+static int      aCrit = 0;
+static int      aMaj = 0;
+
 static int	comp_len = 0;
 
 static int	comp(NSString *s0, NSString *s1)
@@ -2070,12 +2073,26 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         && (EcAlarmSeverityCritical == severity
           || EcAlarmSeverityMajor == severity))
         {
-          NSDate        *when;
+          NSDate                *when;
+          NSTimeInterval        ti;
+
+          /* Determne how long we wait between generating reminder alerts
+           * for this type of alarm.
+           */
+          if (EcAlarmSeverityCritical == severity)
+            {
+              ti = aCrit * 60.0;
+            }
+          else
+            {
+              ti = aMaj * 60.0;
+            }
 
           key = [NSString stringWithFormat: @"%d", notificationID];
           [current setObject: alarm forKey: key];
           when = [lastAlerted objectForKey: key];
-          if (nil == when || [now timeIntervalSinceDate: when] > 900)
+          if (nil == when
+            || (ti > 0.0 && [now timeIntervalSinceDate: when] > ti))
             {
               [self mailAlarm: alarm clear: NO];
               [lastAlerted setObject: now forKey: key];
@@ -2513,10 +2530,17 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       if (nil == o || NO == [o isEqual: d])
         {
+	  NSString      *alerterDef;
+
+	  alerterDef = [d objectForKey: @"AlerterBundle"]; 
+          aMaj = [[d objectForKey: @"AlertMajor"] intValue];
+          if (aMaj < 0) aMaj = 0;
+          aCrit = [[d objectForKey: @"AlertCritical"] intValue];
+
           d = [NSDictionary dictionaryWithObjectsAndKeys:
             d, @"Alerter", nil];
           [[self cmdDefaults] setConfiguration: d];
-	  NSString *alerterDef = [d valueForKeyPath: @"Alerter.AlerterBundle"]; 
+
 	  if (nil == alerterDef)
 	    {
 	      alerterClass = [EcAlerter class];
@@ -2550,7 +2574,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    }
 
           changed = YES;
-	 
         }
     }
 
