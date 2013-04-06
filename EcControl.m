@@ -827,7 +827,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		{
 		  m = [NSString stringWithFormat: @"Clearing %@\n", alarm];
 		  alarm = [alarm clear];
-		  [sink alarm: alarm];
+		  [self alarm: alarm];
 		}
 	    }
 	  else
