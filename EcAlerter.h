@@ -164,7 +164,8 @@
   NSString		*eFrom; /** Sender address in use */
   NSString		*eHost; /** Host with SMTP MTA */
   NSString		*ePort; /** Port of SMTP MTA */
-  GSMimeSMTPClient	*smtp;  /** client connection to MTA */
+  GSMimeSMTPClient	*smtp;  /** Client connection to MTA */
+  BOOL                  debug;  /** Debug enabled in config */
 }
 
 /** Called when user defaults are updated, this fetches the dictionary

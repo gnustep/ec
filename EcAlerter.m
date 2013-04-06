@@ -151,6 +151,46 @@ replaceFields(NSDictionary *fields)
     }
 }
 
+- (void) smtpClient: (GSMimeSMTPClient*)client mimeFailed: (GSMimeDocument*)doc
+{
+  NSLog(@"Message failed: %@", doc);
+}
+
+- (void) smtpClient: (GSMimeSMTPClient*)client mimeSent: (GSMimeDocument*)doc
+{
+  if (YES == debug)
+    {
+      NSLog(@"Message sent: %@", doc);
+    }
+}
+
+- (void) smtpClient: (GSMimeSMTPClient*)client mimeUnsent: (GSMimeDocument*)doc
+{
+  NSLog(@"Message dropped on SMTP client shutdown: %@", doc);
+}
+
+- (GSMimeSMTPClient*) _smtp
+{
+  if (nil == smtp)
+    {
+      smtp = [GSMimeSMTPClient new];
+    }
+  if (nil == eFrom)
+    {
+      [self _setEFrom: nil];
+    }
+  if (nil != eHost)
+    {
+      [smtp setHostname: eHost];
+    }
+  if (nil != ePort)
+    {
+      [smtp setPort: ePort];
+    }
+  [smtp setDelegate: self];
+  return smtp;
+}
+
 - (BOOL) configure: (NSNotification*)n
 {
   NSUserDefaults	*d;
@@ -163,6 +203,7 @@ replaceFields(NSDictionary *fields)
 
 - (BOOL) configureWithDefaults: (NSDictionary*)c
 {
+  debug = [[c objectForKey: @"Debug"] boolValue];
   [self _setEFrom: [c objectForKey: @"EmailFrom"]];
   ASSIGNCOPY(eHost, [c objectForKey: @"EmailHost"]);
   ASSIGNCOPY(ePort, [c objectForKey: @"EmailPort"]);
@@ -282,29 +323,12 @@ replaceFields(NSDictionary *fields)
     {
       GSMimeDocument	*doc;
 
-      if (smtp == nil)
-	{
-	  smtp = [GSMimeSMTPClient new];
-	}
-      if (nil != eHost)
-	{
-	  [smtp setHostname: eHost];
-	}
-      if (nil != ePort)
-	{
-	  [smtp setPort: ePort];
-	}
-      if (nil == eFrom)
-	{
-          [self _setEFrom: nil];
-	}
-
       doc = AUTORELEASE([GSMimeDocument new]);
       [doc setHeader: @"subject" value: subject parameters: nil];
       [doc setHeader: @"to" value: address parameters: nil];
       [doc setHeader: @"from" value: eFrom parameters: nil];
       [doc setContent: text type: @"text/plain" name: nil];
-      [smtp send: doc];
+      [[self _smtp] send: doc];
     }
   NS_HANDLER
     {
@@ -768,23 +792,7 @@ replaceFields(NSDictionary *fields)
     {
       GSMimeDocument    *doc;
 
-      if (nil == smtp)
-	{
-	  smtp = [GSMimeSMTPClient new];
-	}
-      if (nil == eFrom)
-	{
-          [self _setEFrom: nil];
-	}
-      if (nil != eHost)
-	{
-	  [smtp setHostname: eHost];
-	}
-      if (nil != ePort)
-	{
-	  [smtp setPort: ePort];
-	}
-
+      [self _smtp];
       doc = AUTORELEASE([GSMimeDocument new]);
       [doc setHeader: @"subject" value: subject parameters: nil];
       [doc setContent: text type: @"text/plain" name: nil];
