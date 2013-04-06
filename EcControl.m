@@ -1746,6 +1746,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSString	*instance;
   NSString	*message;
   NSString	*repair;
+  NSString      *severity;
   NSString	*spacing1;
   NSString	*spacing2;
 
@@ -1792,13 +1793,22 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       spacing2 = @", ";
     }
 
+  if ([alarm perceivedSeverity] == EcAlarmSeverityCritical)
+    {
+      severity = @"Critical";
+    }
+  else
+    {
+      severity = @"Major";
+    }
+
   identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
 
   if (YES == clear)
     {
       message = [NSString stringWithFormat:
-        @"Clear %@\n%@%@%@%@%@ - '%@%@%@%@' on %@",
-        identifier,
+        @"Clear %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier, severity,
         [alarm specificProblem], spacing1,
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
@@ -1806,13 +1816,32 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   else
     {
+      NSTimeInterval    ti;
+
       message = [NSString stringWithFormat:
-        @"Alarm %@\n%@%@%@%@%@ - '%@%@%@%@' on %@",
-        identifier,
+        @"Alarm %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier, severity,
         [alarm specificProblem], spacing1,
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
         component, [alarm moHost]];
+
+      ti  = 0.0 - [[alarm eventDate] timeIntervalSinceNow];
+      if (ti > 300.0)
+        {
+          if (ti >= 3600.0)
+            {
+              message = [message stringByAppendingFormat:
+                @"%@\nNot cleared after %d hours!",
+                (int)(ti / 3600.0)];
+            }
+          else
+            {
+              message = [message stringByAppendingFormat:
+                @"%@\nNot cleared after %d minutes.",
+               (int)(ti / 60.0)];
+            }
+        }
     }
 
   [alerter handleEvent: message
