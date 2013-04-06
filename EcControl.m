@@ -1832,13 +1832,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           if (ti >= 3600.0)
             {
               message = [message stringByAppendingFormat:
-                @"%@\nNot cleared after %d hours!",
+                @"\nNot cleared after %d hours!",
                 (int)(ti / 3600.0)];
             }
           else
             {
               message = [message stringByAppendingFormat:
-                @"%@\nNot cleared after %d minutes.",
+                @"\nNot cleared after %d minutes.",
                (int)(ti / 60.0)];
             }
         }
