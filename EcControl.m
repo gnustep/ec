@@ -1793,17 +1793,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if (YES == clear)
     {
-      message = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
-        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
-        [alarm specificProblem], spacing1,
-        additional, spacing2, repair,
-        [alarm moProcess], connector, instance,
-        component, [alarm moHost]];
-    }
-  else if (EcAlarmSeverityCritical == [alarm perceivedSeverity])
-    {
-      message = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
+      message = [NSString stringWithFormat:
+        @"Clear %@\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier,
         [alarm specificProblem], spacing1,
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
@@ -1811,8 +1803,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   else
     {
-      message = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
-        @"%@%@%@%@%@ - '%@%@%@%@' on %@"),
+      message = [NSString stringWithFormat:
+        @"Alarm %@\n%@%@%@%@%@ - '%@%@%@%@' on %@",
         [alarm specificProblem], spacing1,
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
