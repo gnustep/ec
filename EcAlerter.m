@@ -204,6 +204,7 @@ replaceFields(NSDictionary *fields)
 - (BOOL) configureWithDefaults: (NSDictionary*)c
 {
   debug = [[c objectForKey: @"Debug"] boolValue];
+  supersede = [[c objectForKey: @"Supersede"] boolValue];
   [self _setEFrom: [c objectForKey: @"EmailFrom"]];
   ASSIGNCOPY(eHost, [c objectForKey: @"EmailHost"]);
   ASSIGNCOPY(ePort, [c objectForKey: @"EmailPort"]);
@@ -806,11 +807,22 @@ replaceFields(NSDictionary *fields)
 
           if (YES == isClear)
             {
-              /* Set all the headers likely to be used by clients.
-               */
-              [doc setHeader: @"Obsoletes" value: mID parameters: nil];
-              [doc setHeader: @"Replaces" value: mID parameters: nil];
-              [doc setHeader: @"Supersedes" value: mID parameters: nil];
+              if (YES == supersede)
+                {
+                  /* Set all the headers likely to be used by clients to
+                   * have this message supersede the original.
+                   */
+                  [doc setHeader: @"Obsoletes" value: mID parameters: nil];
+                  [doc setHeader: @"Replaces" value: mID parameters: nil];
+                  [doc setHeader: @"Supersedes" value: mID parameters: nil];
+                }
+              else
+                {
+                  /* Treat the clear as simply a repeat (new version) of the
+                   * original message.
+                   */
+                  [doc setHeader: @"Message-ID" value: mID parameters: nil];
+                }
             }
           else if ([identifier length] > 0)
             {

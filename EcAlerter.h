@@ -173,6 +173,10 @@
  *     By default this is port 25.</desc>
  *   <term>Rules</term>
  *   <desc>An array of rule dictionaries as defined above.</desc>
+ *   <term>Supersede</term>
+ *   <desc>A boolean saying whether a clear alert should supersede the
+ *     original message or simply act as a new version with the same
+ *     message identifier.</desc>
  * </deflist>
  *
  * <p>When an ExAlerter instance is used by a Control server process,
@@ -195,12 +199,15 @@
  *     EcAlerter class.</desc>
  *   <term>AlertCritical</term>
  *   <desc>An integer number of minutes between generating alerts
- *     reminding about critical alarms.  If this is not set then
- *     the value for AlertMajor is used.</desc>
+ *     reminding about critical alarms.  If this is less than the
+ *     value for AlertMajor, the value of AlertMajor is used.</desc>
  *   <term>AlertMajor</term>
  *   <desc>An integer number of minutes between generating alerts
- *     reminding about major alarms.  If this is not set then it
- *     defaults to zero ... meaning that no reminders are sent.</desc>
+ *     reminding about major alarms.  If this is negative or not
+ *     set then it defaults to zero ... meaning that no reminders
+ *     are sent.<br />
+ *     Otherwise, this value is rounded (up) to a multiple of five
+ *     minutes.</desc>
  * </deflist>
  */
 @interface	EcAlerter : NSObject
@@ -215,9 +222,8 @@
   NSString		*eHost; /** Host with SMTP MTA */
   NSString		*ePort; /** Port of SMTP MTA */
   GSMimeSMTPClient	*smtp;  /** Client connection to MTA */
-  int                   aCrit;  /** Interval between critical alarm reminders */
-  int                   aMaj;   /** Interval between major alarm reminders */
   BOOL                  debug;  /** Debug enabled in config */
+  BOOL                  supersede;  /** If a clear should replace original */
 }
 
 /** Called when user defaults are updated, this fetches the dictionary

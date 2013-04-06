@@ -1749,6 +1749,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSString      *severity;
   NSString	*spacing1;
   NSString	*spacing2;
+  int           minutes;
 
   instance = [alarm moInstance];
   if ([instance length] == 0)
@@ -1802,6 +1803,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       severity = @"Major";
     }
 
+  minutes = (0.0 - [[alarm eventDate] timeIntervalSinceNow]) / 60.0;
+
   identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
 
   if (YES == clear)
@@ -1813,11 +1816,27 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
         component, [alarm moHost]];
+      if (minutes > 5)
+        {
+          if (minutes >= 60)
+            {
+              message = [message stringByAppendingFormat:
+                @"\n\nCleared after %d hours", minutes / 60];
+            }
+          else
+            {
+              message = [message stringByAppendingFormat:
+                @"\n\nCleared after %d minutes.", minutes];
+            }
+        }
+      else
+        {
+          message = [message stringByAppendingString:
+            @"\n\nCleared ... issue has been resolved."];
+        }
     }
   else
     {
-      NSTimeInterval    ti;
-
       message = [NSString stringWithFormat:
         @"Alarm %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
         identifier, severity,
@@ -1826,20 +1845,17 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         [alarm moProcess], connector, instance,
         component, [alarm moHost]];
 
-      ti  = 0.0 - [[alarm eventDate] timeIntervalSinceNow];
-      if (ti > 300.0)
+      if (minutes > 5)
         {
-          if (ti >= 3600.0)
+          if (minutes >= 60)
             {
               message = [message stringByAppendingFormat:
-                @"\nNot cleared after %d hours!",
-                (int)(ti / 3600.0)];
+                @"\n\nStill awaiting resolution after %d hours!", minutes / 60];
             }
           else
             {
               message = [message stringByAppendingFormat:
-                @"\nNot cleared after %d minutes.",
-               (int)(ti / 60.0)];
+                @"\n\nStill awaiting resolution after %d minutes.", minutes];
             }
         }
     }
@@ -2563,8 +2579,23 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 	  alerterDef = [d objectForKey: @"AlerterBundle"]; 
           aMaj = [[d objectForKey: @"AlertMajor"] intValue];
-          if (aMaj < 0) aMaj = 0;
+          if (aMaj < 0)
+            {
+              aMaj = 0;
+            }
+          else if (aMaj % 5)
+            {
+              aMaj += 5 - aMaj % 5;
+            }
           aCrit = [[d objectForKey: @"AlertCritical"] intValue];
+          if (aCrit < aMaj)
+            {
+              aCrit = aMaj;
+            }
+          else if (aCrit % 5)
+            {
+              aCrit += 5 - aCrit % 5;
+            }
 
           d = [NSDictionary dictionaryWithObjectsAndKeys:
             d, @"Alerter", nil];
