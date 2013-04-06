@@ -1805,6 +1805,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       message = [NSString stringWithFormat:
         @"Alarm %@\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier,
         [alarm specificProblem], spacing1,
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
