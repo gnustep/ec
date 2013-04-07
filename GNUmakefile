@@ -88,7 +88,7 @@ Terminate_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
 DOCUMENT_NAME = ECCL
 
-ECCL_AGSDOC_FILES = \
+ECCL_AGSDOC_FILES = ECCL.h \
 	EcAlarm.h \
 	EcAlarmDestination.h \
 	EcAlarmSinkSNMP.h \
@@ -98,6 +98,9 @@ ECCL_AGSDOC_FILES = \
 	EcLogger.h \
 	EcProcess.h \
 	EcUserDefaults.h \
+
+ECCL_AGSDOC_FLAGS = \
+	-MakeFrames YES \
 
 
 ECCL_DOC_INSTALL_DIR = Libraries
