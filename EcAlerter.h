@@ -42,7 +42,9 @@
  * to the people who should be monitoring the system.  It is used by the
  * Control server (to which all these messages are delivered) and
  * implements a simple rule based mechanism for managing final
- * delivery of the messages.
+ * delivery of the messages.<br />
+ * The Control server also feeds alarm events (see [EcAlarm]) into the
+ * system as alerts.
  * </p>
  * <p>The configured rules are compared against each message and any
  * actions associated with a matching rule are performed.<br />
@@ -62,7 +64,31 @@
  *   </desc>
  *   <term>Type</term>
  *   <desc>The type of message ... <em>Error</em> or <em>Alert</em>.
- *   If this is not specified, messages of any type may match.
+ *   If this is not specified, messages of either type may match.
+ *   </desc>
+ *   <term>DurationAbove</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match any message
+ *   whose duration in minutes is greater than the supplied integer value.
+ *   If this is not specified, messages of any duration may match.
+ *   </desc>
+ *   <term>DurationBelow</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match any message
+ *   whose duration in minutes is less than the supplied integer value.
+ *   If this is not specified, messages of any duration may match.
+ *   </desc>
+ *   <term>SeverityCode</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match an integer alarm
+ *   severity code (one of the EcAlarmSeverity enumerated type values).
+ *   If this is not specified, messages of any severity (including alerts
+ *   which are not alarms) may match.  Use zero to match non-alarm messages.
+ *   </desc>
+ *   <term>SeverityText</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match a string alarm
+ *   severity value. The value of this field must be an extended regular
+ *   expression pattern.<br />
+ *   If this is not specified, messages of any severity may match (including
+ *   messages which are not alarms).  Use '^$' to match only non-alarm
+ *   messages.
  *   </desc>
  *   <term>Pattern</term>
  *   <desc>An extended regular expression used to match the main text
@@ -102,10 +128,20 @@
  * <p>When a match is found the full message is normally sent to all the
  * destinations listed in the <em>Email</em> and <em>Sms</em> arrays in
  * the rule, and logged to all the destinations in the <em>Log</em> array.<br />
- * However, the <em>Replacement</em> field may be used to specify
- * a message to be sent in the place of the one received.  Within the
- * <em>Replacement</em> string values enclosed in curly brackets will
- * be substituted as follows -
+ * Before the message is sent, the <em>Rewrite</em> field may be used to
+ * change the message in the event (rewriting it for the current rule and
+ * for all subsequent rules).<br />
+ * Once any rewriting has been done the actual message sent out will be
+ * the most recently rewritten value (or a value determined by any
+ * <em>Replacement</em> field in the current rule).<br />
+ * The <em>Replacement</em> field comes in three variants which may be
+ * used instead of the general field, depending on the kind of alert
+ * actually being sent out.  These variants are:<br />
+ * <em>EmailReplacement</em>, <em>LogReplacement</em>
+ * and <em>SmsReplacement</em>.<br/>
+ * Rewrite and a Replacement fields are handled by using the text value of
+ * the fields as templates with string values enclosed in curly brackets
+ * being substituted as follows -
  * </p>
  * <deflist>
  *   <term>Extra1</term>
@@ -121,9 +157,26 @@
  *   <term>Timestamp</term>
  *   <desc>The timestamp of the original message</desc>
  *   <term>Message</term>
- *   <desc>The text of the original message</desc>
+ *   <desc>The text of the latest rewritten message or the original
+ *   message if no rewriting has been done.</desc>
  *   <term>Match</term>
  *   <desc>The text matched by the <em>Pattern</em> if any</desc>
+ *   <term>Original</term>
+ *   <desc>The text of the original message.</desc>
+ *   <term>Identifier</term>
+ *   <desc>The identifier of any alarm.</desc>
+ *   <term>SeverityCode</term>
+ *   <desc>The numeric severity level of any alarm.
+ *   Zero if this alert is not an alarm, five if it is a clear.</desc>
+ *   <term>SeverityText</term>
+ *   <desc>The text severity level of any alarm.
+ *   An empty string if this alert is not an alarm</desc>
+ *   <term>Duration</term>
+ *   <desc>The duration (minutes) if the event is an alarm.</desc>
+ *   <term>Hours</term>
+ *   <desc>The number of hours for which an alarm has been active.</desc>
+ *   <term>Minutes</term>
+ *   <desc>The number of minutes in the hour for.</desc>
  * </deflist>
  * <p>The <em>Log</em> array specifies a list of log destinations which are
  * normally treated as filenames (stored in the standard log directory).
@@ -185,9 +238,9 @@
  *  alerter.<br />
  *  The Control server integrates the alarm system (EcAlarm etc) with
  *  the alerting system (used by alert and error level logging from
- *  EcProcess) by generating alerter events when major and critical
- *  severity alarms are raised, and sending alerter 'clear' messages
- *  when the alarms are cleared.<br />
+ *  EcProcess) by generating alerter events when alarms of a severity
+ *  above a certain threshold are raised, and sending alerter 'clear'
+ *  messages when those alarms are cleared.<br />
  *  The Control server may also be configured to generate reminder
  *  alerts when alarms have not been dealt with (cleared) in a timely
  *  manner.  
@@ -197,13 +250,14 @@
  *   <desc>An optional class/bundle name for a subclass of EcAlerter
  *     to be loaded into the Control server instead of the standard
  *     EcAlerter class.</desc>
- *   <term>AlertCritical</term>
+ *   <term>AlertAlarmThreshold</term>
+ *   <desc>An integer indicating the threshold at which alarms are to
+ *     be mapped to alerts. This is restricted to lie in the range from
+ *     EcAlarmSeverityCritical to EcAlarmSeverityWarning and defaults
+ *     to the value for EcAlarmSeverityMajor.</desc>
+ *   <term>AlertReminderInterval</term>
  *   <desc>An integer number of minutes between generating alerts
- *     reminding about critical alarms.  If this is less than the
- *     value for AlertMajor, the value of AlertMajor is used.</desc>
- *   <term>AlertMajor</term>
- *   <desc>An integer number of minutes between generating alerts
- *     reminding about major alarms.  If this is negative or not
+ *     reminding about alarms.  If this is negative or not
  *     set then it defaults to zero ... meaning that no reminders
  *     are sent.<br />
  *     Otherwise, this value is rounded (up) to a multiple of five
@@ -252,10 +306,13 @@
 /** <p>This method handles an error/alert event (an 'error' is one which may
  * be buffered, while an 'alert' must be sent immediately).<br />
  * If the identifier field is non-nil then the event is an alert which is
- * identified by the value of the field and may be 'cleared' by a later
- * event with the same identfier and with the isClear flag set.  The use
- * of an empty string as an identifier is permitted for events which should
- * not be buffered, but which will never be matched by a clear.
+ * identified by the value of the field.<br />
+ * An 'alert' may be due to an alarm (persistent problem) whose severity is
+ * indicated in the final argument.  The alarm may be may 'cleared' by a
+ * later event with the same identfier and with the severity set to
+ * EcAlarmSeverityCleared.<br />
+ * The use of an empty string as an identifier is permitted for events which
+ * should not be buffered, but which will never be matched by a clear.
  * </p>
  * <p>Each event must consist of text associated with a host name,
  * server name (usually the process on the host) and timestamp.
@@ -270,9 +327,9 @@
 - (void) handleEvent: (NSString*)text
             withHost: (NSString*)hostName
            andServer: (NSString*)serverName
-           timestamp: (NSString*)timestamp
+           timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
-             isClear: (BOOL)isClear;
+            severity: (int)severity;
 
 /** <p>This method handles error/alert messages.  It is able to handle
  * multiple (newline separated messages.
@@ -281,12 +338,12 @@
  * serverName(hostName): YYYY-MM-DD hh:mm:ss.mmm szzzz type - text
  * </p>
  * <p>Each message is parsed an then the components are passed to
- * the -handleEvent:withHost:andServer:timestamp:identifier:isClear: method.
+ * the -handleEvent:withHost:andServer:timestamp:identifier:severity: method.
  * </p>
  */
 - (void) handleInfo: (NSString*)str;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
  * to log a message to an array of destinations.
  */
 - (void) log: (NSMutableDictionary*)m
@@ -298,7 +355,7 @@
  */
 - (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
  * to pass a message to an array of destinations.
  * The message is actually appended to any cached messages for those
  * destinations ... and the cache is periodically flushed.
@@ -318,7 +375,7 @@
  */
 - (BOOL) setRules: (NSArray*)ra;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:isClear:
+/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
  * to pass a message to an array of destinations.
  * The message replaces any cached messages for those
  * destinations (and has a count of the lost messages noted) ... and

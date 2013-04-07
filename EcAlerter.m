@@ -32,6 +32,7 @@
 
 #import "EcHost.h"
 #import "EcProcess.h"
+#import "EcAlarm.h"
 #import "EcAlerter.h"
 #import "NSFileHandle+Printf.h"
 
@@ -76,6 +77,10 @@
   regmatch_t	matches[2];
   const char	*str = [string UTF8String];
 
+  if (0 == str)
+    {
+      return nil;
+    }
   if (regexec(&regex, str, 1, matches, 0) != 0)
     {
       return nil;
@@ -265,6 +270,19 @@ replaceFields(NSDictionary *fields)
 	  RELEASE(val);
 	}
 
+      str = [md objectForKey: @"SeverityText"];
+      [md removeObjectForKey: @"SeverityTextRegex"];
+      if (str != nil)
+        {
+	  val = [[Regex alloc] initWithString: str];
+	  if (val == nil)
+	    {
+	      return NO;
+	    }
+	  [md setObject: val forKey: @"SeverityTextRegex"];
+	  RELEASE(val);
+	}
+
       str = [md objectForKey: @"Extra1"];
       [md removeObjectForKey: @"Extra1Regex"];
       if (str != nil)
@@ -290,6 +308,7 @@ replaceFields(NSDictionary *fields)
 	  [md setObject: val forKey: @"Extra2Regex"];
 	  RELEASE(val);
 	}
+
     }
   ASSIGN(rules, r);
   return YES;
@@ -377,34 +396,40 @@ replaceFields(NSDictionary *fields)
 
 - (void) flushSms
 {
-  NS_DURING
-    {
-      NSLog(@"Problem flushing sms: ...not currently supported");
-    }
-  NS_HANDLER
-    {
-      NSLog(@"Problem flushing sms: %@", localException);
-    }
-  NS_ENDHANDLER
+  return;
 }
 
 - (void) handleEvent: (NSString*)text
             withHost: (NSString*)hostName
            andServer: (NSString*)serverName
-           timestamp: (NSString*)timestamp
+           timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
-             isClear: (BOOL)isClear
+            severity: (int)severity
 {
   if (nil == identifier)
     {
-      isClear = NO;
+      severity = EcAlarmSeverityIndeterminate;
     }
   NS_DURING
     {
+      NSAutoreleasePool         *pool = nil;
       NSUInteger                i;
       NSString                  *type;
+      NSString                  *severityText;
       NSMutableDictionary	*m;
+      int                       duration;
+      BOOL                      isClear;
 
+      duration = (0.0 - [timestamp timeIntervalSinceNow]) / 60.0;
+      isClear = (EcAlarmSeverityCleared == severity) ? YES : NO;
+      if (EcAlarmSeverityIndeterminate == severity)
+        {
+          severityText = @"";   // Not an alarm
+        }
+      else
+        {
+          severityText = [EcAlarm stringFromSeverity: severity];
+        }
 
       if (nil != identifier)
         {
@@ -414,16 +439,56 @@ replaceFields(NSDictionary *fields)
         {
           type = @"Error";
         }
+
+      m = [NSMutableDictionary dictionaryWithCapacity: 20];
+      [m setObject: serverName forKey: @"Server"];
+      [m setObject: hostName forKey: @"Host"];
+      [m setObject: type forKey: @"Type"];
+      [m setObject: [NSString stringWithFormat: @"%d", severity]
+            forKey: @"SeverityCode"];
+      [m setObject: severityText forKey: @"SeverityText"];
+      [m setObject: [timestamp description] forKey: @"Timestamp"];
+      [m setObject: [NSString stringWithFormat: @"%d", duration]
+            forKey: @"Duration"];
+      if ([identifier length] > 0)
+        {
+          [m setObject: identifier forKey: @"Identifier"];
+        }
+      [m setObject: [NSString stringWithFormat: @"%d", duration / 60]
+            forKey: @"Hours"];
+      [m setObject: [NSString stringWithFormat: @"%02d", duration % 60]
+            forKey: @"Minutes"];
+      [m setObject: text forKey: @"Message"];
+      [m setObject: text forKey: @"Original"];
+
       for (i = 0; i < [rules count]; i++)
         {
-          NSDictionary	*d = [rules objectAtIndex: i];
+          NSDictionary	*d;
           NSString	*match = nil;
           Regex		*e;
           NSString	*s;
           id		o;
 
+          RELEASE(pool);
+          pool = [NSAutoreleasePool new];
+          d = [rules objectAtIndex: i];
           s = [d objectForKey: @"Type"];
           if (s != nil && [s isEqualToString: type] == NO)
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"SeverityCode"];
+          if (s != nil && [s intValue] != severity)
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"DurationAbove"];
+          if (s != nil && duration <= [s intValue])
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"DurationBelow"];
+          if (s != nil && duration >= [s intValue])
             {
               continue;		// Not a match.
             }
@@ -437,13 +502,16 @@ replaceFields(NSDictionary *fields)
             {
               continue;		// Not a match.
             }
+          e = [d objectForKey: @"SeverityTextRegex"];
+          if (e != nil && [e match: severityText] == nil)
+            {
+              continue;		// Not a match.
+            }
           e = [d objectForKey: @"PatternRegex"];
           if (e != nil && (match = [e match: text]) == nil)
             {
               continue;		// Not a match.
             }
-
-          m = [NSMutableDictionary new];
 
           /*
            * If the Extra1 or Extra2 patterns are matched,
@@ -464,27 +532,24 @@ replaceFields(NSDictionary *fields)
               [m setObject: match forKey: @"Extra2"];
             }
 
-          /* We set the Replacement later, because if it is not
-           * set, we want to set a different default for Sms/Email
-           * and database: for Sms/Email logs we want to include
-           * Server, Host, Timestamp, Type and Message (possibly
-           * trying to use as little spaces as possible for Sms,
-           * while trying to display comfortably for Email), while
-           * for database logs we only want to include the
-           * Message.
-           */
-
-          [m setObject: serverName forKey: @"Server"];
-          [m setObject: hostName forKey: @"Host"];
-          [m setObject: type forKey: @"Type"];
-          [m setObject: timestamp forKey: @"Timestamp"];
-          [m setObject: text forKey: @"Message"];
+          [m removeObjectForKey: @"Match"];
           if (match != nil)
             {
               [m setObject: match forKey: @"Match"];
             }
 
-          // NSLog(@"Match produced %@", s);
+          s = [d objectForKey: @"Rewrite"];
+          if (nil != s)
+            {
+              [m setObject: s forKey: @"Replacement"];
+              s = replaceFields(m);
+              [m setObject: s forKey: @"Message"];
+            }
+
+          /* Remove any old Replacement setting ... will set up specifically
+           * for the output alert type later.
+           */
+          [m removeObjectForKey: @"Replacement"];
 
           NS_DURING
             {
@@ -502,10 +567,15 @@ replaceFields(NSDictionary *fields)
                 }
               if (o != nil)
                 {
-                  NSString *s = [d objectForKey: @"Replacement"];
-                  if (s == nil)
+                  NSString *s = [d objectForKey: @"LogReplacement"];
+
+                  if (nil == s)
                     {
-                      s = @"{Message}";
+                      s = [d objectForKey: @"Replacement"];
+                      if (nil == s)
+                        {
+                          s = @"{Message}";
+                        }
                     }
                   [m setObject: s forKey: @"Replacement"];
                   [self log: m identifier: identifier isClear: isClear to: o];
@@ -541,11 +611,16 @@ replaceFields(NSDictionary *fields)
                       [m setObject: s forKey: @"Subject"];
                     }
 
-                  s = [d objectForKey: @"Replacement"];
-                  if (s == nil)
+                  s = [d objectForKey: @"EmailReplacement"];
+                  if (nil == s)
                     {
-                      /* Full details.  */
-                      s = @"{Server}({Host}): {Timestamp} {Type} - {Message}";
+                      s = [d objectForKey: @"Replacement"];
+                      if (nil == s)
+                        {
+                          /* Full details.  */
+                          s = @"{Server}({Host}): {Timestamp} {Type}"
+                            @" - {Message}";
+                        }
                     }
                   [m setObject: s forKey: @"Replacement"];
                   [self mail: m identifier: identifier isClear: isClear to: o];
@@ -574,12 +649,17 @@ replaceFields(NSDictionary *fields)
                 }
               if (o != nil)
                 {
-                  NSString *s = [d objectForKey: @"Replacement"];
-                  if (s == nil)
+                  NSString *s = [d objectForKey: @"SmsReplacement"];
+
+                  if (nil == s)
                     {
-                      /* Use few spaces so that more of the
-                       * message fits into an Sms.  */
-                      s = @"{Server}({Host}):{Timestamp} {Type}-{Message}";
+                      s = [d objectForKey: @"Replacement"];
+                      if (nil == s)
+                        {
+                          /* Use few spaces so that more of the
+                           * message fits into an Sms.  */
+                          s = @"{Server}({Host}):{Timestamp} {Type}-{Message}";
+                        }
                     }
                   [m setObject: s forKey: @"Replacement"];
                   [self sms: m identifier: identifier isClear: isClear to: o];
@@ -591,8 +671,6 @@ replaceFields(NSDictionary *fields)
                 localException);
             }
           NS_ENDHANDLER
-
-          RELEASE(m);
 
           s = [d objectForKey: @"Flush"];
           if (s != nil)
@@ -617,6 +695,7 @@ replaceFields(NSDictionary *fields)
               break;	// Don't want to perform any more matches.
             }
         }
+      RELEASE(pool);
     }
   NS_HANDLER
     {
@@ -637,7 +716,7 @@ replaceFields(NSDictionary *fields)
 	{
 	  NSString		*inf = [a objectAtIndex: i];
 	  NSRange		r;
-	  NSString		*timestamp;
+	  NSCalendarDate	*timestamp;
 	  NSString		*serverName;
 	  NSString		*hostName;
 	  BOOL  		immediate;
@@ -685,7 +764,9 @@ replaceFields(NSDictionary *fields)
 	    {
 	      immediate = YES;
 	    }
-	  timestamp = [str substringToIndex: r.location];
+	  timestamp = [NSCalendarDate
+            dateWithString: [str substringToIndex: r.location]
+            calendarFormat: @"%Y-%m-%d %H:%M:%S %z"];
 
 	  str = [str substringFromIndex: NSMaxRange(r)];
 
@@ -694,7 +775,7 @@ replaceFields(NSDictionary *fields)
                   andServer: serverName
                   timestamp: timestamp
                  identifier: (YES == immediate) ? (id)@"" : (id)nil
-                    isClear: NO];
+                   severity: EcAlarmSeverityIndeterminate];
 	}
     }
   NS_HANDLER

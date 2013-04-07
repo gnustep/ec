@@ -1,3 +1,13 @@
+2013-04-07  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcControl.m:
+	* EcAlerter.h:
+	* EcAlerter.m:
+        * Alaertconfig.plist:
+        More restrucuturing plus addition of rules options for improving
+        formatting of output messages and handling alerts due to alarms.
+        Add some example alert configuration.
+
 2013-04-06  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcControl.m:

@@ -1,6 +1,68 @@
 {
-  /* An empty alert configuration.  See the EcAlerter documentation for
+  /* An example alert configuration.  See the EcAlerter documentation for
    * details on what you can configure here.
-   * An empty config will get you going.
    */
+  Debug = NO;                   /* Defaults ... do not log email alerts sent */
+
+  /* Default setup is to alert for high priority alarms but not
+   * send out reminders ... if reminders are required, set the
+   * interval to a resonable level.
+   */
+  AlertAlarmThreshold = 2;      /* Send alerts for critical and major alarms */
+  AlertReminderInterval = 0;    /* Do not send out reminder alerts */
+
+  /* The default email configuration is usual;ly correct for ht host and
+   * port but almost always wrong for the sender address ... edit it!
+   */
+  EmailFrom = "alerter.test@localhost.localdomain";
+  EmailHost = "127.0.0.1";
+  EmailPort = "25";
+
+  Rules = (
+
+    /* We start by adding rules to handle alerts about alarms, by adding
+     * some extra text to the basic alarm message.
+     */
+    {
+      SeverityText = "..*";     /* Any alert with an alarm severity */
+      DurationAbove = "59";     /* Alarm outstanding for an hour or more */
+      Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
+    },
+    {
+      SeverityText = "..*";     /* Any alert with an alarm severity */
+      DurationBelow = "60";     /* Alarm outstanding for under an hour */
+      Rewrite = "{Original}\n\nAlarm outstanding for {Minutes} minutes.";
+    },
+    {
+      SeverityCode = "5";       /* Any alert for a cleared alarm */
+      DurationAbove = "59";     /* Alarm outstanding for an hour or more */
+      Rewrite = "{Original}\n\nCleared after {Hours} hours.";
+    },
+    {
+      SeverityCode = "5";       /* Any alert for a cleared alarm */
+      DurationBelow = "60";     /* Alarm outstanding for under an hour */
+      Rewrite = "{Original}\n\nCleared after {Minutes} minutes.";
+    },
+    {
+      SeverityText = "..*";     /* Any alert with an alarm severity */
+      Email = (
+        "myaccount@localhost.localdomain"
+      );
+      Stop = YES;               /* Don't go on to any general alerts */
+    },
+
+    {
+      /* Fallback rule ... there are no 'matching' fields in this
+       * rule, so it matches any message which has not already been
+       * matched by a rule containing 'Stop=YES'
+       * All previously unmatched messages get emailed.
+       */
+      Email = (
+        "myaccount@localhost.localdomain"
+      );
+      /* Log all alerts.
+       */
+      Log = ("file:alertlog");
+    }
+  );
 }

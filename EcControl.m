@@ -54,8 +54,8 @@ static NSMutableDictionary      *lastAlerted = nil;
 
 static NSTimeInterval	pingDelay = 240.0;
 
-static int      aCrit = 0;
-static int      aMaj = 0;
+static int      alertAlarmThreshold = EcAlarmSeverityMajor;
+static int      reminderInterval = 0;
 
 static int	comp_len = 0;
 
@@ -357,13 +357,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		type: (EcLogType)t
 		  to: (NSString*)to
 		from: (NSString*)from;
-- (void) mailAlarm: (EcAlarm*)alarm clear: (BOOL)clear;
 - (NSData*) registerCommand: (id<Command>)c
 		       name: (NSString*)n;
 - (NSString*) registerConsole: (id<Console>)c
 		         name: (NSString*)n
 			 pass: (NSString*)p;
 - (void) reply: (NSString*) msg to: (NSString*)n from: (NSString*)c;
+- (void) reportAlarm: (EcAlarm*)alarm severity: (EcAlarmSeverity)severity;
 - (void) reportAlarms;
 - (void) servers: (NSData*)d
 	      on: (id<Command>)s;
@@ -396,8 +396,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           EcAlarm       *old = [a objectAtIndex: index];
          
           severity = [old perceivedSeverity];
-          if (EcAlarmSeverityCritical == severity
-            || EcAlarmSeverityMajor == severity)
+          if (severity <= alertAlarmThreshold)
             {
               NSString  *key;
 
@@ -406,7 +405,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
               if (nil != [lastAlerted objectForKey: key])
                 {
                   [lastAlerted removeObjectForKey: key];
-                  [self mailAlarm: old clear: YES];
+                  [self reportAlarm: old severity: EcAlarmSeverityCleared];
                 }
             }
         }
@@ -1737,137 +1736,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   return result;
 }
 
-- (void) mailAlarm: (EcAlarm*)alarm clear: (BOOL)clear
-{
-  NSString      *additional;
-  NSString	*component;
-  NSString	*connector;
-  NSString	*identifier;
-  NSString	*instance;
-  NSString	*message;
-  NSString	*repair;
-  NSString      *severity;
-  NSString	*spacing1;
-  NSString	*spacing2;
-  int           minutes;
-
-  instance = [alarm moInstance];
-  if ([instance length] == 0)
-    {
-      instance = @"";
-      connector = @"";
-    }
-  else
-    {
-      connector = @"-";
-    }
-
-  component = [alarm moComponent];
-  if (0 == [component length])
-    {
-      component = @"";
-    }
-  else
-    {
-      component = [NSString stringWithFormat: @"(%@)", component];
-    }
-
-  additional = [alarm additionalText];
-  if ([additional length] == 0)
-    {
-      additional = @"";
-      spacing1 = @"";
-    }
-  else
-    {
-      spacing1 = @": ";
-    }
-
-  repair = [alarm proposedRepairAction];
-  if ([repair length] == 0)
-    {
-      repair = @"";
-      spacing2 = @"";
-    }
-  else
-    {
-      spacing2 = @", ";
-    }
-
-  if ([alarm perceivedSeverity] == EcAlarmSeverityCritical)
-    {
-      severity = @"Critical";
-    }
-  else
-    {
-      severity = @"Major";
-    }
-
-  minutes = (0.0 - [[alarm eventDate] timeIntervalSinceNow]) / 60.0;
-
-  identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
-
-  if (YES == clear)
-    {
-      message = [NSString stringWithFormat:
-        @"Clear %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
-        identifier, severity,
-        [alarm specificProblem], spacing1,
-        additional, spacing2, repair,
-        [alarm moProcess], connector, instance,
-        component, [alarm moHost]];
-      if (minutes > 5)
-        {
-          if (minutes >= 60)
-            {
-              message = [message stringByAppendingFormat:
-                @"\n\nCleared after %d hours", minutes / 60];
-            }
-          else
-            {
-              message = [message stringByAppendingFormat:
-                @"\n\nCleared after %d minutes.", minutes];
-            }
-        }
-      else
-        {
-          message = [message stringByAppendingString:
-            @"\n\nCleared ... issue has been resolved."];
-        }
-    }
-  else
-    {
-      message = [NSString stringWithFormat:
-        @"Alarm %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
-        identifier, severity,
-        [alarm specificProblem], spacing1,
-        additional, spacing2, repair,
-        [alarm moProcess], connector, instance,
-        component, [alarm moHost]];
-
-      if (minutes > 5)
-        {
-          if (minutes >= 60)
-            {
-              message = [message stringByAppendingFormat:
-                @"\n\nStill awaiting resolution after %d hours!", minutes / 60];
-            }
-          else
-            {
-              message = [message stringByAppendingFormat:
-                @"\n\nStill awaiting resolution after %d minutes.", minutes];
-            }
-        }
-    }
-
-  [alerter handleEvent: message
-              withHost: [alarm moHost]
-             andServer: [alarm moProcess]
-             timestamp: [[alarm eventDate] description]
-            identifier: identifier
-               isClear: clear];
-}
-
 - (NSData*) registerCommand: (id<Command>)c
 		       name: (NSString*)n
 {
@@ -2096,6 +1964,95 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [self information: msg type: LT_AUDIT to: n from: c];
 }
 
+- (void) reportAlarm: (EcAlarm*)alarm severity: (EcAlarmSeverity)severity
+{
+  NSString      *additional;
+  NSString	*component;
+  NSString	*connector;
+  NSString	*identifier;
+  NSString	*instance;
+  NSString	*message;
+  NSString	*repair;
+  NSString	*spacing1;
+  NSString	*spacing2;
+  int           minutes;
+
+  instance = [alarm moInstance];
+  if ([instance length] == 0)
+    {
+      instance = @"";
+      connector = @"";
+    }
+  else
+    {
+      connector = @"-";
+    }
+
+  component = [alarm moComponent];
+  if (0 == [component length])
+    {
+      component = @"";
+    }
+  else
+    {
+      component = [NSString stringWithFormat: @"(%@)", component];
+    }
+
+  additional = [alarm additionalText];
+  if ([additional length] == 0)
+    {
+      additional = @"";
+      spacing1 = @"";
+    }
+  else
+    {
+      spacing1 = @": ";
+    }
+
+  repair = [alarm proposedRepairAction];
+  if ([repair length] == 0)
+    {
+      repair = @"";
+      spacing2 = @"";
+    }
+  else
+    {
+      spacing2 = @", ";
+    }
+
+  minutes = (0.0 - [[alarm eventDate] timeIntervalSinceNow]) / 60.0;
+
+  identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
+
+  if (EcAlarmSeverityCleared == severity)
+    {
+      message = [NSString stringWithFormat:
+        @"Clear %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier, [EcAlarm stringFromSeverity: [alarm perceivedSeverity]],
+        [alarm specificProblem], spacing1,
+        additional, spacing2, repair,
+        [alarm moProcess], connector, instance,
+        component, [alarm moHost]];
+    }
+  else
+    {
+      message = [NSString stringWithFormat:
+        @"Alarm %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
+        identifier, [EcAlarm stringFromSeverity: [alarm perceivedSeverity]],
+        [alarm specificProblem], spacing1,
+        additional, spacing2, repair,
+        [alarm moProcess], connector, instance,
+        component, [alarm moHost]];
+    }
+
+  [alerter handleEvent: message
+              withHost: [alarm moHost]
+             andServer: [alarm moProcess]
+             timestamp: [alarm eventDate]
+            identifier: identifier
+              severity: severity];
+}
+
 - (void) reportAlarms
 {
   NSMutableDictionary           *current;
@@ -2114,24 +2071,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       int               notificationID = [alarm notificationID];
       EcAlarmSeverity	severity = [alarm perceivedSeverity];
 
-      if (notificationID > 0
-        && (EcAlarmSeverityCritical == severity
-          || EcAlarmSeverityMajor == severity))
+      if (notificationID > 0 && severity <= alertAlarmThreshold)
         {
           NSDate                *when;
           NSTimeInterval        ti;
 
-          /* Determne how long we wait between generating reminder alerts
-           * for this type of alarm.
-           */
-          if (EcAlarmSeverityCritical == severity)
-            {
-              ti = aCrit * 60.0;
-            }
-          else
-            {
-              ti = aMaj * 60.0;
-            }
+          ti = reminderInterval * 60.0;
 
           key = [NSString stringWithFormat: @"%d", notificationID];
           [current setObject: alarm forKey: key];
@@ -2139,7 +2084,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           if (nil == when
             || (ti > 0.0 && [now timeIntervalSinceDate: when] > ti))
             {
-              [self mailAlarm: alarm clear: NO];
+              [self reportAlarm: alarm severity: [alarm perceivedSeverity]];
               [lastAlerted setObject: now forKey: key];
             }
         }
@@ -2576,25 +2521,34 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       if (nil == o || NO == [o isEqual: d])
         {
 	  NSString      *alerterDef;
+          NSString      *str;
 
 	  alerterDef = [d objectForKey: @"AlerterBundle"]; 
-          aMaj = [[d objectForKey: @"AlertMajor"] intValue];
-          if (aMaj < 0)
+          str = [d objectForKey: @"AlertAlarmThreshold"];
+          if (nil != str)
             {
-              aMaj = 0;
+              alertAlarmThreshold = [str intValue];
+              if (alertAlarmThreshold < EcAlarmSeverityCritical)
+                {
+                  alertAlarmThreshold = EcAlarmSeverityCritical;
+                }
+              if (alertAlarmThreshold > EcAlarmSeverityWarning)
+                {
+                  alertAlarmThreshold = EcAlarmSeverityWarning;
+                }
             }
-          else if (aMaj % 5)
+          str = [d objectForKey: @"AlertReminderInterval"];
+          if (nil != str)
             {
-              aMaj += 5 - aMaj % 5;
-            }
-          aCrit = [[d objectForKey: @"AlertCritical"] intValue];
-          if (aCrit < aMaj)
-            {
-              aCrit = aMaj;
-            }
-          else if (aCrit % 5)
-            {
-              aCrit += 5 - aCrit % 5;
+              reminderInterval = [str intValue];
+              if (reminderInterval < 0)
+                {
+                  reminderInterval = 0;
+                }
+              else if (reminderInterval % 5)
+                {
+                  reminderInterval += 5 - reminderInterval % 5;
+                }
             }
 
           d = [NSDictionary dictionaryWithObjectsAndKeys:
