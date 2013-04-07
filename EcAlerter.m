@@ -98,11 +98,11 @@
 @end
 
 static NSMutableString *
-replaceFields(NSDictionary *fields)
+replaceFields(NSDictionary *fields, NSString *template)
 {
   NSMutableString	*m;
 
-  m = [[[fields objectForKey: @"Replacement"] mutableCopy] autorelease];
+  m = [[template mutableCopy] autorelease];
   if (nil != m)
     {
       NSEnumerator	*e;
@@ -541,8 +541,7 @@ replaceFields(NSDictionary *fields)
           s = [d objectForKey: @"Rewrite"];
           if (nil != s)
             {
-              [m setObject: s forKey: @"Replacement"];
-              s = replaceFields(m);
+              s = replaceFields(m, s);
               [m setObject: s forKey: @"Message"];
             }
 
@@ -816,7 +815,7 @@ replaceFields(NSDictionary *fields)
   /*
    * Perform {field-name} substitutions ...
    */
-  s = replaceFields(m);
+  s = replaceFields(m, [m objectForKey: @"Replacement"]);
   while ((d = [e nextObject]) != nil)
     {
       [[EcProc cmdLogFile: d] printf: @"%@\n", s];
@@ -837,6 +836,11 @@ replaceFields(NSDictionary *fields)
   NSString	*d;
   NSString	*text;
   NSString	*subject;
+
+  /*
+   * Perform {field-name} substitutions ...
+   */
+  text = replaceFields(m, [m objectForKey: @"Replacement"]);
 
   subject = [m objectForKey: @"Subject"];
   if (nil == subject)
@@ -859,14 +863,9 @@ replaceFields(NSDictionary *fields)
     }
   else
     {
-      AUTORELEASE(RETAIN(subject));
+      subject = replaceFields(m, subject);
       [m removeObjectForKey: @"Subject"];
     }
-
-  /*
-   * Perform {field-name} substitutions ...
-   */
-  text = replaceFields(m);
 
   /* If we need to send immediately, don't buffer the message.
    */
@@ -996,7 +995,7 @@ replaceFields(NSDictionary *fields)
    */
   t = RETAIN([m objectForKey: @"Timestamp"]);
   [m removeObjectForKey: @"Timestamp"];
-  s = replaceFields(m);
+  s = replaceFields(m, [m objectForKey: @"Replacement"]);
   if (t != nil)
     {
       [m setObject: t forKey: @"Timestamp"];

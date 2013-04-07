@@ -29,22 +29,32 @@
       Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
     },
     {
-      SeverityText = "..*";     /* Any alert with an alarm severity */
+      SeverityText = "..*";
       DurationBelow = "60";     /* Alarm outstanding for under an hour */
       Rewrite = "{Original}\n\nAlarm outstanding for {Minutes} minutes.";
     },
+    {
+      SeverityText = "..*";
+      Subject = "Alarm {Identifier}";
+      Email = (
+        "myaccount@localhost.localdomain"
+      );
+      Stop = YES;               /* Don't go on to any general alerts */
+    },
+
     {
       SeverityCode = "5";       /* Any alert for a cleared alarm */
       DurationAbove = "59";     /* Alarm outstanding for an hour or more */
       Rewrite = "{Original}\n\nCleared after {Hours} hours.";
     },
     {
-      SeverityCode = "5";       /* Any alert for a cleared alarm */
+      SeverityCode = "5";
       DurationBelow = "60";     /* Alarm outstanding for under an hour */
       Rewrite = "{Original}\n\nCleared after {Minutes} minutes.";
     },
     {
-      SeverityText = "..*";     /* Any alert with an alarm severity */
+      SeverityText = "5";
+      Subject = "Clear {Identifier}";
       Email = (
         "myaccount@localhost.localdomain"
       );

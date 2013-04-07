@@ -200,10 +200,12 @@
  * </p>
  * <p>The <em>Email</em> array lists email addresses to which email alerts are
  * to be sent.<br />
- * An optional 'Subject' field may be present in the rule ... this is used
- * to specify that the is to be tagged with the given subject line.  This
- * <em>defeats</em> batching of messages in that only messages with the
- * same subject may be batched in the same email.
+ * An optional <em>Subject</em> field may be present in the rule ...
+ * this is used to specify that the is to be tagged with the given
+ * subject line.  This <em>defeats</em> batching of messages in that
+ * only messages with the same subject may be batched in the same email.<br />
+ * NB. The value of the <em>Subject</em> field is used as a template
+ * in the same way as the <em>Replacement</em> fields.
  * </p>
  *
  * <p>Configuration of the alerter is done by the 'Alerter' key in the user
