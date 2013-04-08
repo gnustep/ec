@@ -1004,7 +1004,7 @@ replaceFields(NSDictionary *fields, NSString *template)
 
               if (r.length > 0)
                 {
-#if 1
+#if 0
                   int   version;
 
                   /* Reference all earlier messages in thread.
