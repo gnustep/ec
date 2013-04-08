@@ -1305,7 +1305,7 @@ static NSString	*noFiles = @"No log files to archive";
   return cmdSignalled;
 }
 
-- (NSDate*) cmdStarted
+- (NSDate*) ecStarted
 {
   return started;
 }
@@ -2788,7 +2788,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       else
 	{
 	  [self cmdPrintf: @"\n%@ on %@ running since %@\n\n",
-	    cmdLogName(), ecHostName(), [self cmdStarted]];
+	    cmdLogName(), ecHostName(), [self ecStarted]];
 
 	  if (NO == [cmdDefs boolForKey: @"Memory"])
 	    {
@@ -2814,7 +2814,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   else
     {
       [self cmdPrintf: @"\n%@ on %@ running since %@\n",
-	cmdLogName(), ecHostName(), [self cmdStarted]];
+	cmdLogName(), ecHostName(), [self ecStarted]];
       if ([self cmdLastIP] != nil)
 	{
 	  [self cmdPrintf: @"Last IP at %@\n", [self cmdLastIP]];
@@ -3004,6 +3004,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NSInteger		i;
 
       EcProc = self;
+
+      started = RETAIN([dateClass date]);
 
       pinfo = [NSProcessInfo processInfo];
       mgr = [NSFileManager defaultManager];
@@ -3207,8 +3209,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 		}
 	    }
 	}
-
-      started = RETAIN([dateClass date]);
 
       /* See if we have a name specified for this process.
        */

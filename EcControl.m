@@ -426,7 +426,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 - (NSString*) description
 {
-  return [NSString stringWithFormat: @"Control server\n%@\n%@", alerter, sink];
+  return [NSString stringWithFormat: @"%@ running since %@\n%@\n%@",
+    [super description], [self ecStarted], alerter, sink];
 }
 
 - (oneway void) domanage: (NSString*)name

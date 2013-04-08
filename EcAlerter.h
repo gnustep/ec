@@ -220,6 +220,13 @@
  * NB. The value of the <em>Subject</em> field is used as a template
  * in the same way as the <em>Replacement</em> fields.
  * </p>
+ * <p>The <em>Threaded</em> is just like the Email array except that
+ * it is only used for alarm messages, and the messages sent to the
+ * addresses in this array form a chain of linke messages referring
+ * back to each other rather than all being versions of the same
+ * message.  This may give a better effect for people using mail
+ * clients which don't support the message-ID header well.
+ * </p>
  *
  * <p>Configuration of the alerter is done by the 'Alerter' key in the user
  * defaults system.  The value for this key must be a dictionary configuring
@@ -293,6 +300,7 @@
   GSMimeSMTPClient	*smtp;  /** Client connection to MTA */
   BOOL                  debug;  /** Debug enabled in config */
   BOOL                  supersede;  /** If a clear should replace original */
+  BOOL                  eThreaded;  /** alarm reminder emails threaded */
 }
 
 /** Called when user defaults are updated, this fetches the dictionary

@@ -344,9 +344,9 @@ replaceFields(NSDictionary *fields, NSString *template)
       GSMimeDocument	*doc;
 
       doc = AUTORELEASE([GSMimeDocument new]);
-      [doc setHeader: @"subject" value: subject parameters: nil];
-      [doc setHeader: @"to" value: address parameters: nil];
-      [doc setHeader: @"from" value: eFrom parameters: nil];
+      [doc setHeader: @"Subject" value: subject parameters: nil];
+      [doc setHeader: @"To" value: address parameters: nil];
+      [doc setHeader: @"From" value: eFrom parameters: nil];
       [doc setContent: text type: @"text/plain" name: nil];
       [[self _smtp] send: doc];
     }
@@ -662,6 +662,80 @@ replaceFields(NSDictionary *fields, NSString *template)
 
           NS_DURING
             {
+              o = [d objectForKey: @"Threaded"];
+              if ([o isKindOfClass: [NSString class]] == YES)
+                {
+                  if ([o hasPrefix: @"("])
+                    {
+                      o = [(NSString*)o propertyList];
+                    }
+                  else
+                    {
+                      o = [NSArray arrayWithObject: o];
+                    }
+                }
+              if (o != nil)
+                {
+                  NSString	*s = [d objectForKey: @"Subject"];
+
+                  if (reminder > 0)
+                    {
+                      NSString      *emailIdentifier;
+                      NSString      *emailInReplyTo;
+
+                      if (1 == reminder)
+                        {
+                          emailInReplyTo = identifier;
+                          emailIdentifier
+                            = [identifier stringByAppendingString: @"_1"];
+                        }
+                      else
+                        {
+                          emailInReplyTo
+                            = [NSString stringWithFormat: @"%@_%d",
+                            identifier, reminder - 1];
+                          emailIdentifier
+                            = [NSString stringWithFormat: @"%@_%d",
+                            identifier, reminder];
+                        }
+
+                      [m setObject: emailIdentifier
+                            forKey: @"EmailIdentifier"];
+                      [m setObject: emailInReplyTo
+                            forKey: @"EmailInReplyTo"];
+                    }
+
+                  if (s != nil)
+                    {
+                      [m setObject: s forKey: @"Subject"];
+                    }
+
+                  s = [d objectForKey: @"EmailReplacement"];
+                  if (nil == s)
+                    {
+                      s = [d objectForKey: @"Replacement"];
+                      if (nil == s)
+                        {
+                          /* Full details.  */
+                          s = @"{Server}({Host}): {Timestamp} {Type}"
+                            @" - {Message}";
+                        }
+                    }
+                  [m setObject: s forKey: @"Replacement"];
+                  [self mail: m identifier: identifier isClear: isClear to: o];
+                }
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Exception handling Email send for rule: %@",
+                localException);
+            }
+          NS_ENDHANDLER
+          [m removeObjectForKey: @"EmailIdentifier"];
+          [m removeObjectForKey: @"EmailInReplyTo"];
+
+          NS_DURING
+            {
               o = [d objectForKey: @"Sms"];
               if ([o isKindOfClass: [NSString class]] == YES)
                 {
@@ -904,15 +978,71 @@ replaceFields(NSDictionary *fields, NSString *template)
 
       [self _smtp];
       doc = AUTORELEASE([GSMimeDocument new]);
-      [doc setHeader: @"subject" value: subject parameters: nil];
+      [doc setHeader: @"Subject" value: subject parameters: nil];
       [doc setContent: text type: @"text/plain" name: nil];
-      [doc setHeader: @"from" value: eFrom parameters: nil];
+      [doc setHeader: @"From" value: eFrom parameters: nil];
 
       if ([identifier length] > 0)
         {
           NSString      *mID;
 
-          mID = [NSString stringWithFormat: @"<alrm%@@%@>", identifier, eBase];
+          /* This may reference an earlier email (for threaded display)
+           */
+          mID = [m objectForKey: @"EmailInReplyTo"];
+          if (nil != mID)
+            {
+              mID = [NSString stringWithFormat: @"<alrm%@@%@>", mID, eBase];
+              [doc setHeader: @"In-Reply-To" value: mID parameters: nil];
+            }
+
+          /* We may have an identifier set in the dictionary to use
+           */
+          mID = [m objectForKey: @"EmailIdentifier"];
+          if (nil != mID)
+            {
+              NSRange   r = [mID rangeOfString: @"_"];
+
+              if (r.length > 0)
+                {
+#if 1
+                  int   version;
+
+                  /* Reference all earlier messages in thread.
+                   */
+                  version = [[mID substringFromIndex: NSMaxRange(r)] intValue];
+                  if (version > 1)
+                    {
+                      NSMutableString   *ms = [NSMutableString string];
+                      int               index;
+
+                      for (index = 1; index < version; index++)
+                        {
+                          if (index > 1)
+                            {
+                              [ms appendString: @" "];
+                            }
+                          [ms appendFormat: @"<alrm%@_%d@%@>",
+                            mID, index, eBase];
+                        }
+                      [doc setHeader: @"References" value: ms parameters: nil];
+                    }
+#else
+                  NSString  *ref;
+
+                  /* Reference the original message at start of thread.
+                   */
+                  ref = [NSString stringWithFormat: @"<alrm%@@%@>",
+                    [mID substringToIndex: r.location], eBase];
+                  [doc setHeader: @"References" value: ref parameters: nil];
+#endif
+                }
+              mID = [NSString stringWithFormat: @"<alrm%@@%@>", mID, eBase];
+            }
+          else
+            {
+              mID = [NSString stringWithFormat: @"<alrm%@@%@>",
+                identifier, eBase];
+            }
 
           if (YES == isClear)
             {
@@ -933,7 +1063,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                   [doc setHeader: @"Message-ID" value: mID parameters: nil];
                 }
             }
-          else if ([identifier length] > 0)
+          else
             {
               [doc setHeader: @"Message-ID" value: mID parameters: nil];
             }
@@ -946,7 +1076,7 @@ replaceFields(NSDictionary *fields, NSString *template)
               GSMimeDocument    *msg;
 
               msg = AUTORELEASE([doc copy]);
-              [msg setHeader: @"to" value: d parameters: nil];
+              [msg setHeader: @"To" value: d parameters: nil];
               [smtp send: msg];
             }
           NS_HANDLER

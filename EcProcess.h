@@ -358,6 +358,11 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) ecDoLock;
 
+/** Return the timestamp at which this process started up (when the
+ * receiver was initialised).
+ */
+- (NSDate*) ecStarted;
+
 /** Release a lock on the shared EcProcess after thread-safe updates to
  * process-wide variables.
  */
