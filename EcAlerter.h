@@ -76,6 +76,16 @@
  *   whose duration in minutes is less than the supplied integer value.
  *   If this is not specified, messages of any duration may match.
  *   </desc>
+ *   <term>ReminderAbove</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match any message
+ *   for an alarm which has triggered more than the specified number of
+ *   alerts. 
+ *   </desc>
+ *   <term>ReminderBelow</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match any message
+ *   for an alarm which has triggered more than the specified number of
+ *   alerts.
+ *   </desc>
  *   <term>SeverityCode</term>
  *   <desc>For [EcAlarm] messages, this may be used to match an integer alarm
  *   severity code (one of the EcAlarmSeverity enumerated type values).
@@ -177,6 +187,9 @@
  *   <desc>The number of hours for which an alarm has been active.</desc>
  *   <term>Minutes</term>
  *   <desc>The number of minutes in the hour for.</desc>
+ *   <term>Reminder</term>
+ *   <desc>The count of alerts previously sent for the alarm represented
+ *   by this message (not present if this is not an alarm).</desc>
  * </deflist>
  * <p>The <em>Log</em> array specifies a list of log destinations which are
  * normally treated as filenames (stored in the standard log directory).
@@ -313,6 +326,9 @@
  * indicated in the final argument.  The alarm may be may 'cleared' by a
  * later event with the same identfier and with the severity set to
  * EcAlarmSeverityCleared.<br />
+ * The reminder field counts the number of copies of an alarm previously
+ * sent to the alerting system, and should be set to -1 if the alert is
+ * not an alarm.<br />
  * The use of an empty string as an identifier is permitted for events which
  * should not be buffered, but which will never be matched by a clear.
  * </p>
@@ -331,7 +347,8 @@
            andServer: (NSString*)serverName
            timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
-            severity: (int)severity;
+            severity: (int)severity
+            reminder: (int)reminder;
 
 /** <p>This method handles error/alert messages.  It is able to handle
  * multiple (newline separated messages.

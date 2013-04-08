@@ -50,7 +50,7 @@
 
 static EcAlarmSinkSNMP	        *sink = nil;
 
-static NSMutableDictionary      *lastAlerted = nil;
+static NSMutableDictionary      *lastAlertInfo = nil;
 
 static NSTimeInterval	pingDelay = 240.0;
 
@@ -363,7 +363,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		         name: (NSString*)n
 			 pass: (NSString*)p;
 - (void) reply: (NSString*) msg to: (NSString*)n from: (NSString*)c;
-- (void) reportAlarm: (EcAlarm*)alarm severity: (EcAlarmSeverity)severity;
+- (void) reportAlarm: (EcAlarm*)alarm
+            severity: (EcAlarmSeverity)severity
+            reminder: (int)reminder;
 - (void) reportAlarms;
 - (void) servers: (NSData*)d
 	      on: (id<Command>)s;
@@ -398,14 +400,20 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           severity = [old perceivedSeverity];
           if (severity <= alertAlarmThreshold)
             {
-              NSString  *key;
+              NSDictionary      *info;
+              NSString          *key;
 
               key = [NSString stringWithFormat: @"%d", [old notificationID]];
 
-              if (nil != [lastAlerted objectForKey: key])
+              if (nil != (info = [lastAlertInfo objectForKey: key]))
                 {
-                  [lastAlerted removeObjectForKey: key];
-                  [self reportAlarm: old severity: EcAlarmSeverityCleared];
+                  int   reminder;
+
+                  reminder = [[info objectForKey: @"Reminder"] intValue];
+                  [lastAlertInfo removeObjectForKey: key];
+                  [self reportAlarm: old
+                           severity: EcAlarmSeverityCleared
+                           reminder: reminder];
                 }
             }
         }
@@ -1725,7 +1733,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary *alertConf = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
   NSString *host = [alertConf objectForKey: @"SNMPMasterAgentHost"];
   NSString *port = [alertConf objectForKey: @"SNMPMasterAgentPort"];
-  lastAlerted = [NSMutableDictionary new];
+  lastAlertInfo = [NSMutableDictionary new];
   sink = [[EcAlarmSinkSNMP alloc] initWithHost: host name: port];
 
   result = [super ecRun];
@@ -1964,7 +1972,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [self information: msg type: LT_AUDIT to: n from: c];
 }
 
-- (void) reportAlarm: (EcAlarm*)alarm severity: (EcAlarmSeverity)severity
+- (void) reportAlarm: (EcAlarm*)alarm
+            severity: (EcAlarmSeverity)severity
+            reminder: (int)reminder
 {
   NSString      *additional;
   NSString	*component;
@@ -2050,7 +2060,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
              andServer: [alarm moProcess]
              timestamp: [alarm eventDate]
             identifier: identifier
-              severity: severity];
+              severity: severity
+              reminder: reminder];
 }
 
 - (void) reportAlarms
@@ -2073,32 +2084,50 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       if (notificationID > 0 && severity <= alertAlarmThreshold)
         {
+          NSDictionary          *info;
           NSDate                *when;
+          int                   reminder;
           NSTimeInterval        ti;
 
           ti = reminderInterval * 60.0;
 
           key = [NSString stringWithFormat: @"%d", notificationID];
           [current setObject: alarm forKey: key];
-          when = [lastAlerted objectForKey: key];
+          info = [lastAlertInfo objectForKey: key];
+          if (nil == info)
+            {
+              when = nil;
+              reminder = 0;
+            }
+          else
+            {
+              when = [info objectForKey: @"When"];
+              reminder = [[info objectForKey: @"Reminder"] intValue];
+            }
           if (nil == when
             || (ti > 0.0 && [now timeIntervalSinceDate: when] > ti))
             {
-              [self reportAlarm: alarm severity: [alarm perceivedSeverity]];
-              [lastAlerted setObject: now forKey: key];
+              [self reportAlarm: alarm
+                       severity: [alarm perceivedSeverity]
+                       reminder: reminder];
+              info = [NSDictionary dictionaryWithObjectsAndKeys:
+                now, @"When",
+                [NSNumber numberWithInt: reminder + 1], @"Reminder",
+                nil];
+              [lastAlertInfo setObject: info forKey: key];
             }
         }
     }
 
   /* Remove any alarms which no longer exist.
    */
-  enumerator = [[lastAlerted allKeys] objectEnumerator];
+  enumerator = [[lastAlertInfo allKeys] objectEnumerator];
   while (nil != (key = [enumerator nextObject]))
     {
       alarm = [current objectForKey: key];
       if (nil == alarm)
         {
-          [lastAlerted removeObjectForKey: key];
+          [lastAlertInfo removeObjectForKey: key];
         }
     }
 }

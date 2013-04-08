@@ -405,6 +405,7 @@ replaceFields(NSDictionary *fields, NSString *template)
            timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
             severity: (int)severity
+            reminder: (int)reminder
 {
   if (nil == identifier)
     {
@@ -448,12 +449,17 @@ replaceFields(NSDictionary *fields, NSString *template)
             forKey: @"SeverityCode"];
       [m setObject: severityText forKey: @"SeverityText"];
       [m setObject: [timestamp description] forKey: @"Timestamp"];
-      [m setObject: [NSString stringWithFormat: @"%d", duration]
-            forKey: @"Duration"];
+      if (reminder >= 0)
+        {
+          [m setObject: [NSString stringWithFormat: @"%d", reminder]
+                forKey: @"Reminder"];
+        }
       if ([identifier length] > 0)
         {
           [m setObject: identifier forKey: @"Identifier"];
         }
+      [m setObject: [NSString stringWithFormat: @"%d", duration]
+            forKey: @"Duration"];
       [m setObject: [NSString stringWithFormat: @"%d", duration / 60]
             forKey: @"Hours"];
       [m setObject: [NSString stringWithFormat: @"%02d", duration % 60]
@@ -477,21 +483,48 @@ replaceFields(NSDictionary *fields, NSString *template)
             {
               continue;		// Not a match.
             }
-          s = [d objectForKey: @"SeverityCode"];
-          if (s != nil && [s intValue] != severity)
+
+          /* This can be used to decide whether an alert is
+           * for an alarm or not.
+           */
+          e = [d objectForKey: @"SeverityTextRegex"];
+          if (e != nil && [e match: severityText] == nil)
             {
               continue;		// Not a match.
             }
-          s = [d objectForKey: @"DurationAbove"];
-          if (s != nil && duration <= [s intValue])
+
+          /* The next set are performed only for alarms,
+           * since a non-alarm can never match them.
+           */
+          if (reminder >= 0)
             {
-              continue;		// Not a match.
+              s = [d objectForKey: @"SeverityCode"];
+              if (s != nil && [s intValue] != severity)
+                {
+                  continue;		// Not a match.
+                }
+              s = [d objectForKey: @"DurationAbove"];
+              if (s != nil && duration <= [s intValue])
+                {
+                  continue;		// Not a match.
+                }
+              s = [d objectForKey: @"DurationBelow"];
+              if (s != nil && duration >= [s intValue])
+                {
+                  continue;		// Not a match.
+                }
+              s = [d objectForKey: @"ReminderAbove"];
+              if (s != nil && reminder <= [s intValue])
+                {
+                  continue;		// Not a match.
+                }
+              s = [d objectForKey: @"ReminderBelow"];
+              if (s != nil && reminder >= [s intValue])
+                {
+                  continue;		// Not a match.
+                }
             }
-          s = [d objectForKey: @"DurationBelow"];
-          if (s != nil && duration >= [s intValue])
-            {
-              continue;		// Not a match.
-            }
+
           e = [d objectForKey: @"ServerRegex"];
           if (e != nil && [e match: serverName] == nil)
             {
@@ -499,11 +532,6 @@ replaceFields(NSDictionary *fields, NSString *template)
             }
           e = [d objectForKey: @"HostRegex"];
           if (e != nil && [e match: hostName] == nil)
-            {
-              continue;		// Not a match.
-            }
-          e = [d objectForKey: @"SeverityTextRegex"];
-          if (e != nil && [e match: severityText] == nil)
             {
               continue;		// Not a match.
             }
@@ -774,7 +802,8 @@ replaceFields(NSDictionary *fields, NSString *template)
                   andServer: serverName
                   timestamp: timestamp
                  identifier: (YES == immediate) ? (id)@"" : (id)nil
-                   severity: EcAlarmSeverityIndeterminate];
+                   severity: EcAlarmSeverityIndeterminate
+                   reminder: -1];
 	}
     }
   NS_HANDLER
