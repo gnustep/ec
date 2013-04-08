@@ -20,30 +20,13 @@
 
   Rules = (
 
-    /* We start by adding rules to handle alerts about alarms, by adding
-     * some extra text to the basic alarm message.
+    /* We start by adding rules to handle alerts for cleared alarms,
+     * by adding some extra text to the basic alarm message.
+     * A clear has a sevrity code of 5 so we can match those alarms
+     * here and leave all other alarms to be matched later.
      */
     {
-      SeverityText = "..*";     /* Any alert with an alarm severity */
-      DurationAbove = "59";     /* Alarm outstanding for an hour or more */
-      Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
-    },
-    {
-      SeverityText = "..*";
-      DurationBelow = "60";     /* Alarm outstanding for under an hour */
-      Rewrite = "{Original}\n\nAlarm outstanding for {Minutes} minutes.";
-    },
-    {
-      SeverityText = "..*";
-      Subject = "Alarm {Identifier}";
-      Email = (
-        "myaccount@localhost.localdomain"
-      );
-      Stop = YES;               /* Don't go on to any general alerts */
-    },
-
-    {
-      SeverityCode = "5";       /* Any alert for a cleared alarm */
+      SeverityCode = "5";
       DurationAbove = "59";     /* Alarm outstanding for an hour or more */
       Rewrite = "{Original}\n\nCleared after {Hours} hours.";
     },
@@ -55,6 +38,29 @@
     {
       SeverityText = "5";
       Subject = "Clear {Identifier}";
+      Email = (
+        "myaccount@localhost.localdomain"
+      );
+      Stop = YES;               /* Don't go on to any general alerts */
+    },
+
+    /* Now the remaining uncleared alarms ... a pattern matching any
+     * non-empty SeverityText will match all alarms (including clears,
+     * but we have already dealt with those).
+     */
+    {
+      SeverityText = "..*";
+      DurationAbove = "59";     /* Alarm outstanding for an hour or more */
+      Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
+    },
+    {
+      SeverityText = "..*";
+      DurationBelow = "60";     /* Alarm outstanding for under an hour */
+      Rewrite = "{Original}\n\nAlarm outstanding for {Minutes} minutes.";
+    },
+    {
+      SeverityText = "..*";
+      Subject = "Alarm {Identifier}";
       Email = (
         "myaccount@localhost.localdomain"
       );
