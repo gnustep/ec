@@ -484,11 +484,16 @@ replaceFields(NSDictionary *fields, NSString *template)
               continue;		// Not a match.
             }
 
-          /* This can be used to decide whether an alert is
+          /* These two can be used to decide whether an alert is
            * for an alarm or not.
            */
           e = [d objectForKey: @"SeverityTextRegex"];
           if (e != nil && [e match: severityText] == nil)
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"SeverityCode"];
+          if (s != nil && [s intValue] != severity)
             {
               continue;		// Not a match.
             }
@@ -498,11 +503,6 @@ replaceFields(NSDictionary *fields, NSString *template)
            */
           if (reminder >= 0)
             {
-              s = [d objectForKey: @"SeverityCode"];
-              if (s != nil && [s intValue] != severity)
-                {
-                  continue;		// Not a match.
-                }
               s = [d objectForKey: @"DurationAbove"];
               if (s != nil && duration <= [s intValue])
                 {
