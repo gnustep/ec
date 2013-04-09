@@ -478,6 +478,13 @@ replaceFields(NSDictionary *fields, NSString *template)
           RELEASE(pool);
           pool = [NSAutoreleasePool new];
           d = [rules objectAtIndex: i];
+
+          s = [d objectForKey: @"Tagged"];
+          if (s != nil && NO == [s isEqual: [m objectForKey: @"Tag"]])
+            {
+              continue;         // Not a match.
+            }
+
           s = [d objectForKey: @"Type"];
           if (s != nil && [s isEqualToString: type] == NO)
             {
@@ -573,10 +580,15 @@ replaceFields(NSDictionary *fields, NSString *template)
               [m setObject: s forKey: @"Message"];
             }
 
-          /* Remove any old Replacement setting ... will set up specifically
-           * for the output alert type later.
+          /* Set the tag for this event if necessary ... done *after*
+           * all matching, but before sending out the alerts.
            */
-          [m removeObjectForKey: @"Replacement"];
+          if (nil != [d objectForKey: @"Tag"])
+            {
+              NSString  *s = replaceFields(m, [d objectForKey: @"Tag"]);
+
+              [m setObject: s forKey: @"Tag"];
+            }
 
           NS_DURING
             {
@@ -614,6 +626,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                 localException);
             }
           NS_ENDHANDLER
+          [m removeObjectForKey: @"Replacement"];
 
           NS_DURING
             {
@@ -659,6 +672,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                 localException);
             }
           NS_ENDHANDLER
+          [m removeObjectForKey: @"Replacement"];
 
           NS_DURING
             {
@@ -731,6 +745,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                 localException);
             }
           NS_ENDHANDLER
+          [m removeObjectForKey: @"Replacement"];
           [m removeObjectForKey: @"EmailIdentifier"];
           [m removeObjectForKey: @"EmailInReplyTo"];
 
@@ -772,6 +787,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                 localException);
             }
           NS_ENDHANDLER
+          [m removeObjectForKey: @"Replacement"];
 
           s = [d objectForKey: @"Flush"];
           if (s != nil)

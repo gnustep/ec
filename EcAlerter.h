@@ -116,6 +116,17 @@
  *   them to a nice readable version, and also match a default rule to
  *   log full details to the technical team.</em>
  *   </desc>
+ *   <term>Tag</term>
+ *   <desc>Specifies a tag to be associated with this event during execution
+ *   of any subsequent rules (until/unless the event is re-tagged).<br />
+ *   The tag actually associated with the event is obtained by treating
+ *   the tag value as a template and substituting in any values (as for
+ *   the Replace and Rewrite fields).
+ *   </desc>
+ *   <term>Tagged</term>
+ *   <desc>The message is matched if (and only if) it has been tagged
+ *   with a value exactly equal to the value of this field.
+ *   </desc>
  *   <term>Flush</term>
  *   <desc>A boolean (YES or NO) saying whether stored messages due to
  *   be sent out later should be sent out immediately after processing
