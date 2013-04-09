@@ -461,6 +461,8 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
 
 /** <init/>
  * Initialises the receiver as an alarm for a particular event.<br />
+ * The managedObject argument may be nil if the alarm should use the
+ * default managed object value for the current process.<br />
  * The eventDate argument may be nil if the alarm should use the current
  * timestamp.<br />
  * The managedObject, eventType, probableCause, and specificProblem

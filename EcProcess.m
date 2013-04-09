@@ -1310,14 +1310,61 @@ static NSString	*noFiles = @"No log files to archive";
   return started;
 }
 
+- (oneway void) alarm: (in bycopy EcAlarm*)event
+{
+  [alarmDestination alarm: event];
+}
+
+- (EcAlarm*) alarmConfigurationFor: (NSString*)managedObject
+                   specificProblem: (NSString*)specificProblem
+                    additionalText: (NSString*)additionalText
+                          critical: (BOOL)isCritical
+{
+  EcAlarmSeverity       severity;
+  NSString              *action;
+  EcAlarm               *a;
+
+  if (YES == isCritical)
+    {
+      severity = EcAlarmSeverityCritical;
+    }
+  else
+    {
+      severity = EcAlarmSeverityMajor;
+    }
+  action = @"Check/correct configuration";      // FIXME ... localize
+  a = [EcAlarm alarmForManagedObject: managedObject
+                                  at: nil
+                       withEventType: EcAlarmEventTypeProcessingError
+                       probableCause: EcAlarmConfigurationOrCustomizationError 
+                     specificProblem: specificProblem
+                   perceivedSeverity: severity
+                proposedRepairAction: action
+                      additionalText: additionalText];
+  [self alarm: a];
+  return a;
+}
+
 - (NSArray*) alarms
 {
   return [alarmDestination alarms];
 }
 
-- (oneway void) alarm: (in bycopy EcAlarm*)event
+- (void) clearConfigurationFor: (NSString*)managedObject
+               specificProblem: (NSString*)specificProblem
+                additionalText: (NSString*)additionalText
 {
-  [alarmDestination alarm: event];
+  EcAlarm       *a;
+
+  a = [EcAlarm alarmForManagedObject: managedObject
+                                  at: nil
+                       withEventType: EcAlarmEventTypeProcessingError
+                       probableCause: EcAlarmConfigurationOrCustomizationError 
+                     specificProblem: specificProblem
+                   perceivedSeverity: EcAlarmSeverityCleared
+                proposedRepairAction: nil
+                      additionalText: additionalText];
+  [self alarm: a];
 }
 
 - (oneway void) domanage: (in bycopy NSString*)managedObject

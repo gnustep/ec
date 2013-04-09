@@ -345,9 +345,34 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 @interface EcProcess : NSObject <CmdClient,EcAlarmDestination>
 
+/** Convenience method to produce a generic configuration alarm and send
+ * it via the -alarm: method.<br />
+ * The managed object may be nil (in which case it's the current process).<br />
+ * The implied event type is EcAlarmEventTypeProcessingError.<br />
+ * The implied probable cause is EcAlarmConfigurationOrCustomizationError.<br />
+ * The implied severity is EcAlarmSeverityMajor unless isCritical is YES.<br />
+ * The implied trend is EcAlarmTrendNone.<br />
+ * The implied proposed repair action is to check/correct the config.<br />
+ * The specific problem and additional text should be used to suggest
+ * what is wrong with the config and where the config error should be
+ * found/corrected.
+ */
+- (EcAlarm*) alarmConfigurationFor: (NSString*)managedObject
+                   specificProblem: (NSString*)specificProblem
+                    additionalText: (NSString*)additionalText
+                          critical: (BOOL)isCritical;
+
 /** Returns the array of current alarms.
  */
 - (NSArray*) alarms;
+
+/** Convenience method to clear an alarm as produced by the
+ * -alarmConfigErrorFor:specificProblem:perceivedSeverity:additionalText:
+ * method.
+ */
+- (void) clearConfigurationFor: (NSString*)managedObject
+               specificProblem: (NSString*)specificProblem
+                additionalText: (NSString*)additionalText;
 
 /** Return a short copyright notice ... subclasses should override.
  */
