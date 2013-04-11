@@ -98,6 +98,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary		*environment;
   NSMutableDictionary	*launches;
   NSMutableSet		*launching;
+  NSMutableSet		*alarmed;
   unsigned		pingPosition;
   NSTimer		*terminating;
   NSDate		*lastUnanswered;
@@ -1245,6 +1246,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  EcAlarm	*a;
 
 		  s = EcMakeManagedObject(host, name, nil);
+                  [alarmed addObject: name];
 		  a = [EcAlarm alarmForManagedObject: s
 		    at: nil
 		    withEventType: EcAlarmEventTypeProcessingError
@@ -1253,7 +1255,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		    perceivedSeverity: EcAlarmSeverityCritical
 		    proposedRepairAction: @"Check system status"
 		    additionalText: @"removed (lost) server"];
-		  [control alarm: a];
+		  [self alarm: a];
 		}
 	      else
 		{
@@ -1297,6 +1299,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       [timer invalidate];
     }
+  RELEASE(alarmed);
   RELEASE(launching);
   RELEASE(launches);
   DESTROY(control);
@@ -1480,6 +1483,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       clients = [[NSMutableArray alloc] initWithCapacity: 10];
       launches = [[NSMutableDictionary alloc] initWithCapacity: 10];
       launching = [[NSMutableSet alloc] initWithCapacity: 10];
+      alarmed = [[NSMutableSet alloc] initWithCapacity: 10];
 
       timer = [NSTimer scheduledTimerWithTimeInterval: 5.0
 					       target: self
@@ -1559,6 +1563,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  NSString	*prog = [taskInfo objectForKey: @"Prog"];
 	  NSDictionary	*addE = [taskInfo objectForKey: @"AddE"];
 	  NSDictionary	*setE = [taskInfo objectForKey: @"SetE"];
+          NSString      *failed = nil;
+          NSString	*m;
 
 	  /* Record time of launch start and the fact that this is launching.
 	   */
@@ -1567,16 +1573,17 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      [launching addObject: key];
 	    }
-	  else
+	  else if (nil == [alarmed member: key])
 	    {
+              NSString  *managedObject;
 	      EcAlarm	*a;
-	      NSString	*s;
 
 	      /* We are re-attempting a launch of a program which never
 	       * contacted us and registered with us ... raise an alarm.
 	       */
-	      s = EcMakeManagedObject(host, key, nil);
-	      a = [EcAlarm alarmForManagedObject: s
+              [alarmed addObject: key];
+              managedObject = EcMakeManagedObject(host, key, nil);
+	      a = [EcAlarm alarmForManagedObject: managedObject
 		at: nil
 		withEventType: EcAlarmEventTypeProcessingError
 		probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
@@ -1584,7 +1591,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		perceivedSeverity: EcAlarmSeverityCritical
 		proposedRepairAction: @"Check system status"
 		additionalText: @"failed to register after launch"];
-	      [control alarm: a];
+	      [self alarm: a];
 	    }
 
 	  if (prog != nil && [prog length] > 0)
@@ -1616,15 +1623,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 		  if ([task validatedLaunchPath] == nil)
 		    {
-		      NSString	*m;
-
-		      m = [NSString stringWithFormat:
-			cmdLogFormat(LT_ERROR,
-			@"failed to launch %@ - not executable"), prog];
-		      [self information: m
-				   from: nil
-				     to: nil
-				   type: LT_ERROR];
+                      failed = @"failed to launch (not executable)";
+                      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+                        @"failed to launch (not executable) %@"), key];
+                      [self information: m from: nil to: nil type: LT_AUDIT];
 		      prog = nil;
 		    }
 		  if (prog != nil)
@@ -1647,23 +1649,32 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	      NS_HANDLER
 		{
-		  NSString	*m;
-
-		  m = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
-		    @"failed to launch %@ - %@"), prog, localException];
-		  [self information: m from: nil to: nil type: LT_ERROR];
+                  failed = @"failed to launch";
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+                    @"failed to launch (%@) %@"), localException, key];
+                  [self information: m from: nil to: nil type: LT_AUDIT];
 		}
 	      NS_ENDHANDLER
 	      RELEASE(task);
 	    }
 	  else
 	    {
-	      NSString	*m;
-
-	      m = [NSString stringWithFormat: cmdLogFormat(LT_ERROR,
+              failed = @"bad program name to launch";
+	      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
 		@"bad program name to launch %@"), key];
-	      [self information: m from: nil to: nil type: LT_ERROR];
+	      [self information: m from: nil to: nil type: LT_AUDIT];
 	    }
+          if (nil != failed && nil == [alarmed member: key])
+            {
+              NSString      *managedObject;
+
+              [alarmed addObject: key];
+              managedObject = EcMakeManagedObject(host, key, nil);
+              [self alarmConfigurationFor: managedObject
+                specificProblem: @"Process launch"
+                additionalText: failed
+                critical: NO];
+            }
 	}
     }
 }
@@ -1911,12 +1922,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	}
       else
 	{
-	  NSString	*s;
+	  NSString	*managedObject;
 	  EcAlarm	*a;
 
 	  [obj setTransient: NO];
-	  s = EcMakeManagedObject(host, n, nil);
-	  a = [EcAlarm alarmForManagedObject: s
+          [alarmed removeObject: n];
+	  managedObject = EcMakeManagedObject(host, n, nil);
+	  a = [EcAlarm alarmForManagedObject: managedObject
 	    at: nil
 	    withEventType: EcAlarmEventTypeProcessingError
 	    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
@@ -1924,7 +1936,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    perceivedSeverity: EcAlarmSeverityCleared
 	    proposedRepairAction: nil
 	    additionalText: nil];
-	  [control alarm: a];
+	  [self alarm: a];
+          [self clearConfigurationFor: managedObject
+                      specificProblem: @"Process launch"
+                       additionalText: @"Process is now running"];
 	  [self information: m from: nil to: nil type: LT_AUDIT];
 	}
       [self update];

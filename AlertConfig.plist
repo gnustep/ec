@@ -4,12 +4,14 @@
    */
   Debug = NO;                   /* Defaults ... do not log email alerts sent */
 
-  /* Default setup is to alert for high priority alarms but not
-   * send out reminders ... if reminders are required, set the
-   * interval to a resonable level.
+  /* Default setup is to alert for high priority alarms and to
+   * send out reminders at five minute intervals.
+   * Individual rules should use the ReminderInterval option to
+   * control how often the rule handles a reminder (eg 1 in 6 will
+   * mean the rule action applies once every half hour).
    */
   AlertAlarmThreshold = 2;      /* Send alerts for critical and major alarms */
-  AlertReminderInterval = 0;    /* Do not send out reminder alerts */
+  AlertReminderInterval = 5;    /* Produce alarm reminders every 5 minutes */
 
   /* The default email configuration is usual;ly correct for ht host and
    * port but almost always wrong for the sender address ... edit it!
@@ -22,21 +24,19 @@
 
     /* We start by adding rules to handle alerts for cleared alarms,
      * by adding some extra text to the basic alarm message.
-     * A clear has a sevrity code of 5 so we can match those alarms
-     * here and leave all other alarms to be matched later.
      */
     {
-      SeverityCode = "5";
+      Type = "Clear";
       DurationAbove = "59";     /* Alarm outstanding for an hour or more */
       Rewrite = "{Original}\n\nCleared after {Hours} hours.";
     },
     {
-      SeverityCode = "5";
+      Type = "Clear";
       DurationBelow = "60";     /* Alarm outstanding for under an hour */
       Rewrite = "{Original}\n\nCleared after {Minutes} minutes.";
     },
     {
-      SeverityText = "5";
+      Type = "Clear";
       Subject = "Clear {Identifier}";
       Email = (
         "myaccount@localhost.localdomain"
@@ -44,22 +44,21 @@
       Stop = YES;               /* Don't go on to any general alerts */
     },
 
-    /* Now the remaining uncleared alarms ... a pattern matching any
-     * non-empty SeverityText will match all alarms (including clears,
-     * but we have already dealt with those).
+    /* Now the remaining uncleared alarms.
      */
     {
-      SeverityText = "..*";
+      Type = "Alarm";
       DurationAbove = "59";     /* Alarm outstanding for an hour or more */
+      ReminderInterval
       Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
     },
     {
-      SeverityText = "..*";
+      Type = "Alarm";
       DurationBelow = "60";     /* Alarm outstanding for under an hour */
       Rewrite = "{Original}\n\nAlarm outstanding for {Minutes} minutes.";
     },
     {
-      SeverityText = "..*";
+      Type = "Alarm";
       Subject = "Alarm {Identifier}";
       Email = (
         "myaccount@localhost.localdomain"
@@ -67,6 +66,12 @@
       Stop = YES;               /* Don't go on to any general alerts */
     },
 
+    {
+      /* Discard any unmatched alarm reminders.
+       */
+      ReminderInterval = 1;
+      Stop = YES;
+    },
     {
       /* Fallback rule ... there are no 'matching' fields in this
        * rule, so it matches any message which has not already been

@@ -63,8 +63,11 @@
  *   If this is not specified, messages from any server may match.
  *   </desc>
  *   <term>Type</term>
- *   <desc>The type of message ... <em>Error</em> or <em>Alert</em>.
- *   If this is not specified, messages of either type may match.
+ *   <desc>The type of message ... <em>Error</em>, <em>Alert</em>,
+ *   <em>Alarm</em> or <em>Clear</em>.<br />
+ *   If this is not specified, messages of any type may match.<br />
+ *   NB. Alarm reminders have a type of <em>Alarm</em> while alarm
+ *   clears have a type of <em>Clear</em>.
  *   </desc>
  *   <term>DurationAbove</term>
  *   <desc>For [EcAlarm] messages, this may be used to match any message
@@ -83,22 +86,31 @@
  *   </desc>
  *   <term>ReminderBelow</term>
  *   <desc>For [EcAlarm] messages, this may be used to match any message
- *   for an alarm which has triggered more than the specified number of
- *   alerts.
+ *   for an alarm which has triggered less than the specified number of
+ *   alerts. 
+ *   </desc>
+ *   <term>ReminderInterval</term>
+ *   <desc>For [EcAlarm] messages, this may be used to match every Nth
+ *   reminder (where the value N is a positive integer).<br />
+ *   Setting a value of 1 matches all reminders.<br />
+ *   Setting a value of 0 (or failing to set a positive integer value)
+ *   matches no reminders.<br />
+ *   NB. This is unlike other match conditions in that the absence of
+ *   this condition implies that the rule does NOT match any alarm
+ *   reminder.
  *   </desc>
  *   <term>SeverityCode</term>
  *   <desc>For [EcAlarm] messages, this may be used to match an integer alarm
  *   severity code (one of the EcAlarmSeverity enumerated type values).
  *   If this is not specified, messages of any severity (including alerts
- *   which are not alarms) may match.  Use zero to match non-alarm messages.
+ *   which are not alarms) may match.
  *   </desc>
  *   <term>SeverityText</term>
  *   <desc>For [EcAlarm] messages, this may be used to match a string alarm
  *   severity value. The value of this field must be an extended regular
  *   expression pattern.<br />
  *   If this is not specified, messages of any severity may match (including
- *   messages which are not alarms).  Use '^$' to match only non-alarm
- *   messages.
+ *   messages which are not alarms).
  *   </desc>
  *   <term>Pattern</term>
  *   <desc>An extended regular expression used to match the main text
@@ -181,7 +193,7 @@
  *   <desc>The text of the latest rewritten message or the original
  *   message if no rewriting has been done.</desc>
  *   <term>Match</term>
- *   <desc>The text matched by the <em>Pattern</em> if any</desc>
+ *   <desc>The text matched by the latest <em>Pattern</em> if any</desc>
  *   <term>Original</term>
  *   <desc>The text of the original message.</desc>
  *   <term>Identifier</term>
@@ -292,9 +304,7 @@
  *   <desc>An integer number of minutes between generating alerts
  *     reminding about alarms.  If this is negative or not
  *     set then it defaults to zero ... meaning that no reminders
- *     are sent.<br />
- *     Otherwise, this value is rounded (up) to a multiple of five
- *     minutes.</desc>
+ *     are sent.
  * </deflist>
  */
 @interface	EcAlerter : NSObject

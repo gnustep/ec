@@ -97,6 +97,38 @@
 }
 @end
 
+@interface      EcAlerterEvent : NSObject
+{
+  @public
+  NSMutableDictionary   *m;
+  NSString              *hostName;
+  NSString              *identifier;
+  NSString              *serverName;
+  NSString              *severityText;
+  NSString              *text;
+  NSDate                *timestamp;
+  NSString              *type;
+  int                   duration;
+  int                   reminder;
+  int                   severity;
+  BOOL                  isClear;
+}
+@end
+@implementation EcAlerterEvent
+- (void) dealloc
+{
+  RELEASE(hostName);
+  RELEASE(identifier);
+  RELEASE(m);
+  RELEASE(serverName);
+  RELEASE(severityText);
+  RELEASE(text);
+  RELEASE(timestamp);
+  RELEASE(type);
+  [super dealloc];
+}
+@end
+
 static NSMutableString *
 replaceFields(NSDictionary *fields, NSString *template)
 {
@@ -399,6 +431,373 @@ replaceFields(NSDictionary *fields, NSString *template)
   return;
 }
 
+- (void) applyRules: (NSArray*)rulesArray
+            toEvent: (EcAlerterEvent*)event
+{
+  CREATE_AUTORELEASE_POOL(pool);
+  NSUInteger    i;
+
+  for (i = 0; i < [rulesArray count]; i++)
+    {
+      NSDictionary	*d;
+      NSString	        *match = nil;
+      Regex		*e;
+      NSString	        *s;
+      id		o;
+
+      RELEASE(pool);
+      pool = [NSAutoreleasePool new];
+      d = [rulesArray objectAtIndex: i];
+
+      s = [d objectForKey: @"Tagged"];
+      if (s != nil && NO == [s isEqual: [event->m objectForKey: @"Tag"]])
+        {
+          continue;         // Not a match.
+        }
+
+      s = [d objectForKey: @"Type"];
+      if (s != nil && [s isEqualToString: event->type] == NO)
+        {
+          continue;		// Not a match.
+        }
+
+      /* The next set are performed only for alarms,
+       * since a non-alarm can never match them.
+       */
+      if (event->reminder >= 0)
+        {
+          if (event->reminder > 0 && NO == event->isClear)
+            {
+              /* This is an alarm reminder (neither the initial alarm
+               * nor the clear), so we check the ReminderInterval.
+               * In order for a match to occur, the ReminderInterval
+               * must be set and must match the number of the reminder
+               * using division modulo the reminder interval value.
+               * NB, unlike other patterns, the absence of this one
+               * implies a match failure!
+               */
+              s = [d objectForKey: @"ReminderInterval"];
+              if (nil == s || (event->reminder % [s intValue]))
+                {
+                  continue;		// Not a match.
+                }
+            }
+
+          s = [d objectForKey: @"DurationAbove"];
+          if (s != nil && event->duration <= [s intValue])
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"DurationBelow"];
+          if (s != nil && event->duration >= [s intValue])
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"ReminderAbove"];
+          if (s != nil && event->reminder <= [s intValue])
+            {
+              continue;		// Not a match.
+            }
+          s = [d objectForKey: @"ReminderBelow"];
+          if (s != nil && event->reminder >= [s intValue])
+            {
+              continue;		// Not a match.
+            }
+          e = [d objectForKey: @"SeverityTextRegex"];
+          if (e != nil && [e match: event->severityText] == nil)
+            {
+              continue;		// Not a match.
+            }
+
+          s = [d objectForKey: @"SeverityCode"];
+          if (s != nil && [s intValue] != event->severity)
+            {
+              continue;		// Not a match.
+            }
+        }
+
+      e = [d objectForKey: @"ServerRegex"];
+      if (e != nil && [e match: event->serverName] == nil)
+        {
+          continue;		// Not a match.
+        }
+      e = [d objectForKey: @"HostRegex"];
+      if (e != nil && [e match: event->hostName] == nil)
+        {
+          continue;		// Not a match.
+        }
+
+      e = [d objectForKey: @"PatternRegex"];
+      if (nil != e)
+        {
+          [event->m removeObjectForKey: @"Match"];
+          if (nil == (match = [e match: event->text]))
+            {
+              continue;		// Not a match.
+            }
+          [event->m setObject: match forKey: @"Match"];
+        }
+
+      /*
+       * If the Extra1 or Extra2 patterns are matched,
+       * The matching strings are made available for
+       * substitution into the replacement message.
+       */
+      e = [d objectForKey: @"Extra1Regex"];
+      if (nil != e)
+        {
+          [event->m removeObjectForKey: @"Extra1"];
+          if (nil == (match = [e match: event->text]))
+            {
+              [event->m setObject: match forKey: @"Extra1"];
+            }
+        }
+
+      e = [d objectForKey: @"Extra2Regex"];
+      if (nil != e)
+        {
+          [event->m removeObjectForKey: @"Extra2"];
+          if (nil != (match = [e match: event->text]))
+            {
+              [event->m setObject: match forKey: @"Extra2"];
+            }
+        }
+
+      s = [d objectForKey: @"Rewrite"];
+      if (nil != s)
+        {
+          s = replaceFields(event->m, s);
+          [event->m setObject: s forKey: @"Message"];
+        }
+
+      s = [d objectForKey: @"Subject"];
+      if (s != nil)
+        {
+          s = replaceFields(event->m, s);
+          [event->m setObject: s forKey: @"Subject"];
+        }
+
+      /* Set the tag for this event if necessary ... done *after*
+       * all matching, but before sending out the alerts.
+       */
+      if (nil != [d objectForKey: @"Tag"])
+        {
+          NSString  *s = replaceFields(event->m, [d objectForKey: @"Tag"]);
+
+          [event->m setObject: s forKey: @"Tag"];
+        }
+
+      NS_DURING
+        {
+          o = [d objectForKey: @"Log"];
+          if ([o isKindOfClass: [NSString class]] == YES)
+            {
+              if ([o hasPrefix: @"("])
+                {
+                  o = [(NSString*)o propertyList];
+                }
+              else
+                {
+                  o = [NSArray arrayWithObject: o];
+                }
+            }
+          if (o != nil)
+            {
+              NSString *s = [d objectForKey: @"LogReplacement"];
+
+              if (nil == s)
+                {
+                  s = [d objectForKey: @"Replacement"];
+                  if (nil == s)
+                    {
+                      s = @"{Message}";
+                    }
+                }
+              [event->m setObject: s forKey: @"Replacement"];
+              [self log: event->m
+             identifier: event->identifier
+                isClear: event->isClear
+                     to: o];
+            }
+        }
+      NS_HANDLER
+        {
+          NSLog(@"Exception handling database log for rule: %@",
+            localException);
+        }
+      NS_ENDHANDLER
+      [event->m removeObjectForKey: @"Replacement"];
+
+      NS_DURING
+        {
+          o = [d objectForKey: @"Email"];
+          if ([o isKindOfClass: [NSString class]] == YES)
+            {
+              if ([o hasPrefix: @"("])
+                {
+                  o = [(NSString*)o propertyList];
+                }
+              else
+                {
+                  o = [NSArray arrayWithObject: o];
+                }
+            }
+          if (o != nil)
+            {
+              NSString	*s;
+
+              s = [d objectForKey: @"EmailReplacement"];
+              if (nil == s)
+                {
+                  s = [d objectForKey: @"Replacement"];
+                  if (nil == s)
+                    {
+                      /* Full details.  */
+                      s = @"{Server}({Host}): {Timestamp} {Type}"
+                        @" - {Message}";
+                    }
+                }
+              [event->m setObject: s forKey: @"Replacement"];
+              [self mail: event->m
+              identifier: event->identifier
+                 isClear: event->isClear
+                      to: o];
+            }
+        }
+      NS_HANDLER
+        {
+          NSLog(@"Exception handling Email send for rule: %@",
+            localException);
+        }
+      NS_ENDHANDLER
+      [event->m removeObjectForKey: @"Replacement"];
+
+      NS_DURING
+        {
+          o = [d objectForKey: @"Threaded"];
+          if ([o isKindOfClass: [NSString class]] == YES)
+            {
+              if ([o hasPrefix: @"("])
+                {
+                  o = [(NSString*)o propertyList];
+                }
+              else
+                {
+                  o = [NSArray arrayWithObject: o];
+                }
+            }
+          if (o != nil)
+            {
+              NSString	*s;
+
+              if (event->reminder > 0)
+                {
+                  NSString      *s;
+
+                  /* Pass the reminder value to the email code so it
+                   * can generate In-Reply-To and References headers
+                   * for threading.
+                   */
+                  s = [NSString stringWithFormat: @"%d", event->reminder];
+                  [event->m setObject: s forKey: @"EmailThreading"];
+                }
+
+              s = [d objectForKey: @"EmailReplacement"];
+              if (nil == s)
+                {
+                  s = [d objectForKey: @"Replacement"];
+                  if (nil == s)
+                    {
+                      /* Full details.  */
+                      s = @"{Server}({Host}): {Timestamp} {Type}"
+                        @" - {Message}";
+                    }
+                }
+              [event->m setObject: s forKey: @"Replacement"];
+              [self mail: event->m
+              identifier: event->identifier
+                 isClear: event->isClear
+                      to: o];
+            }
+        }
+      NS_HANDLER
+        {
+          NSLog(@"Exception handling Email send for rule: %@",
+            localException);
+        }
+      NS_ENDHANDLER
+      [event->m removeObjectForKey: @"Replacement"];
+      [event->m removeObjectForKey: @"ReminderInterval"];
+
+      NS_DURING
+        {
+          o = [d objectForKey: @"Sms"];
+          if ([o isKindOfClass: [NSString class]] == YES)
+            {
+              if ([o hasPrefix: @"("])
+                {
+                  o = [(NSString*)o propertyList];
+                }
+              else
+                {
+                  o = [NSArray arrayWithObject: o];
+                }
+            }
+          if (o != nil)
+            {
+              NSString *s = [d objectForKey: @"SmsReplacement"];
+
+              if (nil == s)
+                {
+                  s = [d objectForKey: @"Replacement"];
+                  if (nil == s)
+                    {
+                      /* Use few spaces so that more of the
+                       * message fits into an Sms.  */
+                      s = @"{Server}({Host}):{Timestamp} {Type}-{Message}";
+                    }
+                }
+              [event->m setObject: s forKey: @"Replacement"];
+              [self sms: event->m
+             identifier: event->identifier
+                isClear: event->isClear
+                     to: o];
+            }
+        }
+      NS_HANDLER
+        {
+          NSLog(@"Exception handling Sms send for rule: %@",
+            localException);
+        }
+      NS_ENDHANDLER
+      [event->m removeObjectForKey: @"Replacement"];
+
+      s = [d objectForKey: @"Flush"];
+      if (s != nil)
+        {
+          if ([s caseInsensitiveCompare: @"Email"] == NSOrderedSame)
+            {
+              [self flushEmail];
+            }
+          else if ([s caseInsensitiveCompare: @"Sms"] == NSOrderedSame)
+            {
+              [self flushSms];
+            }
+          else if ([s boolValue] == YES)
+            {
+              [self flushSms];
+              [self flushEmail];
+            }
+        }
+
+      if ([[d objectForKey: @"Stop"] boolValue] == YES)
+        {
+          break;	// Don't want to perform any more matches.
+        }
+    }
+  RELEASE(pool);
+}
+
 - (void) handleEvent: (NSString*)text
             withHost: (NSString*)hostName
            andServer: (NSString*)serverName
@@ -413,406 +812,67 @@ replaceFields(NSDictionary *fields, NSString *template)
     }
   NS_DURING
     {
-      NSAutoreleasePool         *pool = nil;
-      NSUInteger                i;
-      NSString                  *type;
-      NSString                  *severityText;
       NSMutableDictionary	*m;
-      int                       duration;
-      BOOL                      isClear;
+      EcAlerterEvent            *event = AUTORELEASE([EcAlerterEvent new]);
+      
+      ASSIGN(event->text, text);
+      ASSIGN(event->hostName, hostName);
+      ASSIGN(event->serverName, serverName);
+      ASSIGN(event->timestamp, timestamp);
+      ASSIGN(event->identifier, identifier);
+      event->severity = severity;
+      ASSIGN(event->severityText, [EcAlarm stringFromSeverity: severity]);
+      event->isClear = (EcAlarmSeverityCleared == severity) ? YES : NO;
+      event->reminder = reminder;
+      event->duration = (0.0 - [timestamp timeIntervalSinceNow]) / 60.0;
 
-      duration = (0.0 - [timestamp timeIntervalSinceNow]) / 60.0;
-      isClear = (EcAlarmSeverityCleared == severity) ? YES : NO;
-      if (EcAlarmSeverityIndeterminate == severity)
+      if (event->reminder >= 0)
         {
-          severityText = @"";   // Not an alarm
+          if (YES == event->isClear)
+            {
+              event->type = @"Clear";
+            }
+          else
+            {
+              event->type = @"Alarm";
+            }
+        }
+      else if (nil != identifier)
+        {
+          event->type = @"Alert";
         }
       else
         {
-          severityText = [EcAlarm stringFromSeverity: severity];
+          event->type = @"Error";
         }
 
-      if (nil != identifier)
-        {
-          type = @"Alert";
-        }
-      else
-        {
-          type = @"Error";
-        }
-
-      m = [NSMutableDictionary dictionaryWithCapacity: 20];
-      [m setObject: serverName forKey: @"Server"];
-      [m setObject: hostName forKey: @"Host"];
-      [m setObject: type forKey: @"Type"];
-      [m setObject: [NSString stringWithFormat: @"%d", severity]
+      m = event->m = [[NSMutableDictionary alloc] initWithCapacity: 20];
+      [m setObject: event->serverName forKey: @"Server"];
+      [m setObject: event->hostName forKey: @"Host"];
+      [m setObject: event->type forKey: @"Type"];
+      [m setObject: [NSString stringWithFormat: @"%d", event->severity]
             forKey: @"SeverityCode"];
-      [m setObject: severityText forKey: @"SeverityText"];
-      [m setObject: [timestamp description] forKey: @"Timestamp"];
-      if (reminder >= 0)
+      [m setObject: event->severityText forKey: @"SeverityText"];
+      [m setObject: [event->timestamp description] forKey: @"Timestamp"];
+      if (event->reminder >= 0)
         {
-          [m setObject: [NSString stringWithFormat: @"%d", reminder]
+          [m setObject: [NSString stringWithFormat: @"%d", event->reminder]
                 forKey: @"Reminder"];
         }
-      if ([identifier length] > 0)
+      if ([event->identifier length] > 0)
         {
-          [m setObject: identifier forKey: @"Identifier"];
+          [m setObject: event->identifier forKey: @"Identifier"];
         }
-      [m setObject: [NSString stringWithFormat: @"%d", duration]
+      [m setObject: [NSString stringWithFormat: @"%d", event->duration]
             forKey: @"Duration"];
-      [m setObject: [NSString stringWithFormat: @"%d", duration / 60]
+      [m setObject: [NSString stringWithFormat: @"%d", event->duration / 60]
             forKey: @"Hours"];
-      [m setObject: [NSString stringWithFormat: @"%02d", duration % 60]
+      [m setObject: [NSString stringWithFormat: @"%02d", event->duration % 60]
             forKey: @"Minutes"];
-      [m setObject: text forKey: @"Message"];
-      [m setObject: text forKey: @"Original"];
+      [m setObject: event->text forKey: @"Message"];
+      [m setObject: event->text forKey: @"Original"];
 
-      for (i = 0; i < [rules count]; i++)
-        {
-          NSDictionary	*d;
-          NSString	*match = nil;
-          Regex		*e;
-          NSString	*s;
-          id		o;
-
-          RELEASE(pool);
-          pool = [NSAutoreleasePool new];
-          d = [rules objectAtIndex: i];
-
-          s = [d objectForKey: @"Tagged"];
-          if (s != nil && NO == [s isEqual: [m objectForKey: @"Tag"]])
-            {
-              continue;         // Not a match.
-            }
-
-          s = [d objectForKey: @"Type"];
-          if (s != nil && [s isEqualToString: type] == NO)
-            {
-              continue;		// Not a match.
-            }
-
-          /* These two can be used to decide whether an alert is
-           * for an alarm or not.
-           */
-          e = [d objectForKey: @"SeverityTextRegex"];
-          if (e != nil && [e match: severityText] == nil)
-            {
-              continue;		// Not a match.
-            }
-          s = [d objectForKey: @"SeverityCode"];
-          if (s != nil && [s intValue] != severity)
-            {
-              continue;		// Not a match.
-            }
-
-          /* The next set are performed only for alarms,
-           * since a non-alarm can never match them.
-           */
-          if (reminder >= 0)
-            {
-              s = [d objectForKey: @"DurationAbove"];
-              if (s != nil && duration <= [s intValue])
-                {
-                  continue;		// Not a match.
-                }
-              s = [d objectForKey: @"DurationBelow"];
-              if (s != nil && duration >= [s intValue])
-                {
-                  continue;		// Not a match.
-                }
-              s = [d objectForKey: @"ReminderAbove"];
-              if (s != nil && reminder <= [s intValue])
-                {
-                  continue;		// Not a match.
-                }
-              s = [d objectForKey: @"ReminderBelow"];
-              if (s != nil && reminder >= [s intValue])
-                {
-                  continue;		// Not a match.
-                }
-            }
-
-          e = [d objectForKey: @"ServerRegex"];
-          if (e != nil && [e match: serverName] == nil)
-            {
-              continue;		// Not a match.
-            }
-          e = [d objectForKey: @"HostRegex"];
-          if (e != nil && [e match: hostName] == nil)
-            {
-              continue;		// Not a match.
-            }
-          e = [d objectForKey: @"PatternRegex"];
-          if (e != nil && (match = [e match: text]) == nil)
-            {
-              continue;		// Not a match.
-            }
-
-          /*
-           * If the Extra1 or Extra2 patterns are matched,
-           * The matching strings are made available for
-           * substitution into the replacement message.
-           */
-          [m removeObjectForKey: @"Extra1"];
-          e = [d objectForKey: @"Extra1Regex"];
-          if (e != nil && (match = [e match: text]) != nil)
-            {
-              [m setObject: match forKey: @"Extra1"];
-            }
-
-          [m removeObjectForKey: @"Extra2"];
-          e = [d objectForKey: @"Extra2Regex"];
-          if (e != nil && (match = [e match: text]) != nil)
-            {
-              [m setObject: match forKey: @"Extra2"];
-            }
-
-          [m removeObjectForKey: @"Match"];
-          if (match != nil)
-            {
-              [m setObject: match forKey: @"Match"];
-            }
-
-          s = [d objectForKey: @"Rewrite"];
-          if (nil != s)
-            {
-              s = replaceFields(m, s);
-              [m setObject: s forKey: @"Message"];
-            }
-
-          /* Set the tag for this event if necessary ... done *after*
-           * all matching, but before sending out the alerts.
-           */
-          if (nil != [d objectForKey: @"Tag"])
-            {
-              NSString  *s = replaceFields(m, [d objectForKey: @"Tag"]);
-
-              [m setObject: s forKey: @"Tag"];
-            }
-
-          NS_DURING
-            {
-              o = [d objectForKey: @"Log"];
-              if ([o isKindOfClass: [NSString class]] == YES)
-                {
-                  if ([o hasPrefix: @"("])
-                    {
-                      o = [(NSString*)o propertyList];
-                    }
-                  else
-                    {
-                      o = [NSArray arrayWithObject: o];
-                    }
-                }
-              if (o != nil)
-                {
-                  NSString *s = [d objectForKey: @"LogReplacement"];
-
-                  if (nil == s)
-                    {
-                      s = [d objectForKey: @"Replacement"];
-                      if (nil == s)
-                        {
-                          s = @"{Message}";
-                        }
-                    }
-                  [m setObject: s forKey: @"Replacement"];
-                  [self log: m identifier: identifier isClear: isClear to: o];
-                }
-            }
-          NS_HANDLER
-            {
-              NSLog(@"Exception handling database log for rule: %@",
-                localException);
-            }
-          NS_ENDHANDLER
-          [m removeObjectForKey: @"Replacement"];
-
-          NS_DURING
-            {
-              o = [d objectForKey: @"Email"];
-              if ([o isKindOfClass: [NSString class]] == YES)
-                {
-                  if ([o hasPrefix: @"("])
-                    {
-                      o = [(NSString*)o propertyList];
-                    }
-                  else
-                    {
-                      o = [NSArray arrayWithObject: o];
-                    }
-                }
-              if (o != nil)
-                {
-                  NSString	*s = [d objectForKey: @"Subject"];
-
-                  if (s != nil)
-                    {
-                      [m setObject: s forKey: @"Subject"];
-                    }
-
-                  s = [d objectForKey: @"EmailReplacement"];
-                  if (nil == s)
-                    {
-                      s = [d objectForKey: @"Replacement"];
-                      if (nil == s)
-                        {
-                          /* Full details.  */
-                          s = @"{Server}({Host}): {Timestamp} {Type}"
-                            @" - {Message}";
-                        }
-                    }
-                  [m setObject: s forKey: @"Replacement"];
-                  [self mail: m identifier: identifier isClear: isClear to: o];
-                }
-            }
-          NS_HANDLER
-            {
-              NSLog(@"Exception handling Email send for rule: %@",
-                localException);
-            }
-          NS_ENDHANDLER
-          [m removeObjectForKey: @"Replacement"];
-
-          NS_DURING
-            {
-              o = [d objectForKey: @"Threaded"];
-              if ([o isKindOfClass: [NSString class]] == YES)
-                {
-                  if ([o hasPrefix: @"("])
-                    {
-                      o = [(NSString*)o propertyList];
-                    }
-                  else
-                    {
-                      o = [NSArray arrayWithObject: o];
-                    }
-                }
-              if (o != nil)
-                {
-                  NSString	*s = [d objectForKey: @"Subject"];
-
-                  if (reminder > 0)
-                    {
-                      NSString      *emailIdentifier;
-                      NSString      *emailInReplyTo;
-
-                      if (1 == reminder)
-                        {
-                          emailInReplyTo = identifier;
-                          emailIdentifier
-                            = [identifier stringByAppendingString: @"_1"];
-                        }
-                      else
-                        {
-                          emailInReplyTo
-                            = [NSString stringWithFormat: @"%@_%d",
-                            identifier, reminder - 1];
-                          emailIdentifier
-                            = [NSString stringWithFormat: @"%@_%d",
-                            identifier, reminder];
-                        }
-
-                      [m setObject: emailIdentifier
-                            forKey: @"EmailIdentifier"];
-                      [m setObject: emailInReplyTo
-                            forKey: @"EmailInReplyTo"];
-                    }
-
-                  if (s != nil)
-                    {
-                      [m setObject: s forKey: @"Subject"];
-                    }
-
-                  s = [d objectForKey: @"EmailReplacement"];
-                  if (nil == s)
-                    {
-                      s = [d objectForKey: @"Replacement"];
-                      if (nil == s)
-                        {
-                          /* Full details.  */
-                          s = @"{Server}({Host}): {Timestamp} {Type}"
-                            @" - {Message}";
-                        }
-                    }
-                  [m setObject: s forKey: @"Replacement"];
-                  [self mail: m identifier: identifier isClear: isClear to: o];
-                }
-            }
-          NS_HANDLER
-            {
-              NSLog(@"Exception handling Email send for rule: %@",
-                localException);
-            }
-          NS_ENDHANDLER
-          [m removeObjectForKey: @"Replacement"];
-          [m removeObjectForKey: @"EmailIdentifier"];
-          [m removeObjectForKey: @"EmailInReplyTo"];
-
-          NS_DURING
-            {
-              o = [d objectForKey: @"Sms"];
-              if ([o isKindOfClass: [NSString class]] == YES)
-                {
-                  if ([o hasPrefix: @"("])
-                    {
-                      o = [(NSString*)o propertyList];
-                    }
-                  else
-                    {
-                      o = [NSArray arrayWithObject: o];
-                    }
-                }
-              if (o != nil)
-                {
-                  NSString *s = [d objectForKey: @"SmsReplacement"];
-
-                  if (nil == s)
-                    {
-                      s = [d objectForKey: @"Replacement"];
-                      if (nil == s)
-                        {
-                          /* Use few spaces so that more of the
-                           * message fits into an Sms.  */
-                          s = @"{Server}({Host}):{Timestamp} {Type}-{Message}";
-                        }
-                    }
-                  [m setObject: s forKey: @"Replacement"];
-                  [self sms: m identifier: identifier isClear: isClear to: o];
-                }
-            }
-          NS_HANDLER
-            {
-              NSLog(@"Exception handling Sms send for rule: %@",
-                localException);
-            }
-          NS_ENDHANDLER
-          [m removeObjectForKey: @"Replacement"];
-
-          s = [d objectForKey: @"Flush"];
-          if (s != nil)
-            {
-              if ([s caseInsensitiveCompare: @"Email"] == NSOrderedSame)
-                {
-                  [self flushEmail];
-                }
-              else if ([s caseInsensitiveCompare: @"Sms"] == NSOrderedSame)
-                {
-                  [self flushSms];
-                }
-              else if ([s boolValue] == YES)
-                {
-                  [self flushSms];
-                  [self flushEmail];
-                }
-            }
-
-          if ([[d objectForKey: @"Stop"] boolValue] == YES)
-            {
-              break;	// Don't want to perform any more matches.
-            }
-        }
-      RELEASE(pool);
+      [self applyRules: rules toEvent: event];
     }
   NS_HANDLER
     {
@@ -980,11 +1040,6 @@ replaceFields(NSDictionary *fields, NSString *template)
           subject = @"system alert";
         }
     }
-  else
-    {
-      subject = replaceFields(m, subject);
-      [m removeObjectForKey: @"Subject"];
-    }
 
   /* If we need to send immediately, don't buffer the message.
    */
@@ -1001,58 +1056,33 @@ replaceFields(NSDictionary *fields, NSString *template)
       if ([identifier length] > 0)
         {
           NSString      *mID;
+          int           threadID;
 
-          /* This may reference an earlier email (for threaded display)
-           */
-          mID = [m objectForKey: @"EmailInReplyTo"];
-          if (nil != mID)
+          threadID = [[m objectForKey: @"EmailThreading"] intValue];
+          if (threadID > 0)
             {
-              mID = [NSString stringWithFormat: @"<alrm%@@%@>", mID, eBase];
-              [doc setHeader: @"In-Reply-To" value: mID parameters: nil];
-            }
+              NSString          *rep;
+              NSMutableString   *ref;
 
-          /* We may have an identifier set in the dictionary to use
-           */
-          mID = [m objectForKey: @"EmailIdentifier"];
-          if (nil != mID)
-            {
-              NSRange   r = [mID rangeOfString: @"_"];
-
-              if (r.length > 0)
-                {
+              rep = [NSString stringWithFormat: @"<alrm%@@%@>",
+                identifier, eBase];
+              [doc setHeader: @"In-Reply-To" value: rep parameters: nil];
+              ref = [rep mutableCopy];
 #if 0
-                  int   version;
+              if (threadID > 1)
+                {
+                  int   index;
 
-                  /* Reference all earlier messages in thread.
-                   */
-                  version = [[mID substringFromIndex: NSMaxRange(r)] intValue];
-                  if (version > 1)
+                  for (index = 1; index < threadID; index++)
                     {
-                      NSMutableString   *ms = [NSMutableString string];
-                      int               index;
-
-                      for (index = 1; index < version; index++)
-                        {
-                          if (index > 1)
-                            {
-                              [ms appendString: @" "];
-                            }
-                          [ms appendFormat: @"<alrm%@_%d@%@>",
-                            mID, index, eBase];
-                        }
-                      [doc setHeader: @"References" value: ms parameters: nil];
+                      [ref appendFormat: @"<alrm%@_%d@%@>",
+                        identifier, index, eBase];
                     }
-#else
-                  NSString  *ref;
-
-                  /* Reference the original message at start of thread.
-                   */
-                  ref = [NSString stringWithFormat: @"<alrm%@@%@>",
-                    [mID substringToIndex: r.location], eBase];
-                  [doc setHeader: @"References" value: ref parameters: nil];
-#endif
                 }
-              mID = [NSString stringWithFormat: @"<alrm%@@%@>", mID, eBase];
+#endif
+              [doc setHeader: @"References" value: ref parameters: nil];
+              mID = [NSString stringWithFormat: @"<alrm%@_%d@%@>",
+                identifier, threadID, eBase];
             }
           else
             {
@@ -1060,7 +1090,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                 identifier, eBase];
             }
 
-          if (YES == isClear)
+          if (YES == isClear && threadID <= 0)
             {
               if (YES == supersede)
                 {

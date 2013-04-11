@@ -2575,10 +2575,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
                 {
                   reminderInterval = 0;
                 }
-              else if (reminderInterval % 5)
-                {
-                  reminderInterval += 5 - reminderInterval % 5;
-                }
             }
 
           d = [NSDictionary dictionaryWithObjectsAndKeys:
