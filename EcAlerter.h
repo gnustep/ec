@@ -304,7 +304,7 @@
  *   <desc>An integer number of minutes between generating alerts
  *     reminding about alarms.  If this is negative or not
  *     set then it defaults to zero ... meaning that no reminders
- *     are sent.
+ *     are sent.</desc>
  * </deflist>
  */
 @interface	EcAlerter : NSObject
@@ -385,13 +385,15 @@
  * <p>Each message must be a line of the format -<br />
  * serverName(hostName): YYYY-MM-DD hh:mm:ss.mmm szzzz type - text
  * </p>
- * <p>Each message is parsed an then the components are passed to
- * the -handleEvent:withHost:andServer:timestamp:identifier:severity: method.
+ * <p>Each message is parsed an then the components are passed to the
+ * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
+ * method.
  * </p>
  */
 - (void) handleInfo: (NSString*)str;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
+/** Called by
+ * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder
  * to log a message to an array of destinations.
  */
 - (void) log: (NSMutableDictionary*)m
@@ -403,7 +405,8 @@
  */
 - (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
+/** Called by
+ * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
  * to pass a message to an array of destinations.
  * The message is actually appended to any cached messages for those
  * destinations ... and the cache is periodically flushed.
@@ -423,7 +426,8 @@
  */
 - (BOOL) setRules: (NSArray*)ra;
 
-/** Called by -handleEvent:withHost:andServer:timestamp:identifier:severity:
+/** Called by
+ * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
  * to pass a message to an array of destinations.
  * The message replaces any cached messages for those
  * destinations (and has a count of the lost messages noted) ... and
