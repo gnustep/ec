@@ -396,14 +396,15 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       if (NSNotFound != index)
         {
           EcAlarm       *old = [a objectAtIndex: index];
+          int           notificationID = [old notificationID];
          
           severity = [old perceivedSeverity];
-          if (severity <= alertAlarmThreshold)
+          if (severity <= alertAlarmThreshold && notificationID > 0)
             {
               NSDictionary      *info;
               NSString          *key;
 
-              key = [NSString stringWithFormat: @"%d", [old notificationID]];
+              key = [NSString stringWithFormat: @"%d", notificationID];
 
               if (nil != (info = [lastAlertInfo objectForKey: key]))
                 {
