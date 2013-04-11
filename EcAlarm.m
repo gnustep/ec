@@ -214,15 +214,15 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
       case EcAlarmEventTypeUnknown:	// Not legal
 	return nil;
       case EcAlarmEventTypeCommunications:
-	return @"EcAlarmEventTypeCommunications";
+	return @"communications";
       case EcAlarmEventTypeEnvironmental:
-	return @"EcAlarmEventTypeEnvironmental";
+	return @"environmental";
       case EcAlarmEventTypeEquipment:
-	return @"EcAlarmEventTypeEquipment";
+	return @"equipment";
       case EcAlarmEventTypeProcessingError:
-	return @"EcAlarmEventTypeProcessingError";
+	return @"processingError";
       case EcAlarmEventTypeQualityOfService:
-	return @"EcAlarmEventTypeQualityOfService";
+	return @"qualityOfService";
     }
   return nil;
 }
@@ -232,7 +232,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
   switch (value)
     {
       case EcAlarmProbableCauseUnknown:
-	return @"EcAlarmProbableCauseUnknown";
+	return @"ProbableCauseUnknown";
       case EcAlarmAdapterError:
 	return @"adapterError";
       case EcAlarmApplicationSubsystemFailure:
@@ -353,12 +353,12 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 {
   switch (value)
     {
-      case EcAlarmSeverityIndeterminate: return @"EcAlarmSeverityIndeterminate";
-      case EcAlarmSeverityCritical: return @"EcAlarmSeverityCritical";
-      case EcAlarmSeverityMajor: return @"EcAlarmSeverityMajor";
-      case EcAlarmSeverityMinor: return @"EcAlarmSeverityMinor";
-      case EcAlarmSeverityWarning: return @"EcAlarmSeverityWarning";
-      case EcAlarmSeverityCleared: return @"EcAlarmSeverityCleared";
+      case EcAlarmSeverityIndeterminate: return @"indeterminate";
+      case EcAlarmSeverityCritical: return @"critical";
+      case EcAlarmSeverityMajor: return @"major";
+      case EcAlarmSeverityMinor: return @"minor";
+      case EcAlarmSeverityWarning: return @"warning";
+      case EcAlarmSeverityCleared: return @"cleared";
     }
   return nil;
 }
@@ -367,9 +367,9 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 {
   switch (value)
     {
-      case EcAlarmTrendNone: return @"EcAlarmTrendNone";
-      case EcAlarmTrendUp: return @"EcAlarmTrendUp";
-      case EcAlarmTrendDown: return @"EcAlarmTrendDown";
+      case EcAlarmTrendNone: return @"none";
+      case EcAlarmTrendUp: return @"up";
+      case EcAlarmTrendDown: return @"down";
     }
   return nil;
 }
