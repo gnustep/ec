@@ -37,7 +37,7 @@
     },
     {
       Type = "Clear";
-      Subject = "Clear {Identifier}";
+      Subject = "Clear {Identifier} ({SeverityText})";
       Email = (
         "myaccount@localhost.localdomain"
       );
@@ -59,7 +59,7 @@
     },
     {
       Type = "Alarm";
-      Subject = "Alarm {Identifier}";
+      Subject = "Alarm {Identifier} ({SeverityText})";
       Email = (
         "myaccount@localhost.localdomain"
       );
