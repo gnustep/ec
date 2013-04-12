@@ -2036,7 +2036,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
 
-  alarm = [alarm copy];
+  alarm = [[alarm copy] autorelease];
   if (EcAlarmSeverityCleared == severity)
     {
       [alarm setExtra: @"Clear"];
@@ -2047,6 +2047,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
         component, [alarm moHost]];
+      [alarm setExtra: @"Clear"];
     }
   else
     {
@@ -2065,6 +2066,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         additional, spacing2, repair,
         [alarm moProcess], connector, instance,
         component, [alarm moHost]];
+      if (reminder > 0)
+        {
+          [alarm setExtra: @"Reminder"];
+        }
+      else
+        {
+          [alarm setExtra: @"Alarm"];
+        }
     }
 
   [alerter handleEvent: message

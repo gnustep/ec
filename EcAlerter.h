@@ -29,6 +29,7 @@
 
 #import <Foundation/NSObject.h>
 
+@class	EcAlarm;
 @class	GSMimeSMTPClient;
 @class	NSArray;
 @class	NSMutableArray;

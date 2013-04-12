@@ -822,7 +822,7 @@ replaceFields(NSDictionary *fields, NSString *template)
       if (nil == alarm)
         {
           event->severity = EcAlarmSeverityIndeterminate;
-          event->severityText = nil;
+          event->severityText = @"";
           event->isClear = NO;
           if (nil != identifier)
             {

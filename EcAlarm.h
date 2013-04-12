@@ -34,6 +34,7 @@
 
 @class	NSCoder;
 @class	NSDate;
+@class	NSDictionary;
 @class	NSString;
 
 /**
