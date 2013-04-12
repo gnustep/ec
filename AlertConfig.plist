@@ -37,9 +37,14 @@
     },
     {
       Type = "Clear";
+      /* Set a good subject for the email.
+       */
       Subject = "Clear {Identifier} ({SeverityText})";
       Email = (
-        "myaccount@localhost.localdomain"
+        /* Send to the responsible email destination defined in the alarm
+         * or fall back to sending to myaccount@localhost.localdomain
+         */
+        "{ResponsibleEmail}myaccount@localhost.localdomain"
       );
       Stop = YES;               /* Don't go on to any general alerts */
     },
@@ -61,7 +66,7 @@
       Type = "Alarm";
       Subject = "Alarm {Identifier} ({SeverityText})";
       Email = (
-        "myaccount@localhost.localdomain"
+        "{ResponsibleEmail}myaccount@localhost.localdomain"
       );
       Stop = YES;               /* Don't go on to any general alerts */
     },

@@ -237,9 +237,10 @@
  * </p>
  * <p>The <em>Email</em> array lists email addresses to which email
  * alerts are to be sent.<br />
- * The address '{ResponsibleEmail}' may be used, if the alert is for an alarm,
- * to email to the person/entity with primary responsibility for the alarm
- * (as defined by the userInfo dictionary of the alarm).<br />
+ * An address with the prefix '{ResponsibleEmail}' may be used as a
+ * special case.  It means that if an alarm has a ResponsibleEmail value
+ * set in its userInfo dictionary, that value is used as the address,
+ * otherwise the text after '{ResponsibleEmail}' is used as a fallback.<br />
  * An optional <em>Subject</em> field may be present in the rule ...
  * this is used to specify that the email is to be tagged with the given
  * subject line.  This <em>defeats</em> batching of messages in that

@@ -1131,9 +1131,22 @@ replaceFields(NSDictionary *fields, NSString *template)
 
       while ((d = [e nextObject]) != nil)
         {
-          if (YES == [d isEqualToString: @"{ResponsibleEmail}"])
+          if (YES == [d hasPrefix: @"{ResponsibleEmail}"])
             {
-              d = [m objectForKey: @"ResponsibleEmail"];
+              NSString  *s = [m objectForKey: @"ResponsibleEmail"];
+
+              if ([s length] > 0)
+                {
+                  /* Use the ResponsibleEmail address from the alarm
+                   */
+                  d = s;
+                }
+              else
+                {
+                  /* Use the fallback (remaining text in the address)
+                   */
+                  d = [d substringFromIndex: 18];
+                }
             }
           if (0 == [d length])
             {
