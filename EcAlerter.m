@@ -803,48 +803,54 @@ replaceFields(NSDictionary *fields, NSString *template)
            andServer: (NSString*)serverName
            timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
-            severity: (int)severity
+               alarm: (EcAlarm*)alarm
             reminder: (int)reminder
 {
-  if (nil == identifier)
-    {
-      severity = EcAlarmSeverityIndeterminate;
-    }
   NS_DURING
     {
       NSMutableDictionary	*m;
-      EcAlerterEvent            *event = AUTORELEASE([EcAlerterEvent new]);
+      NSString                  *str;
+      EcAlerterEvent            *event;
       
+      event = AUTORELEASE([EcAlerterEvent new]);
       ASSIGN(event->text, text);
       ASSIGN(event->hostName, hostName);
       ASSIGN(event->serverName, serverName);
       ASSIGN(event->timestamp, timestamp);
       ASSIGN(event->identifier, identifier);
-      event->severity = severity;
-      ASSIGN(event->severityText, [EcAlarm stringFromSeverity: severity]);
-      event->isClear = (EcAlarmSeverityCleared == severity) ? YES : NO;
-      event->reminder = reminder;
-      event->duration = (0.0 - [timestamp timeIntervalSinceNow]) / 60.0;
 
-      if (event->reminder >= 0)
+      if (nil == alarm)
         {
-          if (YES == event->isClear)
+          event->severity = EcAlarmSeverityIndeterminate;
+          event->severityText = nil;
+          event->isClear = NO;
+          if (nil != identifier)
             {
+              event->type = @"Alert";
+            }
+          else
+            {
+              event->type = @"Error";
+            }
+        }
+      else
+        {
+          event->severity = [alarm perceivedSeverity];
+          ASSIGN(event->severityText,
+            [EcAlarm stringFromSeverity: event->severity]);
+          if ([@"Clear" isEqual: [alarm extra]])
+            {
+              event->isClear = YES;
               event->type = @"Clear";
             }
           else
             {
+              event->isClear = NO;
               event->type = @"Alarm";
             }
         }
-      else if (nil != identifier)
-        {
-          event->type = @"Alert";
-        }
-      else
-        {
-          event->type = @"Error";
-        }
+      event->reminder = reminder;
+      event->duration = (0.0 - [timestamp timeIntervalSinceNow]) / 60.0;
 
       m = event->m = [[NSMutableDictionary alloc] initWithCapacity: 20];
       [m setObject: event->serverName forKey: @"Server"];
@@ -858,6 +864,14 @@ replaceFields(NSDictionary *fields, NSString *template)
         {
           [m setObject: [NSString stringWithFormat: @"%d", event->reminder]
                 forKey: @"Reminder"];
+        }
+      /* If the alarm has a responsible person/entity email address set,
+       * make it available.
+       */
+      str = [[alarm userInfo] objectForKey: @"ResponsibleEmail"];
+      if (nil != str)
+        {
+          [m setObject: str forKey: @"ResponsibleEmail"];
         }
       if ([event->identifier length] > 0)
         {
@@ -952,7 +966,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                   andServer: serverName
                   timestamp: timestamp
                  identifier: (YES == immediate) ? (id)@"" : (id)nil
-                   severity: EcAlarmSeverityIndeterminate
+                      alarm: nil
                    reminder: -1];
 	}
     }
@@ -1117,6 +1131,14 @@ replaceFields(NSDictionary *fields, NSString *template)
 
       while ((d = [e nextObject]) != nil)
         {
+          if (YES == [d isEqualToString: @"{ResponsibleEmail}"])
+            {
+              d = [m objectForKey: @"ResponsibleEmail"];
+            }
+          if (0 == [d length])
+            {
+              continue;
+            }
           NS_DURING
             {
               GSMimeDocument    *msg;

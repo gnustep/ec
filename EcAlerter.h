@@ -234,10 +234,13 @@
  * <p>The <em>Sms</em> array lists phone numbers to which Sms alerts are
  * to be sent (if the alerter has been subclassed to implement SMS delivery).
  * </p>
- * <p>The <em>Email</em> array lists email addresses to which email alerts are
- * to be sent.<br />
+ * <p>The <em>Email</em> array lists email addresses to which email
+ * alerts are to be sent.<br />
+ * The address '{ResponsibleEmail}' may be used, if the alert is for an alarm,
+ * to email to the person/entity with primary responsibility for the alarm
+ * (as defined by the userInfo dictionary of the alarm).<br />
  * An optional <em>Subject</em> field may be present in the rule ...
- * this is used to specify that the is to be tagged with the given
+ * this is used to specify that the email is to be tagged with the given
  * subject line.  This <em>defeats</em> batching of messages in that
  * only messages with the same subject may be batched in the same email.<br />
  * NB. The value of the <em>Subject</em> field is used as a template
@@ -351,13 +354,14 @@
  * be buffered, while an 'alert' must be sent immediately).<br />
  * If the identifier field is non-nil then the event is an alert which is
  * identified by the value of the field.<br />
- * An 'alert' may be due to an alarm (persistent problem) whose severity is
- * indicated in the final argument.  The alarm may be may 'cleared' by a
- * later event with the same identfier and with the severity set to
- * EcAlarmSeverityCleared.<br />
+ * An 'alert' may be due to an alarm (persistent problem), in which case
+ * the alarm argument must contain the original alarm details including
+ * its perceived severity.  However, the value returned by [EcAlarm-extra]
+ * may be used to specify that an event is a clear (the end of the alarm),
+ * (the value of the field bust be 'Clear').<br />
  * The reminder field counts the number of copies of an alarm previously
  * sent to the alerting system, and should be set to -1 if the alert is
- * not an alarm.<br />
+ * not an alarm, reminder ofr an alarm, or clear of an alarm.<br />
  * The use of an empty string as an identifier is permitted for events which
  * should not be buffered, but which will never be matched by a clear.
  * </p>
@@ -376,7 +380,7 @@
            andServer: (NSString*)serverName
            timestamp: (NSDate*)timestamp
           identifier: (NSString*)identifier
-            severity: (int)severity
+               alarm: (EcAlarm*)alarm
             reminder: (int)reminder;
 
 /** <p>This method handles error/alert messages.  It is able to handle
@@ -386,14 +390,14 @@
  * serverName(hostName): YYYY-MM-DD hh:mm:ss.mmm szzzz type - text
  * </p>
  * <p>Each message is parsed an then the components are passed to the
- * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
+ * -handleEvent:withHost:andServer:timestamp:identifier:alarm:reminder:
  * method.
  * </p>
  */
 - (void) handleInfo: (NSString*)str;
 
 /** Called by
- * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder
+ * -handleEvent:withHost:andServer:timestamp:identifier:alarm:reminder:
  * to log a message to an array of destinations.
  */
 - (void) log: (NSMutableDictionary*)m
@@ -406,7 +410,7 @@
 - (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations;
 
 /** Called by
- * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
+ * -handleEvent:withHost:andServer:timestamp:identifier:alarm:reminder:
  * to pass a message to an array of destinations.
  * The message is actually appended to any cached messages for those
  * destinations ... and the cache is periodically flushed.
@@ -427,7 +431,7 @@
 - (BOOL) setRules: (NSArray*)ra;
 
 /** Called by
- * -handleEvent:withHost:andServer:timestamp:identifier:severity:reminder:
+ * -handleEvent:withHost:andServer:timestamp:identifier:alarm:reminder:
  * to pass a message to an array of destinations.
  * The message replaces any cached messages for those
  * destinations (and has a count of the lost messages noted) ... and

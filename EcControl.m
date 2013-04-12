@@ -2036,8 +2036,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
 
+  alarm = [alarm copy];
   if (EcAlarmSeverityCleared == severity)
     {
+      [alarm setExtra: @"Clear"];
       message = [NSString stringWithFormat:
         @"Clear %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
         identifier, [EcAlarm stringFromSeverity: [alarm perceivedSeverity]],
@@ -2048,6 +2050,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   else
     {
+      if (reminder > 0)
+        {
+          [alarm setExtra: @"Reminder"];
+        }
+      else
+        {
+          [alarm setExtra: @"Alarm"];
+        }
       message = [NSString stringWithFormat:
         @"Alarm %@ (%@)\n%@%@%@%@%@ - '%@%@%@%@' on %@",
         identifier, [EcAlarm stringFromSeverity: [alarm perceivedSeverity]],
@@ -2062,7 +2072,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
              andServer: [alarm moProcess]
              timestamp: [alarm eventDate]
             identifier: identifier
-              severity: severity
+                 alarm: alarm
               reminder: reminder];
 }
 

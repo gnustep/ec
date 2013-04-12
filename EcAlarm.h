@@ -346,6 +346,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
   NSString		*_additionalText;
   EcAlarmTrend		_trendIndicator;
   int			_notificationID;
+  NSDictionary          *_userInfo;
   void			*_extra;
   BOOL			_frozen;
 }
@@ -417,7 +418,8 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
 /** EcAlarm objects may be copied.  This method is provided to implement
  * the NSCopying protocol.<br />
  * A copy of an object does <em>not</em> copy any value provided by the
- * -setExtra: method.
+ * -setExtra: method.<br />
+ * A copy of an object is not frozen.
  */
 - (id) copyWithZone: (NSZone*)aZone;
 
@@ -450,7 +452,9 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
  */
 - (NSDate*) firstEventDate;
 
-/** Freeze the state of the alarm ... no more calls to setters are permitted.
+/** Freeze the state of the receiver;
+ * no more calls to setters are permitted.<br />
+ * Then a frozen alarm is copied, the new copy is <em>not</em> frozen.
  */
 - (void) freeze;
 
@@ -565,6 +569,21 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
  */
 - (void) setTrendIndicator: (EcAlarmTrend)trendIndicator;
 
+/** Sets the user information associated with this alarm (a dictionary).<br />
+ * This user information is additional data associated with the alarm
+ * which is copied when the alarm is copied.  This data is not used by
+ * the CCITT X.733 ... it's optional additional data.<br />
+ * Conventional keys are:<br />
+ * <deflist>
+ *   <term>ResponsibleEmail</term>
+ *   <desc>The Email address of the person/entity with primary responsibility
+ *   for dealing with an alarm ... this is intended for use by the alerting
+ *   system (EcAlerter) when deciding where to send email alerts.
+ *   </desc>
+ * </deflist>
+ */
+- (void) setUserInfo: (NSDictionary*)userInfo;
+
 /** Returns the specificProblem set when the receiver was initialised.
  */
 - (NSString*) specificProblem;
@@ -576,6 +595,10 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
  */
 - (EcAlarmTrend) trendIndicator;
 
+/** Returns any previously set information (see -setUserInfo:) or nil
+ * if none has been set.
+ */
+- (NSDictionary*) userInfo;
 @end
 
 @interface	EcAlarm (Convenience)

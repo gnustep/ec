@@ -109,6 +109,14 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 
 @implementation	EcAlarm
 
++ (void) initialize
+{
+  if (self == [EcAlarm class])
+    {
+      [self setVersion: 2];
+    }
+}
+
 + (EcAlarm*) alarmForManagedObject: (NSString*)managedObject
 				at: (NSDate*)eventDate
 		     withEventType: (EcAlarmEventType)eventType
@@ -448,12 +456,14 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
       c->_firstEventDate = [_firstEventDate copyWithZone: aZone];
       c->_notificationID = _notificationID;
       c->_trendIndicator = _trendIndicator;
+      ASSIGNCOPY(c->_userInfo, _userInfo);
     }
   return c;
 }
 
 - (void) dealloc
 {
+  DESTROY(_userInfo);
   DESTROY(_managedObject);
   DESTROY(_eventDate);
   DESTROY(_firstEventDate);
@@ -503,7 +513,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
 {
-  [aCoder encodeValuesOfObjCTypes: "iiiii@@@@@@",
+  [aCoder encodeValuesOfObjCTypes: "iiiii@@@@@@@",
     &_eventType,
     &_notificationID,
     &_perceivedSeverity,
@@ -514,7 +524,8 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
     &_firstEventDate,
     &_specificProblem,
     &_proposedRepairAction,
-    &_additionalText];
+    &_additionalText,
+    &_userInfo];
 }
 
 - (NSDate*) eventDate
@@ -686,18 +697,39 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 
 - (id) initWithCoder: (NSCoder*)aCoder
 {
-  [aCoder decodeValuesOfObjCTypes: "iiiii@@@@@@",
-    &_eventType,
-    &_notificationID,
-    &_perceivedSeverity,
-    &_probableCause,
-    &_trendIndicator,
-    &_managedObject,
-    &_eventDate,
-    &_firstEventDate,
-    &_specificProblem,
-    &_proposedRepairAction,
-    &_additionalText];
+  int   version = [aCoder versionForClassName: @"EcAlarm"];
+
+  if (version < 2)
+    {
+      [aCoder decodeValuesOfObjCTypes: "iiiii@@@@@@",
+        &_eventType,
+        &_notificationID,
+        &_perceivedSeverity,
+        &_probableCause,
+        &_trendIndicator,
+        &_managedObject,
+        &_eventDate,
+        &_firstEventDate,
+        &_specificProblem,
+        &_proposedRepairAction,
+        &_additionalText];
+    }
+  else
+    {
+      [aCoder decodeValuesOfObjCTypes: "iiiii@@@@@@@",
+        &_eventType,
+        &_notificationID,
+        &_perceivedSeverity,
+        &_probableCause,
+        &_trendIndicator,
+        &_managedObject,
+        &_eventDate,
+        &_firstEventDate,
+        &_specificProblem,
+        &_proposedRepairAction,
+        &_additionalText,
+        &_userInfo];
+    }
   return self;
 }
 
@@ -858,6 +890,17 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
   _trendIndicator = trendIndicator;
 }
 
+- (void) setUserInfo: (NSDictionary*)userInfo
+{
+  if (YES == _frozen)
+    {
+      [NSException raise: NSInternalInconsistencyException
+		  format: @"[%@-%@] called for frozen instance",
+	NSStringFromClass([self class]), NSStringFromSelector(_cmd)];
+    }
+  ASSIGNCOPY(_userInfo, userInfo);
+}
+
 - (NSString*) specificProblem
 {
   return _specificProblem;
@@ -866,6 +909,11 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 - (EcAlarmTrend) trendIndicator
 {
   return _trendIndicator;
+}
+
+- (NSDictionary*) userInfo
+{
+  return _userInfo;
 }
 
 @end

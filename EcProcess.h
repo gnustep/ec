@@ -367,7 +367,7 @@ extern NSString*	cmdVersion(NSString *ver);
 - (NSArray*) alarms;
 
 /** Convenience method to clear an alarm as produced by the
- * -alarmConfigErrorFor:specificProblem:perceivedSeverity:additionalText:
+ * -alarmConfiguratonFor:specificProblem:perceivedSeverity:additionalText:
  * method.
  */
 - (void) clearConfigurationFor: (NSString*)managedObject
