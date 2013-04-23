@@ -3724,11 +3724,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       if ([[msg objectAtIndex: 1] caseInsensitiveCompare: @"default"]
         == NSOrderedSame)
 	{
-	  [cmdDefs setObject: nil forKey: @"Testing"];
+	  [cmdDefs setCommand: nil forKey: @"Testing"];
 	}
       else
         {
-	  [cmdDefs setObject: [msg objectAtIndex: 1] forKey: @"Testing"];
+	  [cmdDefs setCommand: [msg objectAtIndex: 1] forKey: @"Testing"];
 	}
       [self cmdPrintf: @"Server running in testing mode: %s\n",
 	cmdFlagTesting ? "YES" : "NO"];
