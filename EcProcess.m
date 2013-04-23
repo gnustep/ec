@@ -3664,6 +3664,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"] == NSOrderedSame)
     {
       [self cmdPrintf: @"controls double release memory error detection\n"];
+      [self cmdPrintf: @"to report if an object is released too many times.\n"];
       [self cmdPrintf: @"This has a big impact on program performance.\n"];
       [self cmdPrintf: @"'release yes' turns on checking\n"];
       [self cmdPrintf: @"'release no' turns off checking\n"];
