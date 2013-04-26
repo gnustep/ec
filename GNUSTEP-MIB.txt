@@ -62,7 +62,7 @@ firstEventDate DisplayString,
 eventDate DisplayString,
 managedObject DisplayString,
 eventTypeID INTEGER,
-probabaleCauseID INTEGER,
+probableCauseID INTEGER,
 specificProblem DisplayString,
 proposedRepairAction DisplayString,
 additionalText DisplayString,
@@ -132,7 +132,7 @@ DESCRIPTION "Identifier of the type of event"
 -- For example the OID 'adapterError' {9.3.2.0.0.1} is represented as --
 -- the integer 1 and 'outOfMemory' {9.3.2.0.0.32} is represented as 32 --
 
-probabaleCauseID OBJECT-TYPE
+probableCauseID OBJECT-TYPE
 SYNTAX INTEGER
 MAX-ACCESS read-only
 STATUS current
@@ -253,7 +253,7 @@ firstEventDate,
 eventDate,
 objectID,
 eventTypeID,
-probabaleCauseID,
+probableCauseID,
 specificProblem,
 proposedRepairAction,
 additionalText,
