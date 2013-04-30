@@ -52,8 +52,8 @@
 	  <deflist>
 	    <term>EcCoreSize</term>
 	    <desc>
-	      Specifies the maximum size (in bytes) for any core-dump of the
-              process.
+	      Specifies the maximum size (in MB) for any core-dump of the
+              process.<br />
               If this is negative, the default size of 1GB is used.<br />
 	      If this is zero (or no value is set) then no limit is set.
 	    </desc>
