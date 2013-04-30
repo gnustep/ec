@@ -448,7 +448,7 @@ static NSMutableArray	*noNetConfig = nil;
 
 static NSMutableDictionary *servers = nil;
 
-static int              coreSize = 0;
+static int              coreSize = -2;  // Not yet set
 
 static NSString		*hostName = nil;
 static NSString	*
@@ -1097,10 +1097,18 @@ static NSString	*noFiles = @"No log files to archive";
         }
     }
 
-  i = (int)[cmdDefs integerForKey: @"CoreSize"];
-  if (i < 0)
+  str = [cmdDefs stringForKey: @"CoreSize"];
+  if (nil == str)
     {
-      i = 1024;       // 1 GB default
+      i = 1024;         // 1 GB default
+    }
+  else
+    {
+      i = [str intValue];
+      if (i < 0)
+        {
+          i = -1;       // unlimited
+        }
     }
   if (i != coreSize)
     {
@@ -1108,28 +1116,45 @@ static NSString	*noFiles = @"No log files to archive";
       rlim_t            want;
 
       coreSize = i;
-      want = i * 1024 * 1024;
-      if (i > 0)
+      if (coreSize < 0)
         {
-          if (getrlimit(RLIMIT_CORE, &rlim) < 0)
+          want = RLIM_INFINITY;
+        }
+      else
+        {
+          want = i * 1024 * 1024;
+        }
+      if (getrlimit(RLIMIT_CORE, &rlim) < 0)
+        {
+          NSLog(@"Unable to get core file size limit: %d", errno);
+        }
+      else
+        {
+          if (RLIM_INFINITY != rlim.rlim_max && rlim.rlim_max < want)
             {
-              NSLog(@"Unable to get core file size limit: %d", errno);
+              NSLog(@"Hard limit for core file size (%dMB)"
+                @" less than requested (%dMB)",
+                (int)(rlim.rlim_max/(1024*1024)), coreSize);
             }
           else
             {
-              if (rlim.rlim_max < want)
+              rlim.rlim_cur = want;
+              if (setrlimit(RLIMIT_CORE, &rlim) < 0)
                 {
-                  NSLog(@"Hard limit for core file size (%dMB)"
-                    @" less than requested (%dMB)",
-                    (int)(rlim.rlim_max/(1024*1024)), coreSize);
-                }
-              else
-                {
-                  rlim.rlim_cur = want;
-                  if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+                  if (coreSize > 0)
                     {
                       NSLog(@"Unable to set core file size limit to %uMB"
                         @", errno: %d", coreSize, errno);
+                    }
+                  else if (coreSize < 0)
+                    {
+                      NSLog(@"Unable to set core file size unlimited"
+                        @", errno: %d", errno);
+                    }
+                  else
+                    {
+                      NSLog(@"Unable to set core dumps disabled"
+                        @", errno: %d", errno);
                     }
                 }
             }

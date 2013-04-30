@@ -54,8 +54,9 @@
 	    <desc>
 	      Specifies the maximum size (in MB) for any core-dump of the
               process.<br />
-              If this is negative, the default size of 1GB is used.<br />
-	      If this is zero (or no value is set) then no limit is set.
+              If this is not set, the default size of 1GB is used.<br />
+              If this is negative, the size is unlimited.<br />
+	      If this is zero then no core dumping is performed.
 	    </desc>
 	    <term>EcDebug-</term>
 	    <desc>
