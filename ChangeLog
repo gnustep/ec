@@ -1,3 +1,9 @@
+2013-07-06  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcConsole.m: Strip spaces from command line to avoid a space
+        at end of line causing the line terminator to be treated as an
+        argument.
+
 2013-04-07  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcControl.m:

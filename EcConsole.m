@@ -208,6 +208,7 @@ static BOOL commandIsRepeat (NSString *string)
       [self cmdQuit: 0];
     }
   
+  _line = [_line stringByTrimmingSpaces];       // Remove trailing newline
   if ([_line length] == 0)
     {
       return;
