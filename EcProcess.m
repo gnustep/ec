@@ -2185,6 +2185,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
+- (NSString*) ecUserDirectory
+{
+  return cmdUserDir();
+}
+
 - (void) setCmdDebug: (NSString*)mode withDescription: (NSString*)desc
 {
   [cmdDebugKnown setObject: desc forKey: mode];

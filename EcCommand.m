@@ -85,7 +85,36 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
 }
 
-
+/* Special configuration options are:
+ *
+ * CompressLogsAfter
+ *   A positive integer number of days after which logs should be compressed
+ *   defaults to 14.
+ *
+ * DeleteLogsAfter
+ *   A positive integer number of days after which logs should be deleted.
+ *   Constrained to be at least as large as CompressLogsAfter.
+ *   Defaults to 1000, but logs may still be deleted as if this were set
+ *   to CompressLogsAfter if NodesFree or SpaceFree is reached.
+ *
+ * Environment
+ *   A dictionary setting the default environment for launched processes.
+ *
+ * Launch
+ *   A dictionary describing the processes which the server is responsible
+ *   for launching.
+ *
+ * NodesFree
+ *   A string giving a percentage of the total nodes on the disk below
+ *   which an alert should be raised. Defaults to 10.
+ *   Minimum 2, Maximum 90.
+ *
+ * SpaceFree
+ *   A string giving a percentage of the total space on the disk below
+ *   which an alert should be raised. Defaults to 10.
+ *   Minimum 2, Maximum 90.
+ *
+ */
 @interface	EcCommand : EcProcess <Command>
 {
   NSString		*host;
@@ -106,6 +135,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   unsigned		revSequence;
   float			nodesFree;
   float			spaceFree;
+  NSTimeInterval        uncompressed;
+  NSTimeInterval        undeleted;
+  BOOL                  sweeping;
 }
 - (NSFileHandle*) openLog: (NSString*)lname;
 - (void) cmdGnip: (id <CmdPing>)from
@@ -275,7 +307,27 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       DESTROY(environment);
       if ([d isKindOfClass: [NSDictionary class]] == YES)
 	{
-	  NSString	*k;
+          NSMutableDictionary   *m;
+	  NSString              *k;
+          NSString              *err;
+
+          m = [[d mutableCopy] autorelease];
+          d = m;
+          NS_DURING
+            [self cmdUpdate: m];
+          NS_HANDLER
+            [self cmdError: @"Problem before updating config: %@",
+              localException];
+          NS_ENDHANDLER
+          NS_DURING
+            err = [self cmdUpdated];
+          NS_HANDLER
+            err = [localException description];
+          NS_ENDHANDLER
+          if ([err length] > 0)
+            {
+              [self cmdError: @"Problem after updating config: %@", err];
+            }
 
 	  launchInfo = [d objectForKey: @"Launch"];
 	  if ([launchInfo isKindOfClass: [NSDictionary class]] == NO)
@@ -1470,6 +1522,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 {
   if (nil != (self = [super initWithDefaults: defs]))
     {
+      uncompressed = 0.0;
+      undeleted = 0.0;
       nodesFree = 0.1;
       spaceFree = 0.1;
 
@@ -1990,6 +2044,178 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
     }
 }
+
+- (void) ecNewHour: (NSCalendarDate*)when
+{
+  static const NSTimeInterval   day = 24.0 * 60.0 * 60.0;
+  NSInteger             compressAfter;
+  NSInteger             deleteAfter;
+  NSTimeInterval        latestCompressAt;
+  NSTimeInterval        latestDeleteAt;
+  NSTimeInterval        now;
+  NSTimeInterval        ti;
+  NSFileManager         *mgr;
+  NSString		*logs;
+  NSString		*file;
+  NSAutoreleasePool	*arp;
+
+  if (sweeping == YES)
+    {
+      NSLog(@"Argh - nested sweep attempt");
+      return;
+    }
+
+  sweeping = YES;
+
+  arp = [NSAutoreleasePool new];
+  now = [when timeIntervalSinceReferenceDate];
+
+  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+
+  /* get number of days after which to do log compression/deletion.
+   */
+  compressAfter = [[self cmdDefaults] integerForKey: @"CompressLogsAfter"];
+  if (compressAfter < 1)
+    {
+      compressAfter = 14;
+    }
+  deleteAfter = [[self cmdDefaults] integerForKey: @"DeleteLogsAfter"];
+  if (deleteAfter < 1)
+    {
+      deleteAfter = 1000;
+    }
+  if (deleteAfter < compressAfter)
+    {
+      deleteAfter = compressAfter;
+    }
+
+  mgr = [NSFileManager defaultManager];
+
+  if (0.0 == undeleted)
+    {
+      undeleted = now - 365.0 * day;
+    }
+  ti = undeleted;
+  latestDeleteAt = now - day * deleteAfter;
+  while (ti < latestDeleteAt)
+    {
+      NSAutoreleasePool *pool = [NSAutoreleasePool new];
+
+      when = [NSCalendarDate dateWithTimeIntervalSinceReferenceDate: ti];
+      file = [[logs stringByAppendingPathComponent:
+        [when descriptionWithCalendarFormat: @"%Y-%m-%d"]]
+        stringByStandardizingPath];
+      if ([mgr fileExistsAtPath: file])
+        {
+          [mgr removeFileAtPath: file handler: nil];
+        }
+      ti += day;
+      [pool release];
+    }
+  undeleted = ti;
+
+  if (uncompressed < undeleted)
+    {
+      uncompressed = undeleted;
+    }
+  ti = uncompressed;
+  latestCompressAt = now - day * compressAfter;
+  while (ti < latestCompressAt)
+    {
+      NSAutoreleasePool         *pool = [NSAutoreleasePool new];
+      NSDirectoryEnumerator	*enumerator;
+      BOOL	                isDirectory;
+      NSString                  *base;
+
+      when = [NSCalendarDate dateWithTimeIntervalSinceReferenceDate: ti];
+      base = [[logs stringByAppendingPathComponent:
+        [when descriptionWithCalendarFormat: @"%Y-%m-%d"]]
+        stringByStandardizingPath];
+      if ([mgr fileExistsAtPath: base isDirectory: &isDirectory] == NO
+        || NO == isDirectory)
+        {
+          continue;     // No log directory for this date.
+        }
+
+      enumerator = [mgr enumeratorAtPath: base];
+      while ((file = [enumerator nextObject]) != nil)
+        {
+          NSString	        *src;
+          NSString	        *dst;
+          NSFileHandle          *sh;
+          NSFileHandle          *dh;
+          NSDictionary          *a;
+          NSData                *d;
+
+          if (YES == [[file pathExtension] isEqualToString: @"gz"])
+            {
+              continue; // Already compressed
+            }
+          a = [enumerator fileAttributes];
+          if (NSFileTypeRegular != [a fileType])
+            {
+              continue;	// Not a regular file ... can't compress
+            }
+
+          src = [base stringByAppendingPathComponent: file];
+
+          if ([a fileSize] == 0)
+            {
+              [mgr removeFileAtPath: src handler: nil];
+              continue; // Nothing to compress
+            }
+
+          dst = [src stringByAppendingPathExtension: @"gz"];
+          if ([mgr fileExistsAtPath: dst isDirectory: &isDirectory] == YES)
+            {
+              [mgr removeFileAtPath: dst handler: nil];
+            }
+
+          [mgr createFileAtPath: dst contents: nil attributes: nil];
+          dh = [NSFileHandle fileHandleForWritingAtPath: dst];
+          if (NO == [dh useCompression])
+            {
+              [dh closeFile];
+              [mgr removeFileAtPath: dst handler: nil];
+              [self cmdError: @"Unable to compress %@ to %@", src, dst];
+              continue;
+            }
+
+          sh = nil;
+          NS_DURING
+            {
+              NSAutoreleasePool *inner;
+
+              sh = [NSFileHandle fileHandleForReadingAtPath: src];
+              inner = [NSAutoreleasePool new];
+              while ([(d = [sh readDataOfLength: 1000000]) length] > 0)
+                {
+                  [dh writeData: d];
+                  [inner release];
+                  inner = [NSAutoreleasePool new];
+                }
+              [inner release];
+              [sh closeFile];
+              [dh closeFile];
+              [mgr removeFileAtPath: src handler: nil];
+            }
+          NS_HANDLER
+            {
+              [mgr removeFileAtPath: dst handler: nil];
+              [sh closeFile];
+              [dh closeFile];
+            }
+          NS_ENDHANDLER
+        }
+      ti += day;
+      [pool release];
+    }
+  uncompressed = ti;
+
+  DESTROY(arp);
+  sweeping = NO;
+}
+
 
 /*
  * Tell all our clients to quit, and wait for them to do so.

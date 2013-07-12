@@ -887,6 +887,10 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) ecTestLog: (NSString*)fmt, ...;
 
+/** Returns the directory set as the root for files owned by the ECCL user
+ */
+- (NSString*) ecUserDirectory;
+
 @end
 
 @interface NSObject (RemoteServerDelegate)

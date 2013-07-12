@@ -1,3 +1,10 @@
+2013-07-12  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcProcess.h: New method to get EC user directory
+        * EcProcess.m: implement new method
+        * EcCommand.m: Add simple auto compress/delete of logs
+        CompressLogsAfter and DeleteLogsAfter control this.
+
 2013-07-06  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcConsole.m: Strip spaces from command line to avoid a space
