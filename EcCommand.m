@@ -39,6 +39,8 @@
 
 #define	DLY	300.0
 
+static const NSTimeInterval   day = 24.0 * 60.0 * 60.0;
+
 static int	tStatus = 0;
 
 static NSTimeInterval	pingDelay = 240.0;
@@ -176,6 +178,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 - (void) logMessage: (NSString*)msg
 	       type: (EcLogType)t
 	       name: (NSString*)c;
+- (NSString*) makeSpace;
 - (void) newConfig: (NSMutableDictionary*)newConfig;
 - (void) pingControl;
 - (void) quitAll;
@@ -2045,9 +2048,70 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
 }
 
-- (void) ecNewHour: (NSCalendarDate*)when
+- (NSString*) makeSpace
 {
-  static const NSTimeInterval   day = 24.0 * 60.0 * 60.0;
+  NSInteger             deleteAfter;
+  NSTimeInterval        latestDeleteAt;
+  NSTimeInterval        now;
+  NSTimeInterval        ti;
+  NSFileManager         *mgr;
+  NSCalendarDate        *when;
+  NSString		*logs;
+  NSString		*file;
+  NSString              *gone;
+  NSAutoreleasePool	*arp;
+
+  gone = nil;
+  arp = [NSAutoreleasePool new];
+  when = [NSCalendarDate date];
+  now = [when timeIntervalSinceReferenceDate];
+
+  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+
+  /* When trying to make space, we can delete up to the point when we
+   * would start compressing but no further ... we don't want to delete
+   * all logs!
+   */
+  deleteAfter = [[self cmdDefaults] integerForKey: @"CompressLogsAfter"];
+  if (deleteAfter < 1)
+    {
+      deleteAfter = 14;
+    }
+
+  mgr = [NSFileManager defaultManager];
+
+  if (0.0 == undeleted)
+    {
+      undeleted = now - 365.0 * day;
+    }
+  ti = undeleted;
+  latestDeleteAt = now - day * deleteAfter;
+  while (nil == gone && ti < latestDeleteAt)
+    {
+      when = [NSCalendarDate dateWithTimeIntervalSinceReferenceDate: ti];
+      file = [[logs stringByAppendingPathComponent:
+        [when descriptionWithCalendarFormat: @"%Y-%m-%d"]]
+        stringByStandardizingPath];
+      if ([mgr fileExistsAtPath: file])
+        {
+          [mgr removeFileAtPath: file handler: nil];
+          gone = [when descriptionWithCalendarFormat: @"%Y-%m-%d"];
+        }
+      ti += day;
+    }
+  undeleted = ti;
+  RETAIN(gone);
+  DESTROY(arp);
+  return AUTORELEASE(gone);
+}
+
+/* Perform this one in another thread.
+ * The sweep operation may compress really large logfiles and could be
+ * very slow, so it's performed in a separate thread to avoid blocking
+ * normal operations.
+ */
+- (void) sweep: (NSCalendarDate*)when
+{
   NSInteger             compressAfter;
   NSInteger             deleteAfter;
   NSTimeInterval        latestCompressAt;
@@ -2058,14 +2122,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSString		*logs;
   NSString		*file;
   NSAutoreleasePool	*arp;
-
-  if (sweeping == YES)
-    {
-      NSLog(@"Argh - nested sweep attempt");
-      return;
-    }
-
-  sweeping = YES;
 
   arp = [NSAutoreleasePool new];
   now = [when timeIntervalSinceReferenceDate];
@@ -2089,7 +2145,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       deleteAfter = compressAfter;
     }
 
-  mgr = [NSFileManager defaultManager];
+  mgr = [[NSFileManager new] autorelease];
 
   if (0.0 == undeleted)
     {
@@ -2214,6 +2270,19 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   DESTROY(arp);
   sweeping = NO;
+}
+
+- (void) ecNewHour: (NSCalendarDate*)when
+{
+  if (sweeping == YES)
+    {
+      NSLog(@"Argh - nested sweep attempt");
+      return;
+    }
+  sweeping = YES;
+  [NSThread detachNewThreadSelector: @selector(sweep:)
+                           toTarget: self
+                         withObject: when];
 }
 
 
@@ -2457,9 +2526,20 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      NSString	*m;
 
+	      m = [self makeSpace];
 	      ASSIGN(last, [NSDate date]);
-	      m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-		@"Disk space at %02.1f percent"), f * 100.0];
+              if ([m length] == 0)
+                {
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                    @"Disk space at %02.1f percent"), f * 100.0];
+                }
+              else
+                {
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                    @"Disk space at %02.1f percent"
+                    @" - deleted logs from %@ to make space"),
+                    f * 100.0, m];
+                }
 	      [self information: m from: nil to: nil type: LT_ALERT];
 	    }
 	}
@@ -2473,9 +2553,20 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      NSString	*m;
 
+	      m = [self makeSpace];
 	      ASSIGN(last, [NSDate date]);
-	      m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-		@"Disk nodes at %02.1f percent"), f * 100.0];
+              if ([m length] == 0)
+                {
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                    @"Disk nodes at %02.1f percent"), f * 100.0];
+                }
+              else
+                {
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                    @"Disk nodes at %02.1f percent"
+                    @" - deleted logs from %@ to make space"),
+                    f * 100.0, m];
+                }
 	      [self information: m from: nil to: nil type: LT_ALERT];
 	    }
 	}
