@@ -3683,15 +3683,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   
   return ([server multiple] == nil) ? NO : YES;
 }
+
 @end
 
 @implementation	EcProcess (Private)
-
-// For logging from the Control server.
-- (void) log: (NSString*)message type: (EcLogType)t
-{
-  NSLog(@"%@", message);
-}
 
 - (void) cmdMesgrelease: (NSArray*)msg
 {

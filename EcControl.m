@@ -1987,7 +1987,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSString	*repair;
   NSString	*spacing1;
   NSString	*spacing2;
-  int           minutes;
 
   instance = [alarm moInstance];
   if ([instance length] == 0)
@@ -2031,8 +2030,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       spacing2 = @", ";
     }
-
-  minutes = (0.0 - [[alarm eventDate] timeIntervalSinceNow]) / 60.0;
 
   identifier = [NSString stringWithFormat: @"%d", [alarm notificationID]];
 
@@ -2702,7 +2699,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  e = [NSString stringWithFormat:
 	    @"%@ top-level is not a dictionary.\n", path];
 	  ASSIGN(configFailed, e);
-	  [[self cmdLogFile: logname] printf: @"%n", configFailed];
+	  [[self cmdLogFile: logname] printf: @"%@", configFailed];
 	  return NO;
 	}
 

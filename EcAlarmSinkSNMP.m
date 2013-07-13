@@ -591,7 +591,7 @@ init_EcAlarmSink(void)
   tinfo->max_column = COLUMN_OBJECTID;
   netsnmp_tdata_register(reg, objectsTable, tinfo);
 
-  /* Create the alarms table as a red-only item for SNMP.
+  /* Create the alarms table as a read-only item for SNMP.
    */
   reg = netsnmp_create_handler_registration(
     "alarmsTable",

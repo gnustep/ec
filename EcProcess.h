@@ -368,7 +368,7 @@ extern NSString*	cmdVersion(NSString *ver);
 - (NSArray*) alarms;
 
 /** Convenience method to clear an alarm as produced by the
- * -alarmConfiguratonFor:specificProblem:perceivedSeverity:additionalText:
+ * -alarmConfigurationFor:specificProblem:additionalText:critical:
  * method.
  */
 - (void) clearConfigurationFor: (NSString*)managedObject
@@ -451,7 +451,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Send a SEVERE error message to the server by calling the
  * -cmdAlert:arguments: method.
  */
-- (void) cmdAlert: (NSString*)fmt, ...;
+- (void) cmdAlert: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Archives debug log files into the specified subdirectory of the debug
  * logging directory.  If subdir is nil then a subdirectory name corresponding
@@ -466,7 +466,7 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Send a log message to the server by calling the -cmdAudit:arguments: method.
  */
-- (void) cmdAudit: (NSString*)fmt, ...;
+- (void) cmdAudit: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Handles loss of connection to the server.
  */
@@ -485,7 +485,8 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Send a debug message - as long as the debug mode specified as 'type'
  * is currently set.  Operates by calling the -cmdDbg:msg:arguments: method.
  */
-- (void) cmdDbg: (NSString*)type msg: (NSString*)fmt, ...;
+- (void) cmdDbg: (NSString*)type
+            msg: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,3);
 
 /** Send a debug message with debug mode 'defaultMode'.<br />
  * Calls the -cmdDbg:msg:arguments: method.
@@ -495,7 +496,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Send a debug message with debug mode 'defaultMode'.<br />
  * Operates by calling the -cmdDebug:arguments: method.
  */
-- (void) cmdDebug: (NSString*)fmt, ...;
+- (void) cmdDebug: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Called whenever the user defaults are updated (which may be due to a
  * central configuration in additions to other defaults system changes).<br />
@@ -520,7 +521,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Send an error message to the server by calling the
  * -cmdError:arguments: method.
  */
-- (void) cmdError: (NSString*)fmt, ...;
+- (void) cmdError: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Flush logging information.
  */
@@ -672,7 +673,7 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Send a warning message to the server.
  */
-- (void) cmdWarn: (NSString*)fmt, ...;
+- (void) cmdWarn: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /* Return interval between timeouts.
  */
@@ -740,7 +741,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** May be used withing cmdMesg... methods to return formatted text to
  * the Console.
  */
-- (void) cmdPrintf: (NSString*)fmt, ...;
+- (void) cmdPrintf: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Should be over-ridden to perform extra tidy up on shutdown of the
  * process - should call [super cmdQuit:...] at the end of the method.
@@ -885,7 +886,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Logs a message iff the process is running in test mode.<br />
  * Operates by calling the -ecTestLog:arguments: method.
  */
-- (void) ecTestLog: (NSString*)fmt, ...;
+- (void) ecTestLog: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Returns the directory set as the root for files owned by the ECCL user
  */

@@ -34,7 +34,7 @@
 @interface	NSFileHandle (Printf)
 
 - (void) printWithFormat: (NSString*)format arguments: (va_list)args;
-- (void) printf: (NSString*)format,...;
+- (void) printf: (NSString*)format,... NS_FORMAT_FUNCTION(1,2);
 - (void) puts: (NSString*)text;
 
 @end
