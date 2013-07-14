@@ -486,7 +486,7 @@ extern NSString*	cmdVersion(NSString *ver);
  * is currently set.  Operates by calling the -cmdDbg:msg:arguments: method.
  */
 - (void) cmdDbg: (NSString*)type
-            msg: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,3);
+            msg: (NSString*)fmt, ... NS_FORMAT_FUNCTION(2,3);
 
 /** Send a debug message with debug mode 'defaultMode'.<br />
  * Calls the -cmdDbg:msg:arguments: method.
