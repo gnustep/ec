@@ -658,9 +658,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      @"the form YYYYMMDDhhmmss being the date and time at "
 		      @"which the archive was created.\n";
 		}
-	      else if (comp(wd, @"Connect") >= 0)
+	      else if (comp(wd, @"Control") >= 0)
 		{
-		  m = @"Connect ...\nPasses the command to the Control "
+		  m = @"Control ...\nPasses the command to the Control "
 		      @"process.  You may disconnect from this host by "
 		      @"typing 'control host'\n";
 		}
