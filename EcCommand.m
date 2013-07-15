@@ -2190,6 +2190,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       if ([mgr fileExistsAtPath: base isDirectory: &isDirectory] == NO
         || NO == isDirectory)
         {
+          ti += day;
+          [pool release];
           continue;     // No log directory for this date.
         }
 
