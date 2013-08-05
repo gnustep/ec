@@ -83,6 +83,7 @@ Control_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 LogTool_OBJC_FILES = LogTool.m 
 LogTool_TOOL_LIBS += -lECCL
 LogTool_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
+LogTool_CPPFLAGS += ${ECCL_CPPFLAGS}
 
 Terminate_OBJC_FILES = Terminate.m
 Terminate_TOOL_LIBS += -lECCL

@@ -30,33 +30,32 @@
 #import <Foundation/Foundation.h>
 
 #import "EcProcess.h"
+#import "EcUserDefaults.h"
 
-@interface	LogTool : EcProcess
-{
-}
-@end
-
-@implementation	LogTool
-- (void) cmdQuit: (NSInteger)status
-{
-  [super cmdQuit: status];
-  exit(status);
-}
-@end
-
-static void
-inner_main()
+int
+main()
 {
   NSUserDefaults        *defs;
   NSArray               *args;
-  LogTool               *tool;
+  NSString              *pref;
+  NSString		*host;
+  NSString		*cnam;
   NSString              *name;
   NSString              *mode;
   NSString              *mesg;
+  id			proxy;
+  NSCalendarDate        *d;
+  NSRange               r;
   EcLogType             eclt;
   CREATE_AUTORELEASE_POOL(arp);
 
-  defs = [NSUserDefaults standardUserDefaults];
+  pref = EC_DEFAULTS_PREFIX;
+  if (nil == pref)
+    {
+      pref = @"";
+    }
+  defs = [NSUserDefaults userDefaultsWithPrefix: pref
+                                         strict: EC_DEFAULTS_STRICT];
 
   args = [[NSProcessInfo processInfo] arguments];
   if ([args containsObject: @"--help"] == YES)
@@ -77,6 +76,7 @@ inner_main()
       NSLog(@"You must define a Name under which to log");
       exit(1);
     }
+
   mode = [defs stringForKey: @"Mode"];
   if ([mode length] == 0)
     {
@@ -115,30 +115,63 @@ inner_main()
       exit(1);
     }
 
-  /* Now establish the command server.
+  d = [[NSCalendarDate date] descriptionWithCalendarFormat:
+    @"%Y-%m-%d %H:%M:%S %z" locale: [defs dictionaryRepresentation]];
+
+  mesg = [NSString stringWithFormat: @"%@(%@): %@ %@ - %@\n", 
+    name, [[NSHost currentHost] name], d, mode, mesg];
+
+  /*
+   * A last check to remove any embedded newlines.
    */
-  tool = [[[LogTool alloc] initWithDefaults:
-      [NSDictionary dictionaryWithObjectsAndKeys:
-	      @"yes", @"NoDaemon",			// Never run as daemon
-	      @"yes", @"Transient",			// Don't log to console
-	      name, @"ProgramName",
-	      nil]] autorelease];
+  r = [mesg rangeOfString: @"\n"];
+  if (r.location != [mesg length] - 1)
+    {
+      NSMutableString	*m = [[mesg mutableCopy] autorelease];
 
-  [EcProc cmdNewServer];
+      while (r.location != [m length] - 1)
+	{
+	  [m replaceCharactersInRange: r withString: @" "];
+	  r = [m rangeOfString: @"\n"];
+	}
+      mesg = m;
+    }
+  
+  cnam = [defs stringForKey: @"CommandName"];
+  if (cnam == nil)
+    {
+      cnam = @"Command";
+    }
 
-  [tool log: mesg type: eclt];
+  host = [defs stringForKey: @"CommandHost"];
+  if ([host length] == 0)
+    {
+      host = [[NSHost currentHost] name];
+    }
 
-  [tool cmdFlushLogs];
+  proxy = [NSConnection rootProxyForConnectionWithRegisteredName: cnam
+							    host: host
+    usingNameServer: [NSSocketPortNameServer sharedInstance]];
 
-  [tool cmdQuit: 0];
+  if (nil == proxy)
+    {
+      NSLog(@"Unable to contact %@ on %@", cnam, host);
+      exit(1);
+    }
+
+  NS_DURING
+    {
+      [(id<Command>)proxy logMessage: mesg  
+                                type: eclt  
+                                name: name];
+    }
+  NS_HANDLER
+    {
+      NSLog (@"Could not log message to server: %@", localException);
+      exit(1);
+    }
+  NS_ENDHANDLER
 
   RELEASE(arp);
-  exit(0);
-}
-
-int
-main(int argc, char *argv[])
-{
-  inner_main();
   return 0;
 }
