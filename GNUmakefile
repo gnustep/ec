@@ -64,6 +64,7 @@ TOOL_NAME = \
 	Command \
 	Console \
 	Control \
+	AlarmTool \
 	LogTool \
 	Terminate \
 
@@ -79,6 +80,11 @@ Console_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 Control_OBJC_FILES = Control.m EcControl.m EcClientI.m NSFileHandle+Printf.m
 Control_TOOL_LIBS += -lECCL
 Control_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
+
+AlarmTool_OBJC_FILES = AlarmTool.m 
+AlarmTool_TOOL_LIBS += -lECCL
+AlarmTool_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
+AlarmTool_CPPFLAGS += ${ECCL_CPPFLAGS}
 
 LogTool_OBJC_FILES = LogTool.m 
 LogTool_TOOL_LIBS += -lECCL

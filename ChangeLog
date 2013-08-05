@@ -1,9 +1,10 @@
 2013-08-05  Richard Frith-Macdonald <rfm@gnu.org>
 
+        * AlarmTool.m: Tool to raise/clear alarms
         * LogTool.m: Tool to generate logs
         * Terminate.m: Cleanups
-        * GNUmakefile: Build new tool
-        * ECCL.h: Document new tool
+        * GNUmakefile: Build new tools
+        * ECCL.h: Document new tools
 
 2013-07-12  Richard Frith-Macdonald <rfm@gnu.org>
 

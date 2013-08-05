@@ -40,6 +40,25 @@
       </section>
 
       <section>
+        <heading>The AlarmTool command line tool</heading>
+        <p>The AlarmTool command line tool provides a mechanism to raise and
+          clear alarms (using the ECCL alarm system) from a process which is
+          not itsself ECCL enabled (ie not built using the ECCL classes).<br />
+          You may use this to generate logging from shell scripts
+          or from Java servlets etc.
+        </p>
+        <p>The tool requires at least four (usually six) arguments:<br />
+          '-Cause NN' the probable cause of the alarm (type of problem).<br />
+          '-Component NN' the component which raised the alarm.<br />
+          '-Problem NN' the specific problem which raised the alarm.<br />
+          '-Process NN' the name of the process which raised the alarm.<br />
+          '-Repair NN' a proposed repair action to fix the issue.<br />
+          '-Severity NN' the severity of the problem (defaults to 'cleared',
+          in which case the Repair action is not required).<br />
+        </p>
+      </section>
+
+      <section>
         <heading>The LogTool command line tool</heading>
         <p>The LogTool command line tool provides a mechanism to log various
           types of messages (using the ECCL logging system) from a process
@@ -56,13 +75,14 @@
           to generating a 'Warn' log.
         </p>
       </section>
+
       <section>
         <heading>The Terminate command line tool</heading>
         <p>The Terminate command line tool provides a mechanism to shut down
           an ECCL host.  This tool contacts a Command server and tells it to
           shut down all it's local client process and the shut itsself down.
         </p>
-        <p>You may use -CommandHost and -CommandName to specify a Command
+        <p>You may use '-CommandHost' and '-CommandName' to specify a Command
           server to contact, otherwise the default local Command server is
           contacted (or if there is no local server, any available Command
           server on the local network is contacted).
