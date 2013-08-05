@@ -34,6 +34,9 @@
 @class	NSMutableSet;
 @class	NSString;
 
+/* The EcClientI class provides a lightweight interface to a remote
+ * process, equipped to handle inter-process keepalive signalling.
+ */
 @interface	EcClientI : NSObject
 {
   id<CmdClient>	theServer;

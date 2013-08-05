@@ -64,6 +64,7 @@ TOOL_NAME = \
 	Command \
 	Console \
 	Control \
+	LogTool \
 	Terminate \
 
 
@@ -79,10 +80,14 @@ Control_OBJC_FILES = Control.m EcControl.m EcClientI.m NSFileHandle+Printf.m
 Control_TOOL_LIBS += -lECCL
 Control_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
 
+LogTool_OBJC_FILES = LogTool.m 
+LogTool_TOOL_LIBS += -lECCL
+LogTool_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
+
 Terminate_OBJC_FILES = Terminate.m
 Terminate_TOOL_LIBS += -lECCL
 Terminate_LIB_DIRS += -L./$(GNUSTEP_OBJ_DIR)
-
+Terminate_CPPFLAGS += ${ECCL_CPPFLAGS}
 
 
 

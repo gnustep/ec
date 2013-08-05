@@ -30,48 +30,64 @@
 #import <Foundation/Foundation.h>
 
 #import "EcProcess.h"
+#import "EcUserDefaults.h"
+
 
 int
 main()
 {
   CREATE_AUTORELEASE_POOL(arp);
-  NSUserDefaults	*defs = [NSUserDefaults standardUserDefaults];
+  NSUserDefaults	*defs;
+  NSString              *pref;
   NSString		*host;
   NSString		*name;
   id			proxy;
+  BOOL                  any = NO;
 
-  host = [defs stringForKey: @"BSCommandHost"];
-  if (host == nil)
+  pref = EC_DEFAULTS_PREFIX;
+  if (nil == pref)
     {
-      host = [defs stringForKey: @"CommandHost"];
-      if (host == nil)
-	{
-	  host = @"*";
-	}
+      pref = @"";
     }
-  if ([host length] == 0)
-    {
-      host = [[NSHost currentHost] name];
-    }
+  defs = [NSUserDefaults userDefaultsWithPrefix: pref
+                                         strict: EC_DEFAULTS_STRICT];
 
   /*
    * Shut down the local command server.
    */
-  name = [defs stringForKey: @"BSCommandName"];
+  name = [defs stringForKey: @"CommandName"];
   if (name == nil)
     {
-      name = [defs stringForKey: @"CommandName"];
-      if (name == nil)
-	{
-	  name = @"Command";
-	}
+      name = @"Command";
+    }
+
+  host = [defs stringForKey: @"CommandHost"];
+  if ([host length] == 0)
+    {
+      any = YES;
+      host = [[NSHost currentHost] name];
     }
 
   proxy = [NSConnection rootProxyForConnectionWithRegisteredName: name
 							    host: host
     usingNameServer: [NSSocketPortNameServer sharedInstance]];
-  [(id<Command>)proxy terminate];
 
+  if (nil == proxy && YES == any)
+    {
+      host = @"*";
+      proxy = [NSConnection rootProxyForConnectionWithRegisteredName: name
+                                                                host: host
+        usingNameServer: [NSSocketPortNameServer sharedInstance]];
+    }
+
+  if (nil == proxy)
+    {
+      NSLog(@"Unable to contact %@ on %@", name, host);
+    }
+  else
+    {
+      [(id<Command>)proxy terminate];
+    }
   RELEASE(arp);
   return 0;
 }
