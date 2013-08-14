@@ -55,6 +55,8 @@ main()
   EcAlarmSeverity       severity;
   CREATE_AUTORELEASE_POOL(arp);
 
+  [EcProcess class];            // Force linker to provide library
+
   pref = EC_DEFAULTS_PREFIX;
   if (nil == pref)
     {
