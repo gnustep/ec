@@ -2043,11 +2043,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                 {
                   /* We do not want detailed memory information,
                    * so we set the next alerting threshold from
-                   * 500 to 1000 KB above the current peak usage,
+                   * 5 to 10 MB above the current peak usage,
                    * ensuring that only serious increases
                    * in usage will generate an alert.
                    */
-                  inc = 500;
+                  inc = 5120;
                 }
             }
           memPeak = ((memPeak / (inc * 1024)) + 2) * (inc * 1024);
