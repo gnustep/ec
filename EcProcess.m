@@ -144,7 +144,7 @@ qhandler(int sig)
 {
   signal(sig, ihandler);
   /* We store the signal value in a global variable and return to normal
-   * processing ... that way later code can check on the sttate of the
+   * processing ... that way later code can check on the state of the
    * variable and take action outside the handler.
    * We can't act immediately here inside the handler as the signal may
    * have interrupted some vital library (eg malloc()) and left it in a
@@ -3385,7 +3385,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	      case SIGPIPE: 
 	      case SIGTTOU: 
 	      case SIGTTIN: 
-	      case SIGHUP: 
 	      case SIGCHLD: 
 
 		/* SIGWINCH is generated when the terminal size
@@ -3397,6 +3396,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 		signal(i, SIG_IGN);
 		break;
+
+	      case SIGHUP: 
+                if ([cmdDefs boolForKey: @"Daemon"] == YES)
+                  {
+                    signal(i, SIG_IGN);
+                  }
+                else
+                  {
+                    signal(i, qhandler);
+                  }
+                break;
 
 	      case SIGINT: 
 	      case SIGTERM: 
