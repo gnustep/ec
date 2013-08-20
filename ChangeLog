@@ -1,3 +1,11 @@
+2013-08-20  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcConsole.m: Ignore exception printing message on shutdown.
+        * EcProcess.m: Improve SIGHUP handling. Add new option for
+        memory usage logging and increase default alert increments
+        again. Make name of allowed usage config consistent with other
+        names.  Add option to quit process when usage gets too high.
+
 2013-08-05  Richard Frith-Macdonald <rfm@gnu.org>
 
         * AlarmTool.m: Tool to raise/clear alarms

@@ -71,15 +71,50 @@
 	      may be overridden by using the 'release' command in the
 	      Console program.
 	    </desc>
+	    <term>EcMemoryAllowed</term>
+	    <desc>
+              This may be used to specify the heap memory allocation allowed
+              (in megabytes) before memory usage alerting may begin.<br />
+              If this is not specified (or a negative value is specified)
+              the default of 50 megabytes is used.
+	    </desc>
 	    <term>EcMemoryIncrement</term>
 	    <desc>
 	      This integer value controls the (KBytes) increment in process
               memory usage after which an alert is generated.<br />
-              If this is not set (or is set to a value less than 1) then
-              a value of 500 is used unless EcMemory is set (in which case
-              the lower value of 20 is used).<br />
+              If this is not set (or is set to a value less than ten or
+              greater than a million) then a value of five thousand is used
+              unless EcMemory is set (in which case twenty is used).<br />
               Setting a higher value make memory leak detection less
               sensitive (but reduces unnecessary alerts).<br />
+              If used in conjunction with EcMemoryPercentage, the greater
+              of the two allowed memory values is used.<br />
+	      This may be set on the command line or in Control.plist
+	    </desc>
+	    <term>EcMemoryMaximum</term>
+	    <desc>
+              This may be used to specify the heap memory allocation allowed
+              (in megabytes) before the process is forced to quit due to
+              excessive memory usage.<br />
+              If the memory usage (heap usage minus -ecNotLeaked) reaches
+              this threshold, the -cmdQuit: method will be called with an
+              argument of -1.<br />
+              If this is not specified (or a negative value is specified)
+              the process will never shut down due to excessive memory usage.
+            </desc>
+	    <term>EcMemoryPercentage</term>
+	    <desc>
+	      This integer value controls the increase in the alerting
+              threshold after  which a memory usage alert is generated.<br />
+              The increase is calcuilated as a percentage of the current
+              memory usage value when an alert is generated.<br />
+              If this is not set (or is set to a value less than one or
+              greater than a thousand) then a value of ten is used unless
+              EcMemory is set (in which one is used).<br />
+              Setting a higher value make memory leak detection less
+              sensitive (but reduces unnecessary alerts).<br />
+              If used in conjunction with EcMemoryIncrement, the greater
+              of the two allowed memory values is used.<br />
 	      This may be set on the command line or in Control.plist
 	    </desc>
 	    <term>EcRelease</term>

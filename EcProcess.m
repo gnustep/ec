@@ -1,4 +1,3 @@
-
 /** Enterprise Control Configuration and Logging
 
    Copyright (C) 2012 Free Software Foundation, Inc.
@@ -483,11 +482,12 @@ ecHostName()
 }
 
 #define	DEFMEMALLOWED	50
-static int	memAllowed = DEFMEMALLOWED;
-static int	memLast = 0;
-static int	memPeak = 0;
-static int	memSlot = 0;
-static int	memRoll[10];
+static uint64_t	        memMaximum = 0;
+static uint64_t	        memAllowed = DEFMEMALLOWED;
+static NSUInteger	memLast = 0;
+static NSUInteger	memPeak = 0;
+static NSUInteger	memSlot = 0;
+static NSUInteger	memRoll[10];
 #define	memSize (sizeof(memRoll)/sizeof(*memRoll))
 
 
@@ -1103,14 +1103,16 @@ static NSString	*noFiles = @"No log files to archive";
       [self setCmdInterval: [str floatValue]];
     }
 
-  str = [cmdDefs stringForKey: @"MemAllowed"];
-  if (nil != str)
+  memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
+  if (0 == memAllowed || memAllowed > 100000)
     {
-      memAllowed = [str intValue];
-      if (memAllowed <= 0)
-        {
-          memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
-        }
+      memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
+    }
+
+  memMaximum = (uint64_t)[cmdDefs integerForKey: @"MemoryMaximum"];
+  if (memMaximum > 100000)
+    {
+      memMaximum = 0;	                // Disabled
     }
 
   str = [cmdDefs stringForKey: @"CoreSize"];
@@ -1895,6 +1897,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 		    {
 		      NSLog(@"Rejected by Command - %@",
 			[r objectForKey: @"rejected"]);
+                      cmdIsQuitting = YES;
 		      [self cmdQuit: 0];	/* Rejected by server.	*/
 		    }
 		  else if (nil == r || nil == [r objectForKey: @"back-off"])
@@ -1988,11 +1991,25 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   struct mallinfo	info;
 
   info = mallinfo();
+  /* Do initial population so we can work immediately.
+   */
+  if (0 == memRoll[0])
+    {
+      int       b = info.uordblks;
+
+      if (b <= 0) b = 1;
+      while (memSlot < memSize)
+        {
+          memRoll[memSlot++] = b;
+        }
+      memLast = b;
+      memPeak = b;
+    }
   if (memSlot >= memSize)
     {
       NSUInteger	average;
       NSUInteger	notLeaked;
-      int		i;
+      int	        i;
 
       notLeaked = [self ecNotLeaked];
 
@@ -2021,7 +2038,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       average = ((average / 1024) + 1) * 1024;
       if (average > memPeak)
 	{
-          int   inc;
+          NSInteger     inc;
+          NSInteger     pct;
+          NSInteger     iMax = 0;
+          NSInteger     pMax = 0;
 
 	  /* Alert if the we have peaked above the allowed size.
 	   */
@@ -2044,8 +2064,28 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 		  memPeak = size;
 		}
 	    }
-          inc = (int)[cmdDefs integerForKey: @"MemoryIncrement"];
-          if (inc < 1)
+
+          /* If we have a defined maximum memory usage for the process,
+           * we should shut down with a non-zero status to get a restart.
+           */
+          if (memMaximum > 0 && memPeak > memMaximum * 1024 * 1024)
+            {
+              if (NO == cmdIsQuitting)
+                {
+                  cmdIsQuitting = YES;
+                  [self cmdQuit: -1];
+                }
+            }
+
+          /* We increase the threshold for the next alert by a percentage
+           * of the existing usage or by a fixed increment, whichever is
+           * the larger.
+           */
+          pct = [cmdDefs integerForKey: @"MemoryPercentage"];
+          if (pct < 1 || pct > 1000) pct = 0;
+          inc = [cmdDefs integerForKey: @"MemoryIncrement"];
+          if (inc < 10 || inc > 1000000) inc = 0;
+          if (0 == inc && 0 == pct)
             {
               if (YES == [cmdDefs boolForKey: @"Memory"])
                 {
@@ -2054,6 +2094,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                    * peak usage.
                    */
                   inc = 20;
+                  pct = 0;
                 }
               else
                 {
@@ -2063,10 +2104,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                    * ensuring that only serious increases
                    * in usage will generate an alert.
                    */
-                  inc = 5120;
+                  inc = 5000;
+                  pct = 10;     // Use ten percent if more than fixed increment
                 }
             }
-          memPeak = ((memPeak / (inc * 1024)) + 2) * (inc * 1024);
+          if (inc > 0)
+            {
+              iMax = ((memPeak / (inc * 1024)) + 2) * (inc * 1024);
+            }
+          if (pct > 0)
+            {
+              pMax = (((memPeak * (100 + pct)) / 1024 + 1) * 1024);
+            }
+          memPeak = (iMax > pMax) ? iMax : pMax;
 	}
     }
   /* Record the latest memory usage.
@@ -2161,6 +2211,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               int       sig = cmdSignalled;
 
               cmdSignalled = 0;
+              cmdIsQuitting = YES;
 	      [self cmdQuit: sig];
 	    }
 	}
@@ -2176,6 +2227,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   /* finish server */
 
+  cmdIsQuitting = YES;
   [self cmdQuit: 0];
   DESTROY(EcProcConnection);
   return 0;
@@ -2970,11 +3022,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-      if (YES == [cmdDefs boolForKey: @"Memory"])
-	{
-	  [self cmdPrintf: @"Memory usage: %u (peak), %u (current)\n",
-	    memPeak, memLast];
-	}
+      [self cmdPrintf: @"Memory usage: %"PRIuPTR" (peak), %"PRIuPTR
+        " (current), %"PRIuPTR" (exempt)\n",
+        memPeak, memLast, [self ecNotLeaked]];
+      [self cmdPrintf:
+        @"Memory error reporting after usage: %"PRIu64"MB\n", memAllowed];
+      if (memMaximum > 0)
+        {
+          [self cmdPrintf:
+            @"Memory usage exceeded shutdown after: %"PRIu64"MB\n", memMaximum];
+        }
     }
 }
 
@@ -3869,6 +3926,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   cmdPTimer = nil;
   if (sig > 0)
     {
+      cmdIsQuitting = YES;
       [self cmdQuit: sig];
     }
   if (YES == inProgress)
@@ -4071,6 +4129,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             additionalText: err];
           [self alarm: a];
           [alarmDestination shutdown];
+          cmdIsQuitting = YES;
           [self cmdQuit: 1];
         }
       else
