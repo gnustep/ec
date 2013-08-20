@@ -142,7 +142,20 @@ ihandler(int sig)
 static RETSIGTYPE
 qhandler(int sig)
 {
-  signal(sig, ihandler);
+  if (SIGHUP == sig)
+    {
+      static int        hupCount = 0;
+
+      /* We allow multiple HUP signals since, while shutting down we may
+       * attempt to write out messages to our terminal, generating more
+       * signals, and we want to ignore those and shut down cleanly.
+       */
+      if (hupCount++ < 1000)
+        {
+	  cmdSignalled = 0;	// Allow signal to be set.
+        }
+    }
+
   /* We store the signal value in a global variable and return to normal
    * processing ... that way later code can check on the state of the
    * variable and take action outside the handler.
@@ -154,19 +167,22 @@ qhandler(int sig)
    */
   if (0 == cmdSignalled)
     {
-      cmdSignalled = sig;
+      cmdSignalled = sig;       // Record signal for event loop.
     }
   else
     {
       static BOOL	beenHere = NO;
 
+      /* We have been signalled more than once ... so let's try to
+       * crash rather than continuing.
+       */
       if (NO == beenHere)
 	{
 	  beenHere = YES;
 	  signal(SIGABRT, SIG_DFL);
 	  abort();
 	}
-      exit(sig);
+      exit(cmdSignalled);	// Exit with *first* signal number
     }
 #if	RETSIGTYPE != void
   return 0;

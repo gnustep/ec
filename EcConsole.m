@@ -96,7 +96,13 @@ static BOOL commandIsRepeat (NSString *string)
 
 - (void) cmdQuit: (NSInteger)sig
 {
-  [ochan puts: @"\nExiting\n"];
+  /* Attempt to output an exit message, but our tereminal may have gone away
+   * so we ignore exceptions during that.
+   */
+  NS_DURING
+    [ochan puts: @"\nExiting\n"];
+  NS_HANDLER
+  NS_ENDHANDLER
 
 #if defined(HAVE_LIBREADLINE)
   [self deactivateReadline];
@@ -143,7 +149,7 @@ static BOOL commandIsRepeat (NSString *string)
       [ochan release];
       ochan = nil;
     }
-  exit(0);
+  [super cmdQuit: sig];
 }
 
 - (void) connectionBecameInvalid: (NSNotification*)notification
