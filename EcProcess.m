@@ -49,6 +49,7 @@
 #import <Foundation/NSValue.h>
 
 #import <GNUstepBase/GSObjCRuntime.h>
+#import <GNUstepBase/NSObject+GNUstepBase.h>
 
 
 #import "EcProcess.h"
@@ -191,7 +192,7 @@ qhandler(int sig)
 NSString*
 cmdVersion(NSString *ver)
 {
-  static NSString	*version = @"1997-1999";
+  static NSString	*version = @"1997-2013";
 
   if (ver != nil)
     {
@@ -960,6 +961,47 @@ findMode(NSDictionary* d, NSString* s)
 
 @implementation EcProcess
 
++ (void) atExit
+{
+  if ([NSObject shouldCleanUp])
+    {
+      DESTROY(EcProc);
+      DESTROY(EcProcConnection);
+      DESTROY(alarmDestination);
+      DESTROY(alertLogger);
+      DESTROY(auditLogger);
+      DESTROY(cmdActions);
+      DESTROY(cmdConf);
+      DESTROY(cmdDebugKnown);
+      DESTROY(cmdDebugModes);
+      DESTROY(cmdDebugName);
+      DESTROY(cmdDefs);
+      DESTROY(cmdFirst);
+      DESTROY(cmdInst);
+      DESTROY(cmdLast);
+      DESTROY(cmdLogMap);
+      DESTROY(cmdName);
+      DESTROY(cmdOperators);
+      DESTROY(cmdPTimer);
+      DESTROY(cmdServer);
+      DESTROY(cmdUser);
+      DESTROY(dataDir);
+      DESTROY(debugLogger);
+      DESTROY(ecLock);
+      DESTROY(errorLogger);
+      DESTROY(homeDir);
+      DESTROY(hostName);
+      DESTROY(lastIP);
+      DESTROY(lastOP);
+      DESTROY(noNetConfig);
+      DESTROY(replyBuffer);
+      DESTROY(servers);
+      DESTROY(started);
+      DESTROY(userDir);
+      DESTROY(warningLogger);
+    }
+}
+
 static NSString	*noFiles = @"No log files to archive";
 
 - (id) cmdConfig: (NSString*)key
@@ -1526,6 +1568,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        */
       [[NSConnection defaultConnection] setRequestTimeout: 120.0];
       [[NSConnection defaultConnection] setReplyTimeout: 120.0];
+      [self registerAtExit];
     }
 }
 

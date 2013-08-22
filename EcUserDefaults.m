@@ -57,6 +57,8 @@ static NSLock 		*lock = nil;
   if (nil == lock)
     {
       lock = [NSLock new];
+      [[NSObject leakAt: &lock] release];
+      [[NSObject leakAt: &latest] release];
     }
 }
 
@@ -168,7 +170,7 @@ static NSLock 		*lock = nil;
   [list insertObject: @"EcConfiguration" atIndex: 1]; 
   [defs setSearchList: list];
   [list release];
-  latest = (NSUserDefaults*)self;
+  ASSIGN(latest, (NSUserDefaults*)self);
   [lock unlock];
   return self;
 }
