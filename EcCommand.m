@@ -2124,7 +2124,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSAutoreleasePool	*arp;
 
   arp = [NSAutoreleasePool new];
-  now = [when timeIntervalSinceReferenceDate];
+  if (nil == when)
+    {
+      now = [NSDate timeIntervalSinceReferenceDate];
+    }
+  else
+    {
+      now = [when timeIntervalSinceReferenceDate];
+    } 
 
   logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
 
