@@ -2090,8 +2090,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	   */
 	  if (average > (memAllowed * 1024 * 1024))
 	    {
-	      [self cmdError: @"Average memory usage grown to %"PRIuPTR"KB",
-		average / 1024];
+              if (notLeaked > 1024)
+                {
+                  [self cmdError: @"Average heap usage grown to %"PRIuPTR
+                    "KB (plus %"PRIuPTR"KB not leaked)",
+                    average / 1024, notLeaked / 1024];
+                }
+              else
+                {
+                  [self cmdError: @"Average heap usage grown to %"PRIuPTR"KB",
+                    average / 1024];
+                }
 	    }
 
 	  /* Set the peak memory from the last set of readings.
