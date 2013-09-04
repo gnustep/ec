@@ -190,11 +190,13 @@ replaceFields(NSDictionary *fields, NSString *template)
 
 - (void) smtpClient: (GSMimeSMTPClient*)client mimeFailed: (GSMimeDocument*)doc
 {
+  failEmail++;
   NSLog(@"Message failed: %@", doc);
 }
 
 - (void) smtpClient: (GSMimeSMTPClient*)client mimeSent: (GSMimeDocument*)doc
 {
+  sentEmail++;
   if (YES == debug)
     {
       NSLog(@"Message sent: %@", doc);
@@ -203,6 +205,7 @@ replaceFields(NSDictionary *fields, NSString *template)
 
 - (void) smtpClient: (GSMimeSMTPClient*)client mimeUnsent: (GSMimeDocument*)doc
 {
+  failEmail++;
   NSLog(@"Message dropped on SMTP client shutdown: %@", doc);
 }
 
@@ -363,9 +366,11 @@ replaceFields(NSDictionary *fields, NSString *template)
 - (NSString*) description
 {
   return [NSString stringWithFormat: @"%@ -\nConfigured with %u rules\n"
-    @"With SMTP %@:%@ as %@\nPending Email:%@\nPending SMS:%@",
+    @"With SMTP %@:%@ as %@\n"
+    @"Email sent: %"PRIuPTR", fail: %"PRIuPTR", pending:%@\n"
+    @"SMS pending:%@",
     [super description], (unsigned)[rules count], eHost, ePort,
-    eFrom, email, sms];
+    eFrom, sentEmail, failEmail, email, sms];
 }
 
 - (void) flushEmailForAddress: (NSString*)address
@@ -429,7 +434,7 @@ replaceFields(NSDictionary *fields, NSString *template)
 
 - (void) flushSms
 {
-  return;
+  [sms removeAllObjects];
 }
 
 - (void) applyRules: (NSArray*)rulesArray

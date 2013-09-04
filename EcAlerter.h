@@ -324,6 +324,8 @@
   NSString		*eHost; /** Host with SMTP MTA */
   NSString		*ePort; /** Port of SMTP MTA */
   GSMimeSMTPClient	*smtp;  /** Client connection to MTA */
+  NSUInteger            sentEmail;
+  NSUInteger            failEmail;
   BOOL                  debug;  /** Debug enabled in config */
   BOOL                  supersede;  /** If a clear should replace original */
   BOOL                  eThreaded;  /** alarm reminder emails threaded */
