@@ -99,7 +99,7 @@ main()
   str = [defs stringForKey: @"Cause"];
   if (nil == str)
     {
-      NSLog(@"Missing Cause, try --help", str);
+      NSLog(@"Missing Cause, try --help");
       exit(1);
     }
   cause = EcAlarmVersionMismatch;

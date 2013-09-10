@@ -2177,7 +2177,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if (YES == [cmdDefs boolForKey: @"Memory"])
     {
       [self cmdDbg: cmdDetailDbg
-	       msg: @"Memory usage %u", memRoll[memSlot]];
+	       msg: @"Memory usage %"PRIuPTR, memRoll[memSlot]];
     }
   memSlot++;
 

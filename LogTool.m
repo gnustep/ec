@@ -53,8 +53,8 @@ main()
   NSString              *name;
   NSString              *mode;
   NSString              *mesg;
+  NSString              *date;
   id			proxy;
-  NSCalendarDate        *d;
   NSRange               r;
   EcLogType             eclt;
   CREATE_AUTORELEASE_POOL(arp);
@@ -127,11 +127,11 @@ main()
       exit(1);
     }
 
-  d = [[NSCalendarDate date] descriptionWithCalendarFormat:
+  date = [[NSCalendarDate date] descriptionWithCalendarFormat:
     @"%Y-%m-%d %H:%M:%S %z" locale: [defs dictionaryRepresentation]];
 
   mesg = [NSString stringWithFormat: @"%@(%@): %@ %@ - %@\n", 
-    name, [[NSHost currentHost] name], d, mode, mesg];
+    name, [[NSHost currentHost] name], date, mode, mesg];
 
   /*
    * A last check to remove any embedded newlines.
