@@ -1192,30 +1192,39 @@ static NSString	*noFiles = @"No log files to archive";
         {
           if (RLIM_INFINITY != rlim.rlim_max && rlim.rlim_max < want)
             {
-              NSLog(@"Hard limit for core file size (%dMB)"
-                @" less than requested (%dMB)",
-                (int)(rlim.rlim_max/(1024*1024)), coreSize);
-            }
-          else
-            {
-              rlim.rlim_cur = want;
-              if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+              int       maxMB = (int)(rlim.rlim_max/(1024*1024));
+
+              if (RLIM_INFINITY == want)
                 {
-                  if (coreSize > 0)
-                    {
-                      NSLog(@"Unable to set core file size limit to %uMB"
-                        @", errno: %d", coreSize, errno);
-                    }
-                  else if (coreSize < 0)
-                    {
-                      NSLog(@"Unable to set core file size unlimited"
-                        @", errno: %d", errno);
-                    }
-                  else
-                    {
-                      NSLog(@"Unable to set core dumps disabled"
-                        @", errno: %d", errno);
-                    }
+                  NSLog(@"Hard limit for core file size (%dMB)"
+                    @" less than requested (unlimited); using %dMB.",
+                    maxMB, maxMB);
+                }
+              else
+                {
+                  NSLog(@"Hard limit for core file size (%dMB)"
+                    @" less than requested (%dMB); using %dMB.",
+                    maxMB, coreSize, maxMB);
+                }
+              want = rlim.rlim_max;
+            }
+          rlim.rlim_cur = want;
+          if (setrlimit(RLIMIT_CORE, &rlim) < 0)
+            {
+              if (coreSize > 0)
+                {
+                  NSLog(@"Unable to set core file size limit to %uMB"
+                    @", errno: %d", coreSize, errno);
+                }
+              else if (coreSize < 0)
+                {
+                  NSLog(@"Unable to set core file size unlimited"
+                    @", errno: %d", errno);
+                }
+              else
+                {
+                  NSLog(@"Unable to set core dumps disabled"
+                    @", errno: %d", errno);
                 }
             }
         }
