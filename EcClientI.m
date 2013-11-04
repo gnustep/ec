@@ -181,12 +181,12 @@
 
 - (void) setTransient: (BOOL)flag
 {
-  transient = flag;
+  transient = flag ? YES : NO;
 }
 
 - (void) setUnregistered: (BOOL)flag
 {
-  unregistered = flag;
+  unregistered = flag ? YES : NO;
 }
 
 - (BOOL) transient

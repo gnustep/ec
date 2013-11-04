@@ -194,7 +194,7 @@
 @end
 
 /** Methods called internally to forward events to the remote target of
- * the receiver.  These are provided for subclasses to oveerride.
+ * the receiver.  These are provided for subclasses to override.
  */
 @interface	EcAlarmDestination (Forwarding)
 /** Forward an alarm event. */

@@ -1002,6 +1002,41 @@ findMode(NSDictionary* d, NSString* s)
     }
 }
 
+- (void) _commandRemove
+{
+  id connection = [cmdServer connectionForProxy];
+
+  if (nil != connection)
+    {
+      [connection setDelegate: nil];
+      [[NSNotificationCenter defaultCenter]
+        removeObserver: self
+                  name: NSConnectionDidDieNotification
+                object: connection];
+      [connection invalidate];
+    }
+  DESTROY(cmdServer);
+}
+
+- (void) _connectionRegistered
+{
+  EcAlarm       *a;
+
+  a = [EcAlarm alarmForManagedObject: nil
+    at: nil
+    withEventType: EcAlarmEventTypeProcessingError
+    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+    specificProblem: @"unable to register"
+    perceivedSeverity: EcAlarmSeverityCleared
+    proposedRepairAction: nil
+    additionalText: nil];
+  /* This alarm will usually have been raised by another process,
+   * so we can't clear it as we have no alarm to match.
+   * To work around this, we forward the clear directly.
+   */
+  [alarmDestination alarmFwd: a];
+}
+
 static NSString	*noFiles = @"No log files to archive";
 
 - (id) cmdConfig: (NSString*)key
@@ -1629,6 +1664,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   id connection;
 
   connection = [notification object];
+  [connection setDelegate: nil];
   [[NSNotificationCenter defaultCenter]
     removeObserver: self
 	      name: NSConnectionDidDieNotification
@@ -1655,7 +1691,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      NSLog(@"unknown-Connection sent invalidation\n");
+      NSLog(@"unknown connection sent invalidation\n");
     }
   return self;
 }
@@ -1970,6 +2006,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 			       name: NSConnectionDidDieNotification
 			     object: connection];
 		      [self _update: r];
+
+                      /* If we just connected to the command server,
+                       * and we have a registered connection, then we
+                       * can tell it that any alarm for failure to
+                       * register must be cleared.
+                       */
+                      if (nil != cmdServer && [EcProcConnection isValid])
+                        {
+                          [self _connectionRegistered];
+                        }
 		    }
 		}
 	    }
@@ -1994,12 +2040,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       NS_HANDLER
 	{
-	  DESTROY(cmdServer);
+          [self _commandRemove];
 	  NSLog(@"Caught exception unregistering from Command: %@",
 	    localException);
 	}
       NS_ENDHANDLER
-      DESTROY(cmdServer);
+      [self _commandRemove];
     }
 }
 
@@ -2239,8 +2285,23 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if ([c registerName: [self cmdName]
        withNameServer: [NSSocketPortNameServer sharedInstance]] == NO)
     {
+      EcAlarm   *a;
+
       DESTROY(c);
-      [self cmdError: @"Unable to register with name server."];
+      NSLog(@"Unable to register with name server. Perhaps a copy of this process is already running (or is hung or blocked waiting for a database query etc), or perhaps an old version was killed and is still registered.  Check the state of any running process and and check the process registration with gdomap.");
+
+      a = [EcAlarm alarmForManagedObject: nil
+        at: nil
+        withEventType: EcAlarmEventTypeProcessingError
+        probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+        specificProblem: @"unable to register"
+        perceivedSeverity: EcAlarmSeverityMajor
+        proposedRepairAction:
+        _(@"Check for running copy of process and/or registration in gdomap.")
+        additionalText: _(@"Process probably already running (possibly hung/delayed) or problem in name registration with distributed objects system (gdomap)")];
+      [self alarm: a];
+      [alarmDestination shutdown];
+      cmdIsQuitting = YES;
       [self cmdFlushLogs];
       [arp release];
       return 2;
@@ -2254,6 +2315,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     object: c];
   EcProcConnection = c;
   
+  [self _connectionRegistered];
+
   [self cmdAudit: @"Started `%@'", [self cmdName]];
   
   loop = [NSRunLoop currentRunLoop];
@@ -2503,7 +2566,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       NS_HANDLER
 	{
-	  cmdServer = nil;
+          [self _commandRemove];
 	  NSLog(@"Caught exception sending client reply to Command: %@ %@",
 	    name, localException);
 	}
@@ -3628,14 +3691,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       [[NSProcessInfo processInfo] setProcessName: cmdName];
 
-      [[NSNotificationCenter defaultCenter]
-	addObserver: self
-	selector: @selector(cmdDefaultsChanged:)
-	name: NSUserDefaultsDidChangeNotification
-	object: [NSUserDefaults standardUserDefaults]];
-
-      [self cmdDefaultsChanged: nil];
-
       /* Archive any existing debug log left over by a crash.
        */
       str = [cmdName stringByAppendingPathExtension: @"debug"];
@@ -3657,7 +3712,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
+      [[NSNotificationCenter defaultCenter]
+	addObserver: self
+	selector: @selector(cmdDefaultsChanged:)
+	name: NSUserDefaultsDidChangeNotification
+	object: [NSUserDefaults standardUserDefaults]];
+
       [self cmdMesgCache];
+
+      [self cmdDefaultsChanged: nil];
 
       cmdIsTransient = [cmdDefs boolForKey: @"Transient"];
 
@@ -4151,19 +4214,25 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   if (nil == cmdConf || [cmdConf isEqual: newConfig] == NO)
     {
-      NSString  *err;
+      NSString  *err = nil;
 
       NS_DURING
         [self cmdUpdate: newConfig];
       NS_HANDLER
-        [self cmdError: @"Problem before updating config: %@", localException];
+        NSLog(@"Problem before updating config (in cmdUpdate:) %@",
+          localException);
+        err = @"the -cmdUpdate: method raised an exception";
       NS_ENDHANDLER
-      NS_DURING
-        err = [self cmdUpdated];
-      NS_HANDLER
-        err = nil;
-        [self cmdError: @"Problem after updating config: %@", localException];
-      NS_ENDHANDLER
+      if (nil == err)
+        {
+          NS_DURING
+            err = [self cmdUpdated];
+          NS_HANDLER
+            NSLog(@"Problem after updating config (in cmdUpdated) %@",
+              localException);
+            err = @"the -cmdUpdated method raised an exception";
+          NS_ENDHANDLER
+        }
       if ([err length] > 0)
         {
           EcAlarm       *a;

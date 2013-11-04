@@ -159,11 +159,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 - (NSArray*) findAll: (NSArray*)a
       byAbbreviation: (NSString*)s;
 - (EcClientI*) findIn: (NSArray*)a
-	byAbbreviation: (NSString*)s;
+       byAbbreviation: (NSString*)s;
 - (EcClientI*) findIn: (NSArray*)a
-		byName: (NSString*)s;
+               byName: (NSString*)s;
 - (EcClientI*) findIn: (NSArray*)a
-	      byObject: (id)s;
+             byObject: (id)s;
 - (void) information: (NSString*)inf
 		from: (NSString*)s
 		type: (EcLogType)t;
@@ -312,24 +312,66 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
           NSMutableDictionary   *m;
 	  NSString              *k;
-          NSString              *err;
+          NSString              *err = nil;
 
           m = [[d mutableCopy] autorelease];
           d = m;
           NS_DURING
             [self cmdUpdate: m];
           NS_HANDLER
-            [self cmdError: @"Problem before updating config: %@",
-              localException];
+            NSLog(@"Problem before updating config (in cmdUpdate:) %@",
+              localException);
+            err = @"the -cmdUpdate: method raised an exception";
           NS_ENDHANDLER
-          NS_DURING
-            err = [self cmdUpdated];
-          NS_HANDLER
-            err = [localException description];
-          NS_ENDHANDLER
+          if (nil == err)
+            {
+              NS_DURING
+                err = [self cmdUpdated];
+              NS_HANDLER
+                NSLog(@"Problem after updating config (in cmdUpdated) %@",
+                  localException);
+                err = @"the -cmdUpdated method raised an exception";
+              NS_ENDHANDLER
+            }
           if ([err length] > 0)
             {
-              [self cmdError: @"Problem after updating config: %@", err];
+              EcAlarm       *a;
+
+              /* Truncate additional text to fit if necessary.
+               */
+              err = [err stringByTrimmingSpaces];
+              if ([err length] > 255)
+                {
+                  err = [err substringToIndex: 255];
+                  while (255 < strlen([err UTF8String]))
+                    {
+                      err = [err substringToIndex: [err length] - 1];
+                    }
+                }
+              a = [EcAlarm alarmForManagedObject: nil
+                at: nil
+                withEventType: EcAlarmEventTypeProcessingError
+                probableCause: EcAlarmConfigurationOrCustomizationError
+                specificProblem: @"configuration error"
+                perceivedSeverity: EcAlarmSeverityMajor
+                proposedRepairAction:
+                _(@"Correct config or software (check log for details).")
+                additionalText: err];
+              [self alarm: a];
+            }
+          else
+            {
+              EcAlarm       *a;
+
+              a = [EcAlarm alarmForManagedObject: nil
+                at: nil
+                withEventType: EcAlarmEventTypeProcessingError
+                probableCause: EcAlarmConfigurationOrCustomizationError
+                specificProblem: @"configuration error"
+                perceivedSeverity: EcAlarmSeverityCleared
+                proposedRepairAction: nil
+                additionalText: nil];
+              [self alarm: a];
             }
 
 	  launchInfo = [d objectForKey: @"Launch"];
@@ -557,8 +599,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	sequence: (unsigned)num
 	   extra: (NSData*)data
 {
-  /*
-   * Just send back a response to let the other party know we are alive.
+  /* Send back a response to let the other party know we are alive.
    */
   [from cmdGnip: self sequence: num extra: nil];
 }
@@ -1400,7 +1441,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 }
 
 - (EcClientI*) findIn: (NSArray*)a
-	byAbbreviation: (NSString*)s
+       byAbbreviation: (NSString*)s
 {
   EcClientI	*o;
   int		i;
@@ -1458,7 +1499,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 }
 
 - (EcClientI*) findIn: (NSArray*)a
-	      byObject: (id)s
+             byObject: (id)s
 {
   EcClientI	*o;
   int		i;
@@ -2471,11 +2512,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      NSString	*m;
 
-	      m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+	      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
 		@"Client '%@' failed to respond for over %d seconds"),
 		[r name], (int)pingDelay];
 	      [[[[r obj] connectionForProxy] sendPort] invalidate];
-	      [self information: m from: nil to: nil type: LT_ALERT];
+	      [self information: m from: nil to: nil type: LT_AUDIT];
 	      lost = YES;
 	    }
 	}
@@ -2484,11 +2525,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  NSString	*m;
 
-	  m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+	  m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
 	    @"Control server failed to respond for over %d seconds"),
 	    (int)pingDelay];
 	  [[(NSDistantObject*)control connectionForProxy] invalidate];
-	  [self information: m from: nil to: nil type: LT_ALERT];
+	  [self information: m from: nil to: nil type: LT_AUDIT];
 	  lost = YES;
 	}
       if (lost == YES)
@@ -2501,13 +2542,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
        * than one per 4 timeouts.
        */
       count = [clients count];
+      pingPosition++;
       if (pingPosition >= 4 && pingPosition >= count)
 	{
 	  pingPosition = 0;
 	}
       if (pingPosition < count)
 	{
-	  [[clients objectAtIndex: pingPosition++] ping];
+	  [[clients objectAtIndex: pingPosition] ping];
 	}
       // Ping the control server too - once every four times.
       pingControlCount++;

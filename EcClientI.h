@@ -47,9 +47,9 @@
   unsigned	revSequence;		/* Last gnip sent BY client.	*/
   NSMutableSet	*files;			/* Want update info for these.	*/
   NSData	*config;		/* Config info for client.	*/
-  BOOL		pingOk;
-  BOOL		transient;
-  BOOL		unregistered;
+  BOOL		pingOk;                 /* Can remote end accept ping?  */
+  BOOL		transient;              /* Is this a transient client?  */
+  BOOL		unregistered;           /* Has client unregistered?     */
 }
 - (NSComparisonResult) compare: (EcClientI*)other;
 - (NSData*) config;
