@@ -475,40 +475,58 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 
 - (NSString*) description
 {
-  Class	c = [self class];
+  NSMutableString       *s = [NSMutableString stringWithCapacity: 1000];
+  Class	                c = [self class];
 
   if (0 == _notificationID)
     {
-      return [NSString stringWithFormat:
-        @"Alarm addr: %-16"PRIx64" %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
-        (uint64_t)(uintptr_t)self,
-        _managedObject,
-        [c stringFromEventType: _eventType],
-        [c stringFromProbableCause: _probableCause],
-        [c stringFromSeverity: _perceivedSeverity],
-        [c stringFromTrend: _trendIndicator],
-        _eventDate,
-        _firstEventDate,
-        _specificProblem,
-        _proposedRepairAction,
-        _additionalText];
+      [s appendString: _(@"Alarm address")];
+      [s appendFormat: @": 0x%"PRIxPTR", ", self];
     }
   else
     {
-      return [NSString stringWithFormat:
-        @"Alarm notification: %-8d %@ %@ %@ %@ %@ at %@(%@) %@ %@ %@",
-        _notificationID,
-        _managedObject,
-        [c stringFromEventType: _eventType],
-        [c stringFromProbableCause: _probableCause],
-        [c stringFromSeverity: _perceivedSeverity],
-        [c stringFromTrend: _trendIndicator],
-        _eventDate,
-        _firstEventDate,
-        _specificProblem,
-        _proposedRepairAction,
-        _additionalText];
+      [s appendString: _(@"Alarm notification ID")];
+      [s appendFormat: @": %d, ", _notificationID];
     }
+
+  [s appendString: _(@"Managed object")];
+  [s appendFormat: @": %@, ", _managedObject];
+  [s appendString: _(@"Type")];
+  [s appendFormat: @": %@, ", [c stringFromEventType: _eventType]];
+  [s appendString: _(@"Cause")];
+  [s appendFormat: @": %@, ", [c stringFromProbableCause: _probableCause]];
+  [s appendString: _(@"Severity")];
+  [s appendFormat: @": %@, ", [c stringFromSeverity: _perceivedSeverity]];
+  [s appendString: _(@"Timestamp")];
+  [s appendFormat: @": %@, ", _eventDate];
+  if (EcAlarmTrendNone !=_trendIndicator)
+    {
+      [s appendString: _(@"Trend")];
+      [s appendFormat: @": %@", [c stringFromTrend: _trendIndicator]];
+      if (nil != _firstEventDate
+        && NO == [_firstEventDate isEqual: _eventDate])
+        {
+          [s appendString: @" "];
+          [s appendString: _(@"since")];
+          [s appendString: @" "];
+          [s appendString: [_firstEventDate description]];
+        }
+      [s appendString: @", "];
+    }
+  [s appendString: _(@"Problem")];
+  [s appendString: @": "];
+  [s appendString: _specificProblem];
+  if ([_additionalText length] > 0)
+    {
+      [s appendString: @": "];
+      [s appendString: _additionalText];
+    }
+  [s appendString: @", "];
+  [s appendString: _(@"Proposed repair action")];
+  [s appendString: @": "];
+  [s appendString: _proposedRepairAction];
+
+  return s;
 }
 
 - (void) encodeWithCoder: (NSCoder*)aCoder
