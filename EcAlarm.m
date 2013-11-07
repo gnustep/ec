@@ -481,7 +481,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
   if (0 == _notificationID)
     {
       [s appendString: _(@"Alarm address")];
-      [s appendFormat: @": 0x%"PRIxPTR", ", self];
+      [s appendFormat: @": 0x%"PRIxPTR", ", (uintptr_t)self];
     }
   else
     {
