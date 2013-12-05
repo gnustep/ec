@@ -105,6 +105,7 @@ static NSRecursiveLock	*ecLock = nil;
 static BOOL		cmdFlagDaemon = NO;
 static BOOL		cmdFlagTesting = NO;
 static BOOL		cmdIsQuitting = NO;
+static NSInteger        cmdQuitStatus = 0;
 static NSString		*cmdInst = nil;
 static NSString		*cmdName = nil;
 static NSString		*cmdUser = nil;
@@ -1031,10 +1032,9 @@ findMode(NSDictionary* d, NSString* s)
     proposedRepairAction: nil
     additionalText: nil];
   /* This alarm will usually have been raised by another process,
-   * so we can't clear it as we have no alarm to match.
-   * To work around this, we forward the clear directly.
+   * so we can't clear normally, as we have no alarm to match.
    */
-  [alarmDestination alarmFwd: a];
+  [alarmDestination forceClear: a];
 }
 
 static NSString	*noFiles = @"No log files to archive";
@@ -3190,13 +3190,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (void) cmdQuit: (NSInteger)status
 {
   cmdIsQuitting = YES;
-
+  cmdQuitStatus = status;
   if (cmdPTimer != nil)
     {
       [cmdPTimer invalidate];
       cmdPTimer = nil;
     }
 
+  if (0 == status)
+    {  
+      /* Normal shutdown ... unmanage this process first.
+       */
+      [alarmDestination unmanage: EcMakeManagedObject(nil, nil, nil)];
+    }
   [alarmDestination shutdown];
 
   [self cmdFlushLogs];
@@ -4274,7 +4280,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             perceivedSeverity: EcAlarmSeverityCleared
             proposedRepairAction: nil
             additionalText: nil];
-          [self alarm: a];
+          [alarmDestination forceClear: a];
         }
     }
 }

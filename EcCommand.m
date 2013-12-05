@@ -2652,7 +2652,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	}
       if (transient == NO)
 	{
-	  [control unmanage: EcMakeManagedObject(host, name, nil)];
 	  [self information: m from: nil to: nil type: LT_AUDIT];
 	}
       [self update];
@@ -2686,7 +2685,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	}
       if (transient == NO)
 	{
-	  [control unmanage: EcMakeManagedObject(host, name, nil)];
 	  [self information: m from: nil to: nil type: LT_AUDIT];
 	}
       [self update];

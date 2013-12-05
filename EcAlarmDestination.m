@@ -173,6 +173,31 @@
     }
 }
 
+- (oneway void) forceClear: (in bycopy EcAlarm*)event
+{
+  if (nil != event)
+    {
+      if ([event perceivedSeverity] != EcAlarmSeverityCleared)
+        {
+          event = [event clear];
+        }
+      [_alarmLock lock];
+      NS_DURING
+        {
+          [_alarmQueue removeObject: event];
+          [_alarmsActive removeObject: event];
+          [self alarmFwd: event];
+          [_alarmLock unlock];
+        }
+      NS_HANDLER
+        {
+          [_alarmLock unlock];
+          [localException raise];
+        }
+      NS_ENDHANDLER
+    }
+}
+
 - (id) init
 {
   return [self initWithHost: nil name: nil];
