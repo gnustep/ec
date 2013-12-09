@@ -1027,13 +1027,20 @@ findMode(NSDictionary* d, NSString* s)
     at: nil
     withEventType: EcAlarmEventTypeProcessingError
     probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-    specificProblem: @"unable to register"
+    specificProblem: @"Unable to register"
     perceivedSeverity: EcAlarmSeverityCleared
     proposedRepairAction: nil
     additionalText: nil];
-  /* This alarm will usually have been raised by another process,
-   * so we can't clear normally, as we have no alarm to match.
-   */
+  [alarmDestination forceClear: a];
+
+  a = [EcAlarm alarmForManagedObject: nil
+    at: nil
+    withEventType: EcAlarmEventTypeProcessingError
+    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+    specificProblem: @"Process availability"
+    perceivedSeverity: EcAlarmSeverityCritical
+    proposedRepairAction: @"Check system status"
+    additionalText: @"removed (lost) server"];
   [alarmDestination forceClear: a];
 }
 
@@ -2294,7 +2301,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         at: nil
         withEventType: EcAlarmEventTypeProcessingError
         probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-        specificProblem: @"unable to register"
+        specificProblem: @"Unable to register"
         perceivedSeverity: EcAlarmSeverityMajor
         proposedRepairAction:
         _(@"Check for running copy of process and/or registration in gdomap.")
@@ -4258,7 +4265,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             at: nil
             withEventType: EcAlarmEventTypeProcessingError
             probableCause: EcAlarmConfigurationOrCustomizationError
-            specificProblem: @"fatal configuration error"
+            specificProblem: @"Fatal configuration error"
             perceivedSeverity: EcAlarmSeverityMajor
             proposedRepairAction:
             _(@"Correct config (check additional text and/or log for details).")
@@ -4276,7 +4283,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             at: nil
             withEventType: EcAlarmEventTypeProcessingError
             probableCause: EcAlarmConfigurationOrCustomizationError
-            specificProblem: @"fatal configuration error"
+            specificProblem: @"Fatal configuration error"
             perceivedSeverity: EcAlarmSeverityCleared
             proposedRepairAction: nil
             additionalText: nil];
