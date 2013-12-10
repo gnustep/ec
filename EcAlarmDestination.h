@@ -57,6 +57,14 @@
  */
 - (oneway void) domanage: (in bycopy NSString*)managedObject;
 
+/** Forces the clear of an alarm to be sent to any remote destination
+ * irrespective of whether the alarm has actually been raised or not.<br />
+ * You should not normally use this method ... it's for cases where a
+ * process starts up and wishes to clear an alarm which was actually
+ * raised by a different (eg. earlier instrance of the) process.
+ */
+- (oneway void) forceClear: (in bycopy EcAlarm*)event;
+
 /** Inform the destination of the removal of a managed object.<br />
  * This is an indicator of a graceful shutdown of that object ... meaning that
  * the object has been stopped intentionally and all outstanding alarms for the
@@ -124,7 +132,7 @@
 
 /** Forces the clear of an alarm to be sent to any remote destination
  * irrespective of whether the alarm has actually been raised or not.<br />
- * You should not normally use this metod ... it's for cases where a
+ * You should not normally use this method ... it's for cases where a
  * process starts up and wishes to clear an alarm which was actually
  * raised by a different (eg. earlier instrance of the) process.
  */

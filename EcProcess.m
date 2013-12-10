@@ -1550,6 +1550,11 @@ static NSString	*noFiles = @"No log files to archive";
   [alarmDestination domanage: managedObject];
 }
 
+- (oneway void) forceClear: (in bycopy EcAlarm*)event
+{
+  [alarmDestination forceClear: event];
+}
+
 - (oneway void) unmanage: (in bycopy NSString*)managedObject
 {
   [alarmDestination unmanage: managedObject];
