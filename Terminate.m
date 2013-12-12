@@ -54,6 +54,8 @@ main()
   id			proxy;
   BOOL                  any = NO;
 
+  [EcProcess class];            // Force linker to provide library
+
   pref = EC_DEFAULTS_PREFIX;
   if (nil == pref)
     {
