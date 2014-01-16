@@ -147,6 +147,10 @@
 
 - (oneway void) domanage: (in bycopy NSString*)managedObject
 {
+  if (nil == managedObject)
+    {
+      managedObject = EcMakeManagedObject(nil, nil, nil);
+    }
   if (NO == [managedObject isKindOfClass: [NSString class]]
     || 4 != [[managedObject componentsSeparatedByString: @"_"] count])
     {
@@ -170,31 +174,6 @@
 	  [_alarmQueue addObject: event];
 	}
       [_alarmLock unlock];
-    }
-}
-
-- (oneway void) forceClear: (in bycopy EcAlarm*)event
-{
-  if (nil != event)
-    {
-      if ([event perceivedSeverity] != EcAlarmSeverityCleared)
-        {
-          event = [event clear];
-        }
-      [_alarmLock lock];
-      NS_DURING
-        {
-          [_alarmQueue removeObject: event];
-          [_alarmsActive removeObject: event];
-          [self alarmFwd: event];
-          [_alarmLock unlock];
-        }
-      NS_HANDLER
-        {
-          [_alarmLock unlock];
-          [localException raise];
-        }
-      NS_ENDHANDLER
     }
 }
 
@@ -320,6 +299,10 @@
 
 - (oneway void) unmanage: (in bycopy NSString*)managedObject
 {
+  if (nil == managedObject)
+    {
+      managedObject = EcMakeManagedObject(nil, nil, nil);
+    }
   if (NO == [managedObject isKindOfClass: [NSString class]]
     || 4 != [[managedObject componentsSeparatedByString: @"_"] count])
     {

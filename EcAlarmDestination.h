@@ -57,14 +57,6 @@
  */
 - (oneway void) domanage: (in bycopy NSString*)managedObject;
 
-/** Forces the clear of an alarm to be sent to any remote destination
- * irrespective of whether the alarm has actually been raised or not.<br />
- * You should not normally use this method ... it's for cases where a
- * process starts up and wishes to clear an alarm which was actually
- * raised by a different (eg. earlier instrance of the) process.
- */
-- (oneway void) forceClear: (in bycopy EcAlarm*)event;
-
 /** Inform the destination of the removal of a managed object.<br />
  * This is an indicator of a graceful shutdown of that object ... meaning that
  * the object has been stopped intentionally and all outstanding alarms for the
@@ -126,17 +118,14 @@
  * are to be cleared.<br />
  * The managedObject information is added to a queue which is processed by
  * the receiver's running thread in order to pass the information on to the
- * destination.
+ * destination.<br />
+ * If managedObject is nil, the default managed object for the current
+ * process is used.<br />
+ * Processes using the [EcProcess] class call this method automatically
+ * when they have registered with the Command server, so you don't usually
+ * need to call it explicity for the default managed object.
  */
 - (oneway void) domanage: (in bycopy NSString*)managedObject;
-
-/** Forces the clear of an alarm to be sent to any remote destination
- * irrespective of whether the alarm has actually been raised or not.<br />
- * You should not normally use this method ... it's for cases where a
- * process starts up and wishes to clear an alarm which was actually
- * raised by a different (eg. earlier instrance of the) process.
- */
-- (oneway void) forceClear: (in bycopy EcAlarm*)event;
 
 /* <init />
  * Initialises the receiver and starts up a secondary thread to manage
@@ -203,7 +192,12 @@
  * object are to be cleared.<br />
  * The managedObject information is added to a queue which is processed by
  * the receiver's running thread in order to pass the information on to the
- * destination.
+ * destination.<br />
+ * If managedObject is nil, the default managed object for the current
+ * process is used.<br />
+ * Processes using the [EcProcess] class call this method automatically
+ * when they are shut down normally (with a quit status of zero), so you
+ * don't usually need to call it explicity for the default managed object.
  */
 - (oneway void) unmanage: (in bycopy NSString*)managedObject;
 

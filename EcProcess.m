@@ -1021,27 +1021,7 @@ findMode(NSDictionary* d, NSString* s)
 
 - (void) _connectionRegistered
 {
-  EcAlarm       *a;
-
-  a = [EcAlarm alarmForManagedObject: nil
-    at: nil
-    withEventType: EcAlarmEventTypeProcessingError
-    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-    specificProblem: @"Unable to register"
-    perceivedSeverity: EcAlarmSeverityCleared
-    proposedRepairAction: nil
-    additionalText: nil];
-  [alarmDestination forceClear: a];
-
-  a = [EcAlarm alarmForManagedObject: nil
-    at: nil
-    withEventType: EcAlarmEventTypeProcessingError
-    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-    specificProblem: @"Process availability"
-    perceivedSeverity: EcAlarmSeverityCritical
-    proposedRepairAction: @"Check system status"
-    additionalText: @"removed (lost) server"];
-  [alarmDestination forceClear: a];
+  [alarmDestination domanage: nil];
 }
 
 static NSString	*noFiles = @"No log files to archive";
@@ -1548,11 +1528,6 @@ static NSString	*noFiles = @"No log files to archive";
 - (oneway void) domanage: (in bycopy NSString*)managedObject
 {
   [alarmDestination domanage: managedObject];
-}
-
-- (oneway void) forceClear: (in bycopy EcAlarm*)event
-{
-  [alarmDestination forceClear: event];
 }
 
 - (oneway void) unmanage: (in bycopy NSString*)managedObject
@@ -3213,7 +3188,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     {  
       /* Normal shutdown ... unmanage this process first.
        */
-      [alarmDestination unmanage: EcMakeManagedObject(nil, nil, nil)];
+      [alarmDestination unmanage: nil];
     }
   [alarmDestination shutdown];
 
@@ -4292,7 +4267,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             perceivedSeverity: EcAlarmSeverityCleared
             proposedRepairAction: nil
             additionalText: nil];
-          [alarmDestination forceClear: a];
+          [alarmDestination alarm: a];
         }
     }
 }

@@ -147,6 +147,28 @@
 	  </deflist>
 	</subsect>
       </section>
+      <section>
+	<heading>Alarm mechanism</heading>
+	<p>
+          The EcProcess class conforms to the EcAlarmDestination protocol
+          to allow sending alarm information to a centralised alarm system
+          via the Command server (the Control server acts as a sink for
+          those alarms and provides SNMP integration).
+        </p>
+        <p>
+          In addition to the standard alarm destination behavior, the
+          process automates some thngs:<br />
+          On successful startup and registration with the Command server,
+          a -domanage: message is automatically sent for the default
+          managed object, clearing any outrstanding alarms.<br />
+          On successful shutdown (ie when -cmdQuit: is called with zero
+          as its argument), an -unmanage: message is automatically sent
+          to clear any outstanding alarms for the default managed object.<br />
+          If you want to raise alarms which will persist after a successful
+          shutdown you should therefore do so by creating a different managed
+          object for which to raise those alarms.
+        </p>
+      </section>
     </chapter>
 
  */
@@ -383,7 +405,8 @@ extern NSString*	cmdVersion(NSString *ver);
 
 /** Convenience method to produce a generic configuration alarm and send
  * it via the -alarm: method.<br />
- * The managed object may be nil (in which case it's the current process).<br />
+ * The managed object may be nil (in which case it's the default managed object
+ * for the current process).<br />
  * The implied event type is EcAlarmEventTypeProcessingError.<br />
  * The implied probable cause is EcAlarmConfigurationOrCustomizationError.<br />
  * The implied severity is EcAlarmSeverityMajor unless isCritical is YES.<br />
