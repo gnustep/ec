@@ -418,10 +418,17 @@
 			{
 			  if (nil != prev)
 			    {
+                              /* Alarm previously active ...
+                               * remove old copy and forward clear.
+                               */
 			      [_alarmsActive removeObject: prev];
+                              shouldForward = YES;
 			    }
                           if (nil == [_alarmsCleared member: next])
                             {
+                              /* Alarm not previously cleared ...
+                               * add to cleared set and forward clear.
+                               */
                               [_alarmsCleared addObject: next];
                               shouldForward = YES;
                             }
