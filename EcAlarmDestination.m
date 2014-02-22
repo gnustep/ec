@@ -44,6 +44,10 @@
  */
 - (void) _timeout: (NSTimer*)t;
 
+/* Remove alll recdords for managed object
+ */
+- (void) _unmanage: (NSString*)m;
+
 @end
 
 @implementation	EcAlarmDestination
@@ -104,6 +108,8 @@
   _alarmQueue = nil;
   [_alarmsActive release];
   _alarmsActive = nil;
+  [_alarmsCleared release];
+  _alarmsCleared = nil;
   [_managedObjects release];
   _managedObjects = nil;
   [_alarmLock release];
@@ -122,6 +128,7 @@
       _alarmLock = [NSRecursiveLock new];
       _alarmQueue = [NSMutableArray new];
       _alarmsActive = [NSMutableSet new];
+      _alarmsCleared = [NSMutableSet new];
       _managedObjects = [NSMutableSet new];
 
       [NSThread detachNewThreadSelector: @selector(run)
@@ -396,6 +403,7 @@
 		      EcAlarm	*next = (EcAlarm*)o;
 		      EcAlarm	*prev = [_alarmsActive member: next];
 		      NSString	*m = [next managedObject];
+                      BOOL      shouldForward = NO;
 
 		      if (nil == prev)
 			{
@@ -410,14 +418,34 @@
 			{
 			  if (nil != prev)
 			    {
-			      /* send the clear for the entry and remove it
-			       */
 			      [_alarmsActive removeObject: prev];
-			      [self alarmFwd: next];
 			    }
+                          if (nil == [_alarmsCleared member: next])
+                            {
+                              [_alarmsCleared addObject: next];
+                              shouldForward = YES;
+                            }
 			}
 		      else
 			{
+                          /* If there was a previous version of the alarm
+                           * cleared, remove that so it's re-raised.
+                           */
+                          [_alarmsCleared removeObject: next];
+
+			  /* If the alarm is new or of changed severity,
+			   * update the records and pass it on.
+			   */
+			  if (nil == prev || [next perceivedSeverity]
+			    != [prev perceivedSeverity])
+			    {
+			      [_alarmsActive addObject: next];
+                              shouldForward = YES;
+			    }
+			}
+
+                      if (YES == shouldForward)
+                        {
 			  /* If the managed object is not registered,
 			   * register before sending an alarm for it.
 			   */
@@ -427,16 +455,8 @@
 			      [self domanageFwd: m];
 			    }
 
-			  /* If the alarm is new or of changed severity,
-			   * update the records and pass it on.
-			   */
-			  if (nil == prev || [next perceivedSeverity]
-			    != [prev perceivedSeverity])
-			    {
-			      [_alarmsActive addObject: next];
-			      [self alarmFwd: next];
-			    }
-			}
+                          [self alarmFwd: next];
+                        }
 		    }
 		  else
 		    {
@@ -458,7 +478,7 @@
 
 			  if (nil != [_managedObjects member: m])
 			    {
-			      [_managedObjects removeObject: m];
+                              [self _unmanage: m];
 			      [self unmanageFwd: m];
 			    }
 
@@ -471,13 +491,13 @@
 			      NSEnumerator	*e;
 			      NSString		*s;
 
-			      e = [[[_managedObjects copy] autorelease]
+			      e = [[_managedObjects allObjects]
 				objectEnumerator];
 			      while (nil != (s = [e nextObject]))
 				{
 				  if (YES == [s hasPrefix: m])
 				    {
-				      [_managedObjects removeObject: s];
+                                      [self _unmanage: s];
 				    }
 				}
 			    }
@@ -508,6 +528,33 @@
 	  NSLog(@"%@ %@", NSStringFromClass([self class]), localException);
 	}
       NS_ENDHANDLER
+    }
+}
+
+- (void) _unmanage: (NSString*)m
+{
+  if (nil != [_managedObjects member: m])
+    {
+      NSEnumerator  *e;
+      EcAlarm       *a;
+
+      e = [[_alarmsActive allObjects] objectEnumerator];
+      while (nil != (a = [e nextObject]))
+        {
+          if ([[a managedObject] isEqual: m])
+            {
+              [_alarmsActive removeObject: a];
+            }
+        }
+      e = [[_alarmsCleared allObjects] objectEnumerator];
+      while (nil != (a = [e nextObject]))
+        {
+          if ([[a managedObject] isEqual: m])
+            {
+              [_alarmsCleared removeObject: a];
+            }
+        }
+      [_managedObjects removeObject: m];
     }
 }
 

@@ -1,3 +1,12 @@
+2014-02-22  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcAlarmDestination.h:
+	* EcAlarmDestination.m:
+	When clearing an alarm, forward the clear to the next destination
+	unless we have already done so.
+	When unmanaging a managed object, remove internal records of cleared
+	and active alarms for that managed object.
+
 2014-01-16  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcProcess.m:

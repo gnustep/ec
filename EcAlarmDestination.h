@@ -86,6 +86,7 @@
   NSRecursiveLock		*_alarmLock;
   NSMutableArray		*_alarmQueue;
   NSMutableSet			*_alarmsActive;
+  NSMutableSet			*_alarmsCleared;
   NSMutableSet			*_managedObjects;
   NSTimer			*_timer;
   BOOL				_isRunning;
