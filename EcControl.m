@@ -328,6 +328,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSMutableDictionary	*fileBodies;
   NSMutableDictionary	*fileDates;
   NSTimer		*timer;
+  NSTimer		*terminating;
   unsigned		commandPingPosition;
   unsigned		consolePingPosition;
   NSString		*configFailed;
@@ -1479,12 +1480,15 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	    }
 	}
-
       [a removeAllObjects];
     }
   else
     {
       [self error: "non-Connection sent invalidation"];
+    }
+  if (nil != terminating && 0 == [commands count])
+    {
+      [self cmdQuit: 0];
     }
   return self;
 }
@@ -1744,6 +1748,36 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   DESTROY(sink);
 
   return result;
+}
+
+- (void) quitAll
+{
+  NSArray       *hosts;
+  NSUInteger	i;
+
+  hosts = [[commands copy] autorelease];
+  i = [hosts count];
+  while (i-- > 0)
+    {
+      CommandInfo	*c = [hosts objectAtIndex: i];
+
+      if ([commands indexOfObjectIdenticalTo: c] != NSNotFound)
+        {
+          NS_DURING
+            {
+              [[c obj] terminate];
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Caught: %@", localException);
+            }
+          NS_ENDHANDLER
+        }
+    }
+  if (0 == [commands count])
+    {
+      [self cmdQuit: 0];
+    }
 }
 
 - (NSData*) registerCommand: (id<Command>)c
@@ -2172,35 +2206,44 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
 }
 
+- (void) terminate: (NSTimer*)t
+{
+  if (nil == terminating)
+    {
+      [self information: @"Handling terminate."
+                   type: LT_AUDIT
+                     to: nil
+                   from: nil];
+    }
+
+  if (nil == terminating)
+    {
+      terminating = [NSTimer scheduledTimerWithTimeInterval: 10.0
+	target: self selector: @selector(terminate:)
+	userInfo: [NSDate new]
+	repeats: YES];
+    }
+
+  [self quitAll];
+
+  if (t != nil)
+    {
+      NSDate	*when = (NSDate*)[t userInfo];
+
+      if ([when timeIntervalSinceNow] < -60.0)
+	{
+	  [[self cmdLogFile: logname]
+	    puts: @"Final shutdown.\n"];
+	  [terminating invalidate];
+	  terminating = nil;
+	  [self cmdQuit: 0];
+	}
+    }
+}
+
 - (void) terminate
 {
-  NSArray       *hosts;
-  NSUInteger	i;
-
-  [self information: @"Received terminate message"
-	       type: LT_AUDIT
-		 to: nil
-               from: nil];
-  hosts = [[commands copy] autorelease];
-  i = [hosts count];
-  while (i-- > 0)
-    {
-      CommandInfo	*c = [hosts objectAtIndex: i];
-
-      if ([commands indexOfObjectIdenticalTo: c] != NSNotFound)
-        {
-          NS_DURING
-            {
-              [[c obj] terminate];
-            }
-          NS_HANDLER
-            {
-              NSLog(@"Caught: %@", localException);
-            }
-          NS_ENDHANDLER
-        }
-    }
-  [self cmdQuit: 0];
+  [self terminate: nil];
 }
 
 - (void) timedOut: (NSTimer*)t
@@ -2303,6 +2346,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   [self reportAlarms];
   inTimeout = NO;
+  if (nil != terminating && 0 == [commands count])
+    {
+      [self cmdQuit: 0];
+    }
 }
 
 - (id) recursiveInclude: (id)o
@@ -2517,6 +2564,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	       type: LT_AUDIT
 		 to: nil
 	       from: nil];
+  if (nil != terminating && 0 == [commands count])
+    {
+      [self cmdQuit: 0];
+    }
 }
 
 
