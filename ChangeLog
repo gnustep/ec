@@ -1,3 +1,10 @@
+2014-02-28  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcControl.m:
+	* ECCL.h:
+	Extend system so the Terminate tool can contact the Control server
+	and shut down the entire cluster rather than just a singlee host.
+
 2014-02-22  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcAlarmDestination.h:

@@ -87,6 +87,14 @@
           contacted (or if there is no local server, any available Command
           server on the local network is contacted).
         </p>
+        <p>If you wish to terminate everything in a cluster, you may use the
+          '-CommandName' argument to specify the name of the 'Control'
+          server of the cluster rather than the 'Command' server of an
+          individual host.  In this case the tool will contact the Control
+          server, and the Control server will in turn send a terminate
+          message to each Command server in the cluster, before closing
+          down itsself.
+        </p>
       </section>
 
     </chapter>

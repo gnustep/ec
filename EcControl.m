@@ -2172,6 +2172,37 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
 }
 
+- (void) terminate
+{
+  NSArray       *hosts;
+  NSUInteger	i;
+
+  [self information: @"Received terminate message"
+	       type: LT_AUDIT
+		 to: nil
+               from: nil];
+  hosts = [[commands copy] autorelease];
+  i = [hosts count];
+  while (i-- > 0)
+    {
+      CommandInfo	*c = [hosts objectAtIndex: i];
+
+      if ([commands indexOfObjectIdenticalTo: c] != NSNotFound)
+        {
+          NS_DURING
+            {
+              [[c obj] terminate];
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Caught: %@", localException);
+            }
+          NS_ENDHANDLER
+        }
+    }
+  [self cmdQuit: 0];
+}
+
 - (void) timedOut: (NSTimer*)t
 {
   static BOOL	inTimeout = NO;
