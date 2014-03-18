@@ -68,6 +68,8 @@ static BOOL commandIsRepeat (NSString *string)
   NSString		*user;
   NSString		*pass;
   NSString		*rnam;
+  NSRegularExpression   *want;
+  NSRegularExpression   *fail;
   id			server;
   int			pos;
 }
@@ -82,6 +84,7 @@ static BOOL commandIsRepeat (NSString *string)
 - (void) didWrite: (NSNotification*)notification;
 - (void) doCommand: (NSMutableArray*)words;
 - (void) timedOut;
+- (void) waitEnded: (NSTimer*)t;
 @end
 
 
@@ -96,6 +99,9 @@ static BOOL commandIsRepeat (NSString *string)
 
 - (void) cmdQuit: (NSInteger)sig
 {
+  [timer invalidate];
+  timer = nil;
+
   /* Attempt to output an exit message, but our tereminal may have gone away
    * so we ignore exceptions during that.
    */
@@ -163,8 +169,7 @@ static BOOL commandIsRepeat (NSString *string)
     {
       if (server && [(NSDistantObject*)server connectionForProxy] == conn)
 	{
-	  [server release];
-	  server = nil;
+          DESTROY(server);
 	  NSLog(@"Lost connection to Control server.");
 	  [self cmdQuit: 0];
 	}
@@ -179,6 +184,8 @@ static BOOL commandIsRepeat (NSString *string)
   [host release];
   [name release];
   [local release];
+  [want release];
+  [fail release];
   [data release];
   if (timer)
     {
@@ -200,42 +207,6 @@ static BOOL commandIsRepeat (NSString *string)
   NSLog(@"ERROR: this should not get called w/o readline: %s",
     __PRETTY_FUNCTION__);
 #endif
-}
-
-- (void)processReadLine:(NSString *)_line
-{
-  NSAutoreleasePool *arp;
-  NSMutableArray *words;
-  NSEnumerator   *wordsEnum;
-  NSString       *word;
-  
-  if (_line == nil)
-    {
-      [self cmdQuit: 0];
-    }
-  
-  _line = [_line stringByTrimmingSpaces];       // Remove trailing newline
-  if ([_line length] == 0)
-    {
-      return;
-    }
-
-  arp = [[NSAutoreleasePool alloc] init];
-
-  /* setup word array */
-  
-  words = [NSMutableArray arrayWithCapacity: 16];
-  wordsEnum = [[_line componentsSeparatedByString: @" "] objectEnumerator];
-  while ((word = [wordsEnum nextObject]) != nil)
-    {
-      [words addObject: [word stringByTrimmingSpaces]];
-    }
-
-  /* invoke server */
-  
-  [self doCommand: words];
-
-  [arp release];
 }
 
 #if defined(HAVE_LIBREADLINE)
@@ -598,6 +569,42 @@ static BOOL commandIsRepeat (NSString *string)
     }
 }
 
+- (void) doLine:(NSString *)_line
+{
+  NSAutoreleasePool *arp;
+  NSMutableArray *words;
+  NSEnumerator   *wordsEnum;
+  NSString       *word;
+  
+  if (_line == nil)
+    {
+      [self cmdQuit: 0];
+    }
+  
+  _line = [_line stringByTrimmingSpaces];       // Remove trailing newline
+  if ([_line length] == 0)
+    {
+      return;
+    }
+
+  arp = [[NSAutoreleasePool alloc] init];
+
+  /* setup word array */
+  
+  words = [NSMutableArray arrayWithCapacity: 16];
+  wordsEnum = [[_line componentsSeparatedByString: @" "] objectEnumerator];
+  while ((word = [wordsEnum nextObject]) != nil)
+    {
+      [words addObject: [word stringByTrimmingSpaces]];
+    }
+
+  /* invoke server */
+  
+  [self doCommand: words];
+
+  [arp release];
+}
+
 #define	add(C) { if (op - out >= len - 1) { int i = op - out; len += 128; [d setLength: len]; out = [d mutableBytes]; op = &out[i];} *op++ = C; }
 
 - (oneway void) information: (NSString*)s
@@ -606,10 +613,14 @@ static BOOL commandIsRepeat (NSString *string)
   int		len = (ilen + 4) * 2;
   char		buf[ilen];
   const char	*ip = buf;
-  NSMutableData	*d = [NSMutableData dataWithCapacity: len];
-  char		*out = [d mutableBytes];
-  char		*op = out;
+  NSMutableData	*d;
+  char		*out;
+  char		*op;
   char		c;
+
+  d = [NSMutableData dataWithCapacity: len];
+  out = [d mutableBytes];
+  op = out;
 
   [s getCString: buf];
   buf[ilen-1] = '\0';
@@ -685,6 +696,36 @@ static BOOL commandIsRepeat (NSString *string)
     }
   [d setLength: op - out];
   [ochan writeData: d];
+
+  /* If we are waiting for a regular expression ... check to see if it is
+   * found and then end with a success status.
+   */
+  if (nil != want)
+    {
+      NSRange   r;
+
+      r = [want rangeOfFirstMatchInString: s
+                                  options: 0
+                                    range: NSMakeRange(0, [s length])];
+      if (r.length > 0)
+        {
+          [self cmdQuit: 0];
+          return;
+        }
+    }
+  if (nil != fail)
+    {
+      NSRange   r;
+
+      r = [fail rangeOfFirstMatchInString: s
+                                  options: 0
+                                    range: NSMakeRange(0, [s length])];
+      if (r.length > 0)
+        {
+          [self cmdQuit: 3];    // Matched failure message ... status 3
+          return;
+        }
+    }
 }
 
 #define	NUMARGS	1
@@ -709,6 +750,8 @@ static BOOL commandIsRepeat (NSString *string)
   if (self)
     {
       NSUserDefaults	*defs = [self cmdDefaults];
+      NSDictionary      *env = [[NSProcessInfo processInfo] environment];
+      NSString          *s;
 
       local = [[[NSHost currentHost] name] retain];
       name = [defs stringForKey: @"ControlName"];
@@ -729,20 +772,156 @@ static BOOL commandIsRepeat (NSString *string)
 	  host = local;
 	}
       [host retain];
+
+      /* If the User and Pass arguments are supplied, login directly.
+       */
+      user = [[defs stringForKey: @"User"] retain];
+      if (nil == user)
+        {
+          user = [[env objectForKey: @"ConsoleUser"] retain];
+        }
+      pass = [[defs stringForKey: @"Pass"] retain];
+      if (nil == pass)
+        {
+          pass = [[env objectForKey: @"ConsolePass"] retain];
+        }
+
       rnam = [[NSString stringWithFormat: @"%@:%@", user, local] retain];
 
-      data = [[NSMutableData alloc] init];
-      ichan = [[NSFileHandle fileHandleWithStandardInput] retain];
-      ochan = [[NSFileHandle fileHandleWithStandardOutput] retain];
+      if (user && pass)
+        {
+	  server = [NSConnection rootProxyForConnectionWithRegisteredName: name
+	    host: host
+	    usingNameServer: [NSSocketPortNameServer sharedInstance]];
+	  if (nil == server)
+	    {
+	      if ([host isEqual: @"*"])
+		{
+		  GSPrintf(stderr, @"Unable to connect to %@ on any host.\n",
+		    name);
+		}
+	      else
+		{
+		  GSPrintf(stderr, @"Unable to connect to %@ on %@.\n",
+		    name, host);
+		}
+	      [self cmdQuit: 1];
+	      DESTROY(self);
+	    }
+	  else
+	    {
+	      NSString	*reject;
 
+	      [server retain];
+	      [server setProtocolForProxy: @protocol(Control)];
+	      [[NSNotificationCenter defaultCenter]
+		  addObserver: self
+		  selector: @selector(connectionBecameInvalid:)
+		  name: NSConnectionDidDieNotification
+		  object: (id)[server connectionForProxy]];
+	      [[server connectionForProxy] setDelegate: self];
+
+	      reject = [server registerConsole: self
+					  name: rnam
+					  pass: pass];
+
+	      if (reject != nil)
+		{
+		  GSPrintf(stderr, @"Login rejected for %@ on %@.\n",
+		    name, host);
+                  [self cmdQuit: 1];
+		  DESTROY(self);
+		}
+	    }
+
+          s = [defs stringForKey: @"Line"];
+          if (0 == [s length])
+            {
+              s = [env objectForKey: @"ConsoleLine"];
+            }
+          if (nil != self && nil != s)
+            {
+              [self doLine: s];
+
+              /* Now, we may delay for 'Wait' seconds looking for a response
+               * containing the 'Want' pattern or the 'Fail' pattern.
+               */
+              s = [defs stringForKey: @"Want"];
+              if (0 == [s length])
+                {
+                  s = [env objectForKey: @"ConsoleWant"];
+                }
+              if ([s length] > 0)
+                {
+                  want = [[NSRegularExpression alloc] initWithPattern: s
+                                                              options: 0
+                                                                error: 0];
+                }
+              s = [defs stringForKey: @"Fail"];
+              if (0 == [s length])
+                {
+                  s = [env objectForKey: @"ConsoleFail"];
+                }
+              if ([s length] > 0)
+                {
+                  fail = [[NSRegularExpression alloc] initWithPattern: s
+                                                              options: 0
+                                                                error: 0];
+                }
+              if (nil != want || nil != fail)
+                {
+                  NSTimeInterval    ti;
+
+                  s = [defs stringForKey: @"Wait"];
+                  if (0 == [s length])
+                    {
+                      s = [env objectForKey: @"ConsoleWait"];
+                      if (0 == [s length])
+                        {
+                          s = @"5";
+                        }
+                    }
+                  ti = [s floatValue];
+                  timer = [NSTimer scheduledTimerWithTimeInterval: ti
+                    target: self selector: @selector(waitEnded:)
+                    userInfo: nil repeats: NO];
+
+                  if (YES == [defs boolForKey: @"Quiet"]
+                    || YES == [[env objectForKey: @"ConsoleQuiet"] boolValue])
+                    {
+                      /* If we don't want any output, return without
+                       * setting the output channel up.
+                       */
+                      return self;
+                    }
+                }
+              else
+                {
+                  /* No waiting ... quit immediately.
+                   */
+                  [self cmdQuit: 0];
+                  DESTROY(self);
+                }
+            }
+        }
+
+      if (nil != self)
+        {
+          data = [[NSMutableData alloc] init];
+          ichan = [[NSFileHandle fileHandleWithStandardInput] retain];
+          ochan = [[NSFileHandle fileHandleWithStandardOutput] retain];
 #if !defined(HAVE_LIBREADLINE)
-      [[NSNotificationCenter defaultCenter] addObserver: self
-		     selector: @selector(didRead:)
-			 name: NSFileHandleReadCompletionNotification
-		       object: (id)ichan];
-      [ochan puts: @"Enter your username: "];
-      [ichan readInBackgroundAndNotify];
+          if (nil == user)
+            {
+              [[NSNotificationCenter defaultCenter] addObserver: self
+                             selector: @selector(didRead:)
+                                 name: NSFileHandleReadCompletionNotification
+                               object: (id)ichan];
+              [ochan puts: @"Enter your username: "];
+              [ichan readInBackgroundAndNotify];
+            }
 #endif
+        }
     }
   return self;
 }
@@ -773,7 +952,12 @@ static BOOL commandIsRepeat (NSString *string)
 
 - (void) timedOut
 {
-  return;
+  return;               // Ignore EcProcess timeouts
+}
+
+- (void) waitEnded: (NSTimer*)t
+{
+  [self cmdQuit: 2];    // Timeout waiting for regex has status 2
 }
 
 /* readline handling */
@@ -788,7 +972,7 @@ readlineReadALine(char *_line)
 {
   NSString *s = _line ? [[NSString alloc] initWithCString: _line] : nil;
   
-  [rlConsole processReadLine: s];
+  [rlConsole doLine: s];
   
   if (_line != NULL && strlen(_line) > 0)
     {

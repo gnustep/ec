@@ -1,3 +1,11 @@
+2014-03-18  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* ECCL.h:
+	* EcCommand.m:
+	* EcConsole.m:
+	* GNUmakefile:
+	Extend Console tool to support non-interactive use for scripting etc.
+
 2014-02-28  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcControl.m:

@@ -1213,7 +1213,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSRange	r;
   id		o;
   
-  if (nil == config)
+  if (nil == config || 0 == [name length])
     {
       return nil;	// Not available
     }

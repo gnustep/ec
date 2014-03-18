@@ -40,6 +40,56 @@
       </section>
 
       <section>
+        <heading>The Control command line tool</heading>
+        <p>Based around the [EcControl] class, this server process provides
+          a central command/control point and acts as the SNMP agent for
+          integration of a cluster of Objective-C based processes.
+        </p> 
+      </section>
+
+      <section>
+        <heading>The Command command line tool</heading>
+        <p>Based around the [EcCommand] class, this server process provides
+          the configuration/logging/launch facilities for all processes on
+          a single machine.  It obtains centralised configuration from the
+          Control server and sends logging, alerts and alarms to that server.
+        </p> 
+      </section>
+
+      <section>
+        <heading>The Console command line tool</heading>
+        <p>Based around the [EcConsole] class, this process provides an
+          interactive command-line based interface for controlling the
+          entire system via the Control server.<br />
+          It may also be used in a non-interactive mode to send commands to
+          any process and wait for responses.  In non-interactive mode the
+          tool uses the following additional
+          command-line-arguments/user-default-keys and/or
+          environment variables:
+        </p> 
+        User (or the ConsoleUser environment variable) specifies the
+        user for whom the tool is performing an action.<br />
+        Pass (or the ConsolePass environment variable) specifies the
+        password for the user login to the Control server.<br />
+        Line (or the ConsoleLine environment variable) specifies the
+        command line to be used (as if type in interactively).
+        If the command line is sent, the process exit status is 0, but
+        if a failure occurs the status is 1 (except as noted below).<br />
+        Wait (or the ConsoleWait environment variable) specifies the
+        number of seconds to wait for the result of the command.
+        If this timeout occurs, the process exit status is 2.<br />
+        Want (or the ConsoleWant environment variable) specifies the
+        regular expression to match a single line success response to the
+        command.<br />
+        Fail (or the ConsoleFail environment variable) specifies the regular
+        expression to match a single line failure response to the command.
+        If this response is matched, the process exit status is 3.<br />
+        Quiet (or the ConsoleQuiet environment variable) is a boolean
+        which, if true, will suppress any output while waiting for a
+        response.
+      </section>
+
+      <section>
         <heading>The AlarmTool command line tool</heading>
         <p>The AlarmTool command line tool provides a mechanism to raise and
           clear alarms (using the ECCL alarm system) from a process which is

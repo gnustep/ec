@@ -110,6 +110,9 @@ ECCL_AGSDOC_FILES = ECCL.h \
 	EcLogger.h \
 	EcProcess.h \
 	EcUserDefaults.h \
+	EcCommand.m \
+	EcControl.m \
+	EcConsole.m \
 
 ECCL_AGSDOC_FLAGS = \
 	-MakeFrames YES \
