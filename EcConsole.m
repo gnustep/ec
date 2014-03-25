@@ -72,6 +72,7 @@ static BOOL commandIsRepeat (NSString *string)
   NSRegularExpression   *fail;
   id			server;
   int			pos;
+  BOOL                  interactive;
 }
 - (void) connectionBecameInvalid: (NSNotification*)notification;
 #if defined(HAVE_LIBREADLINE)
@@ -421,7 +422,10 @@ static BOOL commandIsRepeat (NSString *string)
 	  [data setLength: len - done];
 	}
 
-      [ichan readInBackgroundAndNotify];	/* Need more data.	*/
+      if (YES == interactive)
+        {
+          [ichan readInBackgroundAndNotify];	/* Need more data.	*/
+        }
     }
 }
 #endif
@@ -753,6 +757,7 @@ static BOOL commandIsRepeat (NSString *string)
       NSDictionary      *env = [[NSProcessInfo processInfo] environment];
       NSString          *s;
 
+      interactive = YES;
       local = [[[NSHost currentHost] name] retain];
       name = [defs stringForKey: @"ControlName"];
       if (name == nil)
@@ -790,6 +795,7 @@ static BOOL commandIsRepeat (NSString *string)
 
       if (user && pass)
         {
+          interactive = NO;
 	  server = [NSConnection rootProxyForConnectionWithRegisteredName: name
 	    host: host
 	    usingNameServer: [NSSocketPortNameServer sharedInstance]];
@@ -911,7 +917,7 @@ static BOOL commandIsRepeat (NSString *string)
           ichan = [[NSFileHandle fileHandleWithStandardInput] retain];
           ochan = [[NSFileHandle fileHandleWithStandardOutput] retain];
 #if !defined(HAVE_LIBREADLINE)
-          if (nil == user)
+          if (YES == interactive)
             {
               [[NSNotificationCenter defaultCenter] addObserver: self
                              selector: @selector(didRead:)
@@ -931,8 +937,11 @@ static BOOL commandIsRepeat (NSString *string)
   NSRunLoop	*loop;
 
 #if defined(HAVE_LIBREADLINE)
-  [self setupConnection];
-  [self activateReadline];
+  if (YES == interactive)
+    {
+      [self setupConnection];
+      [self activateReadline];
+    }
 #endif
 
   loop = [NSRunLoop currentRunLoop];
@@ -945,7 +954,10 @@ static BOOL commandIsRepeat (NSString *string)
     }
 
 #if defined(HAVE_LIBREADLINE)
-  [self deactivateReadline];
+  if (YES == interactive)
+    {
+      [self deactivateReadline];
+    }
 #endif
   return 0;
 }
