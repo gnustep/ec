@@ -1904,7 +1904,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        */
       if (cmdLast == nil || [cmdLast timeIntervalSinceNow] < -10.0)
 	{
+          int   mayRetry;
+
 	  connecting = YES;
+
+          /* The first time we try to connect to the Command server
+           * (on startup) we should retry for several seconds in case
+           * the whole system is coming up and the Command server has
+           * not yet been started.
+           */
+          mayRetry = (nil == cmdLast ? 10 : 0);
 
 	  ASSIGN(cmdLast, [dateClass date]);
 	  if (cmdFirst == nil)
@@ -1920,13 +1929,24 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 	      NS_DURING
 		{
+                  NSSocketPortNameServer        *ns;
+
 		  host = ecCommandHost();
 		  name = ecCommandName();
 
+                  ns = [NSSocketPortNameServer sharedInstance];
 		  proxy = [NSConnection
 		    rootProxyForConnectionWithRegisteredName: name
 							host: host
-		    usingNameServer: [NSSocketPortNameServer sharedInstance]];
+                                             usingNameServer: ns];
+                  while (nil == proxy && mayRetry-- > 0)
+                    {
+                      [NSThread sleepForTimeInterval: 1.0];
+                      proxy = [NSConnection
+                        rootProxyForConnectionWithRegisteredName: name
+                                                            host: host
+                                                 usingNameServer: ns];
+                    }
 		}
 	      NS_HANDLER
 		{

@@ -1,3 +1,9 @@
+2014-03-25  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcConsole.m: Don't read from stdin whn in non-interactive mode
+	* EcProcess.m: Allow up to ten seconds to Contact Command server
+	on startup.
+
 2014-03-18  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* ECCL.h:
