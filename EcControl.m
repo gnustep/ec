@@ -2267,6 +2267,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [[self cmdLogFile: logname] synchronizeFile];
   if (inTimeout == NO)
     {
+      NSString  *alive;
+      NSString  *mesg;
+      NSString  *ver;
       unsigned	count;
 
       inTimeout = YES;
@@ -2347,10 +2350,21 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       /*
        * Write heartbeat file to let external programs know we are alive.
        */
-      [[NSString stringWithFormat: @"Heartbeat: %@\n", now]
-	writeToFile: [NSString stringWithFormat: @"/tmp/%@.alive",
-	  [self cmdName]]
-	atomically: YES];
+      ver = [[self cmdDefaults] stringForKey: @"ControlVersion"];
+      if (nil == ver)
+        {
+          mesg = [NSString stringWithFormat: @"Heartbeat: %@\n", now];
+        }
+      else
+        {
+          mesg = [NSString stringWithFormat: @"Heartbeat: %@\nVersion: %@\n",
+            now, ver];
+        }
+      alive = [NSString stringWithFormat: @"/tmp/%@.alive", [self cmdName]];
+      [mesg writeToFile: alive atomically: YES];
+      [mgr changeFileAttributes: [NSDictionary dictionaryWithObjectsAndKeys:
+        [NSNumber numberWithInt: 0666], NSFilePosixPermissions,
+        nil] atPath: alive];
     }
   [self reportAlarms];
   inTimeout = NO;
@@ -2798,7 +2812,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
        * applications/classes levels of the configuration.
        */
       conf = [self recursiveInclude: conf];
-      [conf writeToFile: @"/tmp/control.log" atomically: YES];
+      [conf writeToFile: @"/tmp/Control.cnf" atomically: YES];
+      [mgr changeFileAttributes: [NSDictionary dictionaryWithObjectsAndKeys:
+        [NSNumber numberWithInt: 0666], NSFilePosixPermissions,
+        nil] atPath: @"/tmp/Control.cnf"];
+
       root = [NSMutableDictionary dictionaryWithCapacity: [conf count]];
       rootEnum = [conf keyEnumerator];
       while ((hostKey = [rootEnum nextObject]) != nil)
@@ -2809,6 +2827,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  NSString		*appKey;
 
 	  rootObj = [conf objectForKey: hostKey];
+
 	  if ([rootObj isKindOfClass: [NSDictionary class]] == NO)
 	    {
 	      NSString	*e;

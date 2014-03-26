@@ -45,6 +45,15 @@
           a central command/control point and acts as the SNMP agent for
           integration of a cluster of Objective-C based processes.
         </p> 
+        <p>On startup, (or configuration change) the configuration dictionary
+          from Control.plist (plus any included files) is written to
+          /tmp/Control.cnf to provide a record of the latest config.
+        </p>
+        <p>Periodically, the file /tmp/Control.alive is updated to indicate
+          that the process is still running correctly.  If the user default
+          string ControlVersion is defined, it is written to one line of
+          this file and in any case a timestamp is written.
+        </p>
       </section>
 
       <section>
