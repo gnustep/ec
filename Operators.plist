@@ -6,4 +6,18 @@
   richard = {
     Password = richard;
   };
+
+  /* If the entry with no name exists, it will be used to allow login for
+   * any username which doesn't exist in this file.
+   */
+  "" = {
+    Password = password;
+  };
+
+  /* If Password is omitted or is empty, then any password is accepted
+   * to allow the user to log in.
+   */
+  guest = {
+    Password = "";
+  };
 }

@@ -1967,6 +1967,14 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSDictionary	*info = [operators objectForKey: s];
       NSString		*passwd = [info objectForKey: @"Password"];
 
+      if (nil == info)
+        {
+          /* If Operators.plist contains a user with an empty string as
+           * a name, this will match any login attempt not already matched.
+           */
+          info = [operators objectForKey: @""];
+          passwd = [info objectForKey: @"Password"];
+        }
       if (info == nil)
 	{
 	  m = [NSString stringWithFormat:
