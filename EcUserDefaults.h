@@ -64,6 +64,8 @@
 
 /** Sets a value to take precedence over others (in the volatile domain
  * reserved for commands issued to the current process by an operator).<br />
+ * Setting a nil value removes any previously set value so that behavior
+ * reverts to the default.<br />
  * Returns YES if the configuration was changed, NO otherwise.
  */
 - (BOOL) setCommand: (id)val forKey: (NSString*)key;
