@@ -4294,3 +4294,61 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 @end
 
+@implementation EcProcess (Test)
+
+- (bycopy NSString*) ecTestCommand: (in bycopy NSString*)command
+{
+  NSEnumerator          *enumerator;
+  NSMutableArray        *words;
+  NSString              *word;
+
+  command = [command stringByTrimmingSpaces];
+  words = [NSMutableArray arrayWithCapacity: 16];
+  enumerator = [[command componentsSeparatedByString: @" "] objectEnumerator];
+  while ((word = [enumerator nextObject]) != nil)
+    {
+      [words addObject: [word stringByTrimmingSpaces]];
+    }
+  if ([words count] == 0)
+    {
+      return nil;
+    }
+  return [self cmdMesg: words];
+}
+
+- (bycopy NSData*) ecTestConfigForKey: (in bycopy NSString*)key
+{
+  id    result = [cmdDefs objectForKey: key];
+
+  if (nil != result)
+    {
+      result = [NSPropertyListSerialization
+        dataFromPropertyList: result
+        format: NSPropertyListBinaryFormat_v1_0
+        errorDescription: 0];
+    }
+  return result;
+}
+
+- (void) ecTestSetConfig: (in bycopy NSData*)data
+                  forKey: (in bycopy NSString*)key
+{
+  id    val;
+
+  if (nil == data)
+    {
+      val = data;
+    }
+  else
+    {
+      val = [NSPropertyListSerialization
+        propertyListWithData: data
+        options: NSPropertyListMutableContainers
+        format: 0
+        error: 0];
+    }
+  [cmdDefs setCommand: val forKey: key];
+}
+
+@end
+

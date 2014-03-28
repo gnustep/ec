@@ -46,6 +46,7 @@ ECCL_OBJC_FILES = \
 	EcHost.m \
 	EcLogger.m \
 	EcProcess.m \
+	EcTest.m \
 	EcUserDefaults.m \
 
 ECCL_HEADER_FILES = \
@@ -57,6 +58,7 @@ ECCL_HEADER_FILES = \
 	EcHost.h \
 	EcLogger.h \
 	EcProcess.h \
+	EcTest.h \
 	EcUserDefaults.h \
 
 
@@ -109,6 +111,7 @@ ECCL_AGSDOC_FILES = ECCL.h \
 	EcHost.h \
 	EcLogger.h \
 	EcProcess.h \
+	EcTest.h \
 	EcUserDefaults.h \
 	EcCommand.m \
 	EcControl.m \

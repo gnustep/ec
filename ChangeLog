@@ -1,6 +1,17 @@
+2014-03-28  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcTest.h:
+	* EcTest.m:
+	* EcProcess.m:
+	* GNUmakefile:
+	Add a few simple functions to connect to a process, set/get the
+	config of a running process, and issue commands (and get back
+	the response) so that regression test software can relatively
+	easily exercie an entire system.
+
 2014-03-26  Richard Frith-Macdonald <rfm@gnu.org>
 
-	EcControl.m: Add option to allow any user to log in.
+	* EcControl.m: Add option to allow any user to log in.
 
 2014-03-25  Richard Frith-Macdonald <rfm@gnu.org>
 
