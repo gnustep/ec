@@ -1311,40 +1311,48 @@ static NSString	*noFiles = @"No log files to archive";
   hdl = [cmdLogMap objectForKey: name];
   if (hdl != nil)
     {
-      NSString		*path;
-      NSDictionary	*attr;
-      NSFileManager	*mgr;
-
-      /*
-       * Ensure that all data is written to file.
+      /* Ensure that all data is written to file.
        */
       fflush(stderr);
-      [hdl closeFile];
 
-      /*
-       * If the file is empty, remove it, otherwise move to archive directory.
+      /* If we are writing to stderr, we can't close the file handle
+       * and move the underlying file.
        */
-      path = [cmdLogsDir(nil) stringByAppendingPathComponent: name]; 
-      mgr = [NSFileManager defaultManager];
-      attr = [mgr fileAttributesAtPath: path traverseLink: NO];
-      if ([[attr objectForKey: NSFileSize] intValue] == 0)
-	{
-	  [mgr removeFileAtPath: path handler: nil];
-	}
+      if ([NSFileHandle fileHandleWithStandardError] != hdl)
+        {
+          [hdl closeFile];
+        }
       else
-	{
-	  NSDate	*when;
-	  NSString	*where;
+        {
+          NSString      *path;
+          NSDictionary	*attr;
+          NSFileManager	*mgr;
 
-	  when = [NSDate date];
-	  where = [when descriptionWithCalendarFormat: @"%Y-%m-%d"
-			timeZone: nil locale: nil];
-	  if (where != nil)
-	    {
-	      [self _moveLog: name to: where];
-	    }
-	}
 
+          /* If the file is empty, remove it,
+           * otherwise move to archive directory.
+           */
+          path = [cmdLogsDir(nil) stringByAppendingPathComponent: name]; 
+          mgr = [NSFileManager defaultManager];
+          attr = [mgr fileAttributesAtPath: path traverseLink: NO];
+          if ([[attr objectForKey: NSFileSize] intValue] == 0)
+            {
+              [mgr removeFileAtPath: path handler: nil];
+            }
+          else
+            {
+              NSDate	*when;
+              NSString	*where;
+
+              when = [NSDate date];
+              where = [when descriptionWithCalendarFormat: @"%Y-%m-%d"
+                            timeZone: nil locale: nil];
+              if (where != nil)
+                {
+                  [self _moveLog: name to: where];
+                }
+            }
+        }
       /*
        * Unregister filename.
        */
