@@ -403,6 +403,20 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 @interface EcProcess : NSObject <CmdClient,EcAlarmDestination>
 
+/** Provides initial configuration.
+ * This method is used by -init and its return value is passed to
+ * -initWithDefaults: method.<br />
+ * The default implementation simply sets the ProgramName and
+ * HomeDirectory defaults (with the default prefix configured
+ * when the library was built) to the current program name and
+ * the current directory ('.').<br />
+ * Subclasses may override this method to provide additional
+ * default configuration for processes using them. The returned
+ * dictionary is mutable so that a subclass may simply modify
+ * the configuration provided by the superclass implementation.
+ */
++ (NSMutableDictionary*) ecInitialDefaults;
+
 /** Convenience method to produce a generic configuration alarm and send
  * it via the -alarm: method.<br />
  * The managed object may be nil (in which case it's the default managed object
@@ -816,6 +830,11 @@ extern NSString*	cmdVersion(NSString *ver);
  * initialised.  Make sure it is safe.
  */
 - (void) cmdUpdate: (NSMutableDictionary*)info;
+
+/** This calls the designated initialiser (-initWithDefaults:) passing
+ * the results of a call to +ecInitialDefaults as its argument.
+ */
+- (id) init;
 
 /** [-initWithDefaults:] is the Designated initialiser<br />
  * It adds the defaults specified to the defaults system.<br />

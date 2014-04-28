@@ -1,3 +1,10 @@
+2014-04-27  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Add +ecInitialDefaults to allow subclasses to easily set and
+	modify default configuration values.
+
 2014-03-28  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcTest.h:

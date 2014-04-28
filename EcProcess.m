@@ -1003,6 +1003,27 @@ findMode(NSDictionary* d, NSString* s)
     }
 }
 
++ (NSMutableDictionary*) ecInitialDefaults
+{
+  id		objects[2];
+  id		keys[2];
+  NSString	*prefix;
+
+  objects[0] = [[NSProcessInfo processInfo] processName];
+  objects[1] = @".";
+  prefix = EC_DEFAULTS_PREFIX;
+  if (nil == prefix)
+    {
+      prefix = @"";
+    }
+  keys[0] = [prefix stringByAppendingString: @"ProgramName"];
+  keys[1] = [prefix stringByAppendingString: @"HomeDirectory"];
+
+  return [NSMutableDictionary dictionaryWithObjects: objects
+                                            forKeys: keys
+                                              count: 2];
+}
+
 - (void) _commandRemove
 {
   id connection = [cmdServer connectionForProxy];
@@ -3294,23 +3315,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (id) init
 {
-  id		objects[2];
-  id		keys[2];
-  NSString	*prefix;
+  CREATE_AUTORELEASE_POOL(pool);
 
-  objects[0] = [[NSProcessInfo processInfo] processName];
-  objects[1] = @".";
-  prefix = EC_DEFAULTS_PREFIX;
-  if (nil == prefix)
-    {
-      prefix = @"";
-    }
-  keys[0] = [prefix stringByAppendingString: @"ProgramName"];
-  keys[1] = [prefix stringByAppendingString: @"HomeDirectory"];
-
-  return [self initWithDefaults: [NSDictionary dictionaryWithObjects: objects
-							     forKeys: keys
-							       count: 2]];
+  self = [self initWithDefaults: [[self class] ecInitialDefaults]];
+  RELEASE(pool);
+  return self;
 }
 
 - (id) initWithDefaults: (NSDictionary*) defs
