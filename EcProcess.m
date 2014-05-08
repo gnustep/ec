@@ -3068,10 +3068,14 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdPrintf: @"memory usage statistics.\n"];
 	  [self cmdPrintf: @"With the single parameter 'default', the "];
 	  [self cmdPrintf: @"gathering of memory usage statistics reverts "];
-	  [self cmdPrintf: @"to the default setting."];
+	  [self cmdPrintf: @"to the default setting.\n"];
+	  [self cmdPrintf: @"With two parameters ('class' and a class name), "];
+	  [self cmdPrintf: @"new instances of the class are recorded.\n"];
+	  [self cmdPrintf: @"With two parameters ('list' and a class), "];
+	  [self cmdPrintf: @"recorded instances of the class are reported.\n"];
 	  [self cmdPrintf: @"\n"];
 	}
-      else if ([msg count] > 1)
+      else if ([msg count] == 2)
 	{
 	  NSString	*word = [msg objectAtIndex: 1];
 
@@ -3124,6 +3128,45 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	      [cmdDefs setCommand: @"NO" forKey: @"Memory"];
 	    }
 	}
+      else if ([msg count] == 3)
+        {
+          NSString      *name = [msg objectAtIndex: 2];
+          Class         c = NSClassFromString(name);
+
+          if (Nil == c)
+            {
+	      [self cmdPrintf: @"Unable to find class '%@'.\n", name];
+            }
+          else
+            {
+              NSString  *op = [msg objectAtIndex: 1];
+
+              if ([op caseInsensitiveCompare: @"class"] == NSOrderedSame)
+                {
+                  GSDebugAllocationActiveRecordingObjects(c);
+                  [self cmdPrintf: @"Recording instances of '%@'.\n", name];
+                }
+              else if ([op caseInsensitiveCompare: @"list"] == NSOrderedSame)
+                {
+                  NSArray       *array;
+                  NSUInteger    count;
+                  NSUInteger    index;
+
+                  array = GSDebugAllocationListRecordedObjects(c);
+                  [self cmdPrintf: @"Current instances of '%@':\n", name];
+                  count = [array count];
+                  for (index = 0; index < count; index++)
+                    {
+                      [self cmdPrintf: @"%6lu %@\n",
+                        (unsigned long)index, [array objectAtIndex: index]];
+                    }
+                }
+              else
+                {
+                  [self cmdPrintf: @"Unknown memory command '%@'.\n", op];
+                }
+            }
+        }
       else
 	{
 	  [self cmdPrintf: @"\n%@ on %@ running since %@\n\n",

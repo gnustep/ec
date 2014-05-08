@@ -1,5 +1,11 @@
 2014-05-08  Richard Frith-Macdonald <rfm@gnu.org>
 
+	* EcProcess.m: add memory commands 'class' and 'list' to record
+	allocated instances of a specific class and list them... another
+	memory debugging option.
+
+2014-05-08  Richard Frith-Macdonald <rfm@gnu.org>
+
 	* GNUmakefile: bump subminor version number for release
 	Version 1.1.0: scripting and alarm improvements.
 
