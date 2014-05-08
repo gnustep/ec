@@ -1,3 +1,8 @@
+2014-05-08  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* GNUmakefile: bump subminor version number for release
+	Version 1.1.0: scripting and alarm improvements.
+
 2014-04-27  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:
