@@ -3,6 +3,8 @@
 	* EcProcess.m: add memory commands 'class' and 'list' to record
 	allocated instances of a specific class and list them... another
 	memory debugging option.
+	* GNUmakefile: bump subminor version number for release
+	Version 1.1.1 release
 
 2014-05-08  Richard Frith-Macdonald <rfm@gnu.org>
 
