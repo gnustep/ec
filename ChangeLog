@@ -1,3 +1,9 @@
+2014-05-14  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcAlerter.m: fix bug processing alert emails
+	* GNUmakefile: bump subminor version number for release
+	Version 1.1.2 release
+
 2014-05-08  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: add memory commands 'class' and 'list' to record
