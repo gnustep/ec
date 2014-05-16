@@ -36,6 +36,10 @@
 
 @interface	EcAlarmDestination (Private)
 
+/* Make connection to destination host.
+ */
+- (void) _connect;
+
 /* Loss of connection ... clear destination.
  */
 - (void) _connectionBecameInvalid: (id)connection;
@@ -123,8 +127,8 @@
     {
       NSDate	*begin;
 
-       _host = [host copy];
-       _name = [name copy];
+      _host = [host copy];
+      _name = [name copy];
       _alarmLock = [NSRecursiveLock new];
       _alarmQueue = [NSMutableArray new];
       _alarmsActive = [NSMutableSet new];
@@ -137,6 +141,8 @@
       begin = [NSDate date];
       while (NO == [self isRunning])
 	{
+          NSDate        *when;
+
 	  if ([begin timeIntervalSinceNow] < -5.0)
 	    {
 	      NSLog(@"alarm thread failed to start within 5 seconds");
@@ -146,7 +152,9 @@
 	      [self release];
 	      return nil;
 	    }
-	  [NSThread sleepForTimeInterval: 0.1];
+          when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
+	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate: when];
+          [when release];
 	}
     }
   return self;
@@ -295,12 +303,16 @@
   begin = [NSDate date];
   while (YES == [self isRunning])
     {
+      NSDate    *when;
+
       if ([begin timeIntervalSinceNow] < -5.0)
 	{
 	  NSLog(@"alarm thread failed to stop within 5 seconds");
 	  return;
 	}
-      [NSThread sleepForTimeInterval: 0.1];
+      when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
+      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate: when];
+      [when release];
     }
 }
 
@@ -340,6 +352,47 @@
 
 @implementation	EcAlarmDestination (Private)
 
+- (void) _connect
+{
+  if (nil == (id)_destination)
+    {
+      if (nil != _name)
+        {
+          id	proxy;
+
+          if (nil == _host)
+            {
+              proxy = [NSConnection
+                rootProxyForConnectionWithRegisteredName: _name
+                                                    host: _host
+                usingNameServer:
+                  [NSMessagePortNameServer sharedInstance]];
+            }
+          else
+            {
+              proxy = [NSConnection
+                rootProxyForConnectionWithRegisteredName: _name
+                                                    host: _host
+                usingNameServer:
+                  [NSSocketPortNameServer sharedInstance]];
+            }
+
+          if (proxy != nil)
+            {
+              id connection = [proxy connectionForProxy];
+
+              [connection setDelegate: self];
+              [[NSNotificationCenter defaultCenter]
+                addObserver: self
+                selector: @selector(_connectionBecameInvalid:)
+                name: NSConnectionDidDieNotification
+                object: connection];
+              [self setDestination: (id<EcAlarmDestination>)proxy];
+            }
+        }
+    }
+}
+
 - (void) _connectionBecameInvalid: (id)connection
 {
   [self setDestination: nil];
@@ -355,43 +408,6 @@
 	{
 	  if ([_alarmQueue count] > 0)
 	    {
-	      if (nil == (id)_destination)
-		{
-		  if (nil != _name)
-		    {
-		      id	proxy;
-
-		      if (nil == _host)
-			{
-			  proxy = [NSConnection
-			    rootProxyForConnectionWithRegisteredName: _name
-								host: _host
-			    usingNameServer:
-			      [NSMessagePortNameServer sharedInstance]];
-			}
-		      else
-			{
-			  proxy = [NSConnection
-			    rootProxyForConnectionWithRegisteredName: _name
-								host: _host
-			    usingNameServer:
-			      [NSSocketPortNameServer sharedInstance]];
-			}
-
-		      if (proxy != nil)
-			{
-			  id connection = [proxy connectionForProxy];
-
-			  [connection setDelegate: self];
-			  [[NSNotificationCenter defaultCenter]
-			    addObserver: self
-			    selector: @selector(_connectionBecameInvalid:)
-			    name: NSConnectionDidDieNotification
-			    object: connection];
-			  [self setDestination: (id<EcAlarmDestination>)proxy];
-			}
-		    }
-		}
 	      // Do stuff here
 
 	      while ([_alarmQueue count] > 0)
@@ -461,7 +477,6 @@
 			      [_managedObjects addObject: m];
 			      [self domanageFwd: m];
 			    }
-
                           [self alarmFwd: next];
                         }
 		    }
@@ -504,7 +519,7 @@
 				{
 				  if (YES == [s hasPrefix: m])
 				    {
-                                      [self _unmanage: s];
+                                      [self unmanageFwd: s];
 				    }
 				}
 			    }
@@ -571,7 +586,14 @@
 
 - (void) alarmFwd: (EcAlarm*)event
 {
+  if (NO == [NSThread isMainThread])
+    {
+      [self performSelectorOnMainThread: _cmd withObject: event waitUntilDone: NO];
+      return;
+    }
+  [_alarmLock lock];
   NS_DURING
+    [self _connect];
     [_destination alarm: event];
     NS_DURING
       [_backups makeObjectsPerformSelector: @selector(alarm:)
@@ -584,11 +606,19 @@
     [self setDestination: nil];
     NSLog(@"Problem sending alarm to destination ... %@", localException);
   NS_ENDHANDLER
+  [_alarmLock unlock];
 }
 
 - (void) domanageFwd: (NSString*)managedObject
 {
+  if (NO == [NSThread isMainThread])
+    {
+      [self performSelectorOnMainThread: _cmd withObject: managedObject waitUntilDone: NO];
+      return;
+    }
+  [_alarmLock lock];
   NS_DURING
+    [self _connect];
     [_destination domanage: managedObject];
     NS_DURING
       [_backups makeObjectsPerformSelector: @selector(domanage:)
@@ -601,11 +631,19 @@
     [self setDestination: nil];
     NSLog(@"Problem with domanage to destination ... %@", localException);
   NS_ENDHANDLER
+  [_alarmLock unlock];
 }
 
 - (void) unmanageFwd: (NSString*)managedObject
 {
+  if (NO == [NSThread isMainThread])
+    {
+      [self performSelectorOnMainThread: _cmd withObject: managedObject waitUntilDone: NO];
+      return;
+    }
+  [_alarmLock lock];
   NS_DURING
+    [self _connect];
     [_destination unmanage: managedObject];
     NS_DURING
       [_backups makeObjectsPerformSelector: @selector(unmanage:)
@@ -618,6 +656,7 @@
     [self setDestination: nil];
     NSLog(@"Problem with unmanage to destination ... %@", localException);
   NS_ENDHANDLER
+  [_alarmLock unlock];
 }
 
 @end
