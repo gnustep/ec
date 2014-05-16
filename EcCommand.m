@@ -579,13 +579,39 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       EcClientI	*r;
 
-      /*
-       * See if we have a fitting client - and update records.
+      /* See if we have a fitting client - and update records.
        */
       r = [self findIn: clients byObject: (id)from];
       if (r != nil)
 	{
+          NSString      *n = [r name];
+
 	  [r gnip: num];
+
+          /* After the first ping response from a client we assume
+           * that client has completed startup and is running OK.
+           * We can therefore clear any loss of client alarm.
+           */
+          if (nil != [alarmed member: n])
+            {
+              NSString	*managedObject;
+              EcAlarm	*a;
+
+              [alarmed removeObject: n];
+              managedObject = EcMakeManagedObject(host, n, nil);
+              a = [EcAlarm alarmForManagedObject: managedObject
+                at: nil
+                withEventType: EcAlarmEventTypeProcessingError
+                probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+                specificProblem: @"Process availability"
+                perceivedSeverity: EcAlarmSeverityCleared
+                proposedRepairAction: nil
+                additionalText: nil];
+              [self alarm: a];
+              [self clearConfigurationFor: managedObject
+                          specificProblem: @"Process launch"
+                           additionalText: @"Process is now running"];
+            }
 	}
     }
 }
@@ -2020,24 +2046,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	}
       else
 	{
-	  NSString	*managedObject;
-	  EcAlarm	*a;
-
 	  [obj setTransient: NO];
-          [alarmed removeObject: n];
-	  managedObject = EcMakeManagedObject(host, n, nil);
-	  a = [EcAlarm alarmForManagedObject: managedObject
-	    at: nil
-	    withEventType: EcAlarmEventTypeProcessingError
-	    probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-	    specificProblem: @"Process availability"
-	    perceivedSeverity: EcAlarmSeverityCleared
-	    proposedRepairAction: nil
-	    additionalText: nil];
-	  [self alarm: a];
-          [self clearConfigurationFor: managedObject
-                      specificProblem: @"Process launch"
-                       additionalText: @"Process is now running"];
 	  [self information: m from: nil to: nil type: LT_AUDIT];
 	}
       [self update];

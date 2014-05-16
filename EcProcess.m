@@ -2346,6 +2346,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [self _connectionRegistered];
 
   [self cmdAudit: @"Started `%@'", [self cmdName]];
+  [self cmdFlushLogs];
   
   loop = [NSRunLoop currentRunLoop];
   while (YES == [EcProcConnection isValid])

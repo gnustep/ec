@@ -35,7 +35,7 @@
   NSRecursiveLock       *lock;
   NSDate		*last;
   NSTimer		*timer;
-  unsigned		interval;
+  NSTimeInterval	interval;
   unsigned		size;
   NSMutableString	*message;
   EcLogType		type;

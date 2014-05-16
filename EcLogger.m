@@ -79,7 +79,7 @@ static NSArray          *modes;
 	= [[NSString alloc] initWithFormat: @"BS%@Flush", logger->key];
       logger->serverKey
 	= [[NSString alloc] initWithFormat: @"BS%@Server", logger->key];
-      logger->interval = 1.0;
+      logger->interval = 10.0;
       logger->size = 8 * 1024;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
 
@@ -524,18 +524,13 @@ static NSArray          *modes;
 	}
     }
       
-  /*
-   *	Is the program to flush at intervals or at
-   *	a particular buffer size (or both)?
+  /* Is the program to flush at intervals or at
+   * a particular buffer size (or both)?
    */
   str = [defs stringForKey: flushKey];
   if (str == nil)
     {
       str = [defs stringForKey: @"BSDefaultFlush"];	// Default settings.
-      if (str == nil)
-	{
-	  str = [defs stringForKey: @"BSDebugFlush"];	// Backward compat.
-	}
     }
   if (str != nil)
     {

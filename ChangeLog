@@ -1,8 +1,13 @@
 2014-05-16  Richard Frith-Macdonald <rfm@gnu.org>
 
-	EcAlarmDestination.m: Perform all connection operations in
+	* EcAlarmDestination.m: Perform all connection operations in
 	main thread (forwarding etc) and ensure that we run the
 	current run loop while waiting for startup and shutdown.
+	* EcLogger.m: Use floating point flush interval for modern
+	systems which run faster and might want to flush more than
+	once per second.
+	* GNUmakefile: bump subminor version number for release
+	Version 1.1.3 release
 
 2014-05-14  Richard Frith-Macdonald <rfm@gnu.org>
 
