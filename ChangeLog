@@ -6,6 +6,9 @@
 	* EcLogger.m: Use floating point flush interval for modern
 	systems which run faster and might want to flush more than
 	once per second.
+	* EcProcess.m: Don't start handling timeouts until the
+	process is actually running (so we don't get any during
+	initialisation of the class).
 	* GNUmakefile: bump subminor version number for release
 	Version 1.1.3 release
 

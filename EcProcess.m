@@ -105,6 +105,7 @@ static NSRecursiveLock	*ecLock = nil;
 static BOOL		cmdFlagDaemon = NO;
 static BOOL		cmdFlagTesting = NO;
 static BOOL		cmdIsQuitting = NO;
+static BOOL		cmdIsRunning = NO;
 static NSInteger        cmdQuitStatus = 0;
 static NSString		*cmdInst = nil;
 static NSString		*cmdName = nil;
@@ -2299,7 +2300,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   arp = [NSAutoreleasePool new];
   if (YES == cmdIsTransient)
     {
-      [self cmdWarn: @"Attempted to run transient  process."];
+      [self cmdWarn: @"Attempted to run transient process."];
       [self cmdFlushLogs];
       [arp release];
       return 1;
@@ -2347,6 +2348,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   [self cmdAudit: @"Started `%@'", [self cmdName]];
   [self cmdFlushLogs];
+  cmdIsRunning = YES;
   
   loop = [NSRunLoop currentRunLoop];
   while (YES == [EcProcConnection isValid])
@@ -2379,9 +2381,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [arp release];
 
   /* finish server */
-
   cmdIsQuitting = YES;
   [self cmdQuit: 0];
+  cmdIsRunning = NO;
   DESTROY(EcProcConnection);
   return 0;
 }
@@ -4119,7 +4121,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       cmdIsQuitting = YES;
       [self cmdQuit: sig];
     }
-  if (YES == inProgress)
+  if (YES == cmdIsQuitting)
+    {
+      NSLog(@"_timedOut: ignored because process is quitting");
+    }
+  else if (YES == inProgress)
     {
       NSLog(@"_timedOut: ignored because timeout already in progress");
     }
@@ -4128,76 +4134,85 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       BOOL	delay = NO;
 
       inProgress = YES;
-      NS_DURING
-	{
-	  NSCalendarDate	*now = [NSCalendarDate date];
-	  static int		lastDay = 0;
-	  static int		lastHour = 0;
-	  static int		lastMinute = 0;
-	  static int		lastTenSecond = 0;
-	  BOOL			newDay = NO;
-	  BOOL			newHour = NO;
-	  BOOL			newMinute = NO;
-	  BOOL			newTenSecond = NO;
-	  int			i;
 
-	  i = [now dayOfWeek];
-	  if (i != lastDay)
-	    {
-	      lastDay = i;
-	      newDay = YES;
-	      newHour = YES;
-	      newMinute = YES;
-	      newTenSecond = YES;
-	    }
-	  i = [now hourOfDay];
-	  if (i != lastHour)
-	    {
-	      lastHour = i;
-	      newHour = YES;
-	      newMinute = YES;
-	      newTenSecond = YES;
-	    }
-	  i = [now minuteOfHour];
-	  if (i != lastMinute)
-	    {
-	      lastMinute = i;
-	      newMinute = YES;
-	      newTenSecond = YES;
-	    }
-	  i = [now secondOfMinute] / 10;
-	  if (i != lastTenSecond)
-	    {
-	      lastTenSecond = i;
-	      newTenSecond = YES;
-	    }
-	  if (YES == newTenSecond)
-	    {
-	      [self cmdNewServer];
-	    }
-	  if (YES == newMinute)
-	    {
-	      [self ecNewMinute: now];
-	    }
-	  if (YES == newHour)
-	    {
-	      [self ecNewHour: now];
-	    }
-	  if (YES == newDay)
-	    {
-	      [self ecNewDay: now];
-	    }
-	  if (cmdTimSelector != 0)
-	    {
-	      [self performSelector: cmdTimSelector];
-	    }
-	}
-      NS_HANDLER
-	{
-	  NSLog(@"Exception performing regular timeout: %@", localException);
-	  delay = YES;	// Avoid runaway logging.
-	}
-      NS_ENDHANDLER
+      /* We only perform timeouts if the process is actually
+       * running (don't want them during startup before the
+       * thing is fully initialised.
+       * So if not running, skip to scheduling next timeout.
+       */
+      if (YES == cmdIsRunning)
+        {
+          NS_DURING
+            {
+              NSCalendarDate	*now = [NSCalendarDate date];
+              static int	lastDay = 0;
+              static int	lastHour = 0;
+              static int	lastMinute = 0;
+              static int	lastTenSecond = 0;
+              BOOL		newDay = NO;
+              BOOL		newHour = NO;
+              BOOL		newMinute = NO;
+              BOOL		newTenSecond = NO;
+              int		i;
+
+              i = [now dayOfWeek];
+              if (i != lastDay)
+                {
+                  lastDay = i;
+                  newDay = YES;
+                  newHour = YES;
+                  newMinute = YES;
+                  newTenSecond = YES;
+                }
+              i = [now hourOfDay];
+              if (i != lastHour)
+                {
+                  lastHour = i;
+                  newHour = YES;
+                  newMinute = YES;
+                  newTenSecond = YES;
+                }
+              i = [now minuteOfHour];
+              if (i != lastMinute)
+                {
+                  lastMinute = i;
+                  newMinute = YES;
+                  newTenSecond = YES;
+                }
+              i = [now secondOfMinute] / 10;
+              if (i != lastTenSecond)
+                {
+                  lastTenSecond = i;
+                  newTenSecond = YES;
+                }
+              if (YES == newTenSecond)
+                {
+                  [self cmdNewServer];
+                }
+              if (YES == newMinute)
+                {
+                  [self ecNewMinute: now];
+                }
+              if (YES == newHour)
+                {
+                  [self ecNewHour: now];
+                }
+              if (YES == newDay)
+                {
+                  [self ecNewDay: now];
+                }
+              if (cmdTimSelector != 0)
+                {
+                  [self performSelector: cmdTimSelector];
+                }
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Exception performing regular timeout: %@", localException);
+              delay = YES;	// Avoid runaway logging.
+            }
+          NS_ENDHANDLER
+        }
 
       if (cmdPTimer == nil)
 	{
