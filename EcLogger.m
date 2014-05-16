@@ -79,7 +79,7 @@ static NSArray          *modes;
 	= [[NSString alloc] initWithFormat: @"BS%@Flush", logger->key];
       logger->serverKey
 	= [[NSString alloc] initWithFormat: @"BS%@Server", logger->key];
-      logger->interval = 10;
+      logger->interval = 1.0;
       logger->size = 8 * 1024;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
 
@@ -157,9 +157,9 @@ static NSArray          *modes;
     {
       [s appendFormat: @"%@ output is immediate.\n", key];
     }
-  else if (interval > 0)
+  else if (interval > 0.0)
     {
-      [s appendFormat: @"%@ flushed every %u seconds", key, interval];
+      [s appendFormat: @"%@ flushed every %g seconds", key, interval];
       [s appendFormat: @" or with a %u byte buffer.\n", size];
       if (timer != nil)
 	{
@@ -429,7 +429,7 @@ static NSArray          *modes;
 	    userInfo: nil repeats: NO];
 	}
     }
-  else if (interval > 0 && timer == nil)
+  else if (interval > 0.0 && timer == nil)
     {
       /*
        * No timer running - so schedule one to output the debug info.
@@ -457,7 +457,7 @@ static NSArray          *modes;
       message = [[NSMutableString alloc] initWithCapacity: 1024];
     }
   [message appendString: text];
-  if ([message length] >= size || (interval > 0 && timer == nil))
+  if ([message length] >= size || (interval > 0.0 && timer == nil))
     {
       shouldFlush = YES;
     }
@@ -540,14 +540,16 @@ static NSArray          *modes;
   if (str != nil)
     {
       NSScanner	*scanner = [NSScanner scannerWithString: str];
+      float     f;
       int	i;
 
-      if ([scanner scanInt: &i] == YES)
+      if ([scanner scanFloat: &f] == YES)
 	{
-	  if (i < 0)
-	    interval = 0;
+          interval = (floor(interval * 1000)) / 1000.0;
+	  if (f < 0.0)
+	    interval = 0.0;
 	  else
-	    interval = i;
+	    interval = f;
 	}
       if (([scanner scanString: @":" intoString: 0] == YES)
 	&& ([scanner scanInt: &i] == YES))
