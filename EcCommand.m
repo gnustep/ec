@@ -1690,6 +1690,22 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
           NSString      *failed = nil;
           NSString	*m;
 
+          /* As a convenience, the 'Home' option sets the -HomeDirectory
+           * for the process.
+           */
+          if ([home length] > 0)
+            {
+              NSMutableArray    *a = [[args mutableCopy] autorelease];
+
+              if (nil == a)
+                {
+                  a = [NSMutableArray arrayWithCapacity: 2];
+                }
+              [a addObject: @"-HomeDirectory"];
+              [a addObject: home];
+              args = a;
+            }
+
 	  /* Record time of launch start and the fact that this is launching.
 	   */
 	  [launches setObject: now forKey: key];
