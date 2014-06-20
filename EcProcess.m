@@ -2117,6 +2117,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 {
   struct mallinfo	info;
 
+  /* We want to be sure we work with reasonably up to date information.
+   */
+  [NSHost flushHostCache];
+
   info = mallinfo();
   /* Do initial population so we can work immediately.
    */
