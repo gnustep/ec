@@ -1,3 +1,12 @@
+2014-07-01  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* Command.m:
+	* Control.m:
+	Implement auto-restart ...
+	Run a 'Watcher' process as a daemon with the actual server as a
+	subtask.  If the subtask dies with a status other than zero,
+	restart it after a 30 second delay.
+
 2014-06-20  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: Make sure the NSHost cache is flushed at least

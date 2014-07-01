@@ -74,6 +74,112 @@ inner_main()
 int
 main(int argc, char *argv[])
 {
+  NSProcessInfo		*pInfo;
+  NSArray               *pArgs;
+  NSString              *pName;
+  CREATE_AUTORELEASE_POOL(pool);
+
+  pInfo = [NSProcessInfo processInfo];
+  pArgs = [pInfo arguments];
+  pName = [pInfo processName];
+
+  if ([pArgs containsObject: @"--Watched"] == NO)
+    {
+      NSMutableArray	*args = AUTORELEASE([pArgs mutableCopy]);
+      NSString          *path = [[NSBundle mainBundle] executablePath];
+      NSAutoreleasePool *inner = nil;
+      BOOL              done = NO;
+      int               status = 0;
+      NSFileHandle	*null;
+      NSTask	        *t;
+
+      [args removeObjectAtIndex: 0];
+
+      if ([pArgs containsObject: @"--Watcher"] == NO)
+        {
+          /* In the top level task ... set flags to create a subtask
+           * to act as a watcher for other tasks, and once that has
+           * been created, exit to leave it running as a daemon.
+           */
+          [args addObject: @"--Watcher"];
+          t = [NSTask new];
+          NS_DURING
+            {
+              [t setLaunchPath: path];
+              [t setArguments: args];
+              [t setEnvironment: [pInfo environment]];
+              null = [NSFileHandle fileHandleWithNullDevice];
+              [t setStandardInput: null];
+              [t setStandardOutput: null];
+              [t setStandardError: null];
+              [t launch];
+            }
+          NS_HANDLER
+            {
+              NSLog(@"Problem creating %@ subprocess: %@",
+                pName, localException);
+              exit(1);
+            }
+          NS_ENDHANDLER
+          [t release];
+          exit(0);
+        }
+
+      /* This is the watcher ... its subtasks are those which are watched.
+       */
+
+      /* Set args to tell subtask task not to make itself a daemon
+       */
+      [args addObject: @"-Daemon"];
+      [args addObject: @"NO"];
+
+      /* Set args to tell task it is being watched.
+       */
+      [args removeObject: @"--Watcher"];
+      [args addObject: @"--Watched"];
+
+      while (NO == done)
+        {
+          DESTROY(inner);
+          inner = [NSAutoreleasePool new];
+          t = [[NSTask new] autorelease];
+          NS_DURING
+            {
+              [t setLaunchPath: path];
+              [t setArguments: args];
+              [t setEnvironment: [pInfo environment]];
+              null = [NSFileHandle fileHandleWithNullDevice];
+              [t setStandardInput: null];
+              [t setStandardOutput: null];
+              [t setStandardError: null];
+              [t launch];
+              [t waitUntilExit];
+              if (0 == [t terminationStatus])
+                {
+                  done = YES;
+                }
+              else
+                {
+                  /* Subprocess died ... try to restart after 30 seconds
+                   */
+                  [NSThread sleepForTimeInterval: 30.0];
+                }
+            }
+          NS_HANDLER
+            {
+              done = YES;
+              status = 1;
+              NSLog(@"Problem creating %@ subprocess: %@",
+                pName, localException);
+            }
+          NS_ENDHANDLER
+        }
+      DESTROY(inner);
+      DESTROY(pool);
+      exit(status);
+    }
+  DESTROY(pool);
+
   inner_main();
   return 0;
 }
