@@ -417,6 +417,14 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 + (NSMutableDictionary*) ecInitialDefaults;
 
+/** Convenience method to create the singleton EcProcess instance
+ * using the initial configuration provided by the +ecInitialDefaults
+ * method.<br />
+ * Raises NSGenericException if the singleton instance has already
+ * been created.
+ */
++ (void) ecSetup;
+
 /** Convenience method to produce a generic configuration alarm and send
  * it via the -alarm: method.<br />
  * The managed object may be nil (in which case it's the default managed object

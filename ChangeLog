@@ -1,3 +1,9 @@
+2014-07-30  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Added +ecSetup method to create/initialise the singleton instance.
+
 2014-07-01  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* Command.m:

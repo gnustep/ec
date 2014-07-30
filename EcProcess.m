@@ -1025,6 +1025,16 @@ findMode(NSDictionary* d, NSString* s)
                                               count: 2];
 }
 
++ (void) ecSetup
+{
+  if (nil != EcProc)
+    {
+      [NSException raise: NSGenericException
+                  format: @"+ecSetup called when EcProcess is already set up"];
+    }
+  [[self alloc] init];
+}
+
 - (void) _commandRemove
 {
   id connection = [cmdServer connectionForProxy];
