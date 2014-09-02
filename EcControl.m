@@ -1859,7 +1859,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       else
         {
           m = [NSString stringWithFormat:
-              @"Re-registered new host with name '%@' at %@\n",
+              @"Re-registered host with name '%@' at %@\n",
                   n, [NSDate date]];
           [commands removeObjectIdenticalTo: old];
         }
