@@ -1829,7 +1829,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       obj = old;
       m = [NSString stringWithFormat:
-	  @"Re-registered new host with name '%@' at %@\n",
+	  @"Re-registered existing host with name '%@' at %@\n",
 	      n, [NSDate date]];
       [self information: m
 		   type: LT_AUDIT
@@ -1846,50 +1846,27 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 				    with: self];
 
       old = (CommandInfo*)[self findIn: commands byName: n];
-      if (old != nil)
-	{
-	  NS_DURING
-	    {
-	      [[old obj] cmdPing: self sequence: 0 extra: nil];
-	    }
-	  NS_HANDLER
-	    {
-	      NSLog(@"Ping %@ - Caught: %@", n, localException);
-	    }
-	  NS_ENDHANDLER
-	}
-
-      if ((old = (CommandInfo*)[self findIn: commands byName: n]) != nil)
-	{
-	  RELEASE(obj);
-	  m = [NSString stringWithFormat:
-	      @"Rejected new host with name '%@' at %@\n",
-		  n, [NSDate date]];
-	  [self information: m
-		       type: LT_AUDIT
-			 to: nil
-		       from: nil];
-	  [dict setObject: @"client with that name already registered."
-		   forKey: @"rejected"];
-	  return [NSPropertyListSerialization
-	    dataFromPropertyList: dict
-	    format: NSPropertyListBinaryFormat_v1_0
-	    errorDescription: 0];
-	}
+      [commands addObject: obj];
+      RELEASE(obj);
+      [commands sortUsingSelector: @selector(compare:)];
+      if (nil == old)
+        {
+          m = [NSString stringWithFormat:
+              @"Registered new host with name '%@' at %@\n",
+                  n, [NSDate date]];
+          [self domanage: EcMakeManagedObject(n, @"Command", nil)];
+        }
       else
-	{
-	  [commands addObject: obj];
-	  RELEASE(obj);
-	  [commands sortUsingSelector: @selector(compare:)];
-	  [self domanage: EcMakeManagedObject(n, @"Command", nil)];
-	  m = [NSString stringWithFormat:
-	      @"Registered new host with name '%@' at %@\n",
-		  n, [NSDate date]];
-	  [self information: m
-		       type: LT_AUDIT
-			 to: nil
-		       from: nil];
-	}
+        {
+          m = [NSString stringWithFormat:
+              @"Re-registered new host with name '%@' at %@\n",
+                  n, [NSDate date]];
+          [commands removeObjectIdenticalTo: old];
+        }
+      [self information: m
+                   type: LT_AUDIT
+                     to: nil
+                   from: nil];
     }
 
   /* Inform SNMP monitoring of new Command server.

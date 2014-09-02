@@ -441,6 +441,7 @@ replaceFields(NSDictionary *fields, NSString *template)
             toEvent: (EcAlerterEvent*)event
 {
   CREATE_AUTORELEASE_POOL(pool);
+  BOOL          found = NO;
   NSUInteger    i;
 
   for (i = 0; i < [rulesArray count]; i++)
@@ -542,6 +543,13 @@ replaceFields(NSDictionary *fields, NSString *template)
               continue;		// Not a match.
             }
           [event->m setObject: match forKey: @"Match"];
+        }
+
+
+      found = YES;
+      if (YES == debug)
+        {
+          NSLog(@"Rule %u matched %@ with %@", (unsigned)i, d, event->m);
         }
 
       /*
@@ -799,6 +807,13 @@ replaceFields(NSDictionary *fields, NSString *template)
       if ([[d objectForKey: @"Stop"] boolValue] == YES)
         {
           break;	// Don't want to perform any more matches.
+        }
+    }
+  if (NO == found)
+    {
+      if (YES == debug)
+        {
+          NSLog(@"No match of %@ with %@", event->m, rulesArray);
         }
     }
   RELEASE(pool);

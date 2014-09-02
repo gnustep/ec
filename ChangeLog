@@ -1,3 +1,13 @@
+2014-09-02  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcControl.m: If a Command server on a host registers and we already
+	have a Command server registered, have the new registration replace
+	the old one rather than rejecting it.  The aim is to handle a race
+	condition where a Command server is re-registering after some network
+	problem and the old registration is still in place.
+	* EcAlerter.m: Add more debug logging to show what elarms/alerts are
+	handled by what rules.
+
 2014-07-30  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:
