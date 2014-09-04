@@ -153,7 +153,8 @@
 	      return nil;
 	    }
           when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
-	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate: when];
+	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+                                   beforeDate: when];
           [when release];
 	}
     }
@@ -311,7 +312,8 @@
 	  return;
 	}
       when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
-      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode beforeDate: when];
+      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+                               beforeDate: when];
       [when release];
     }
 }

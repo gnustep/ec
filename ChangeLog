@@ -1,3 +1,8 @@
+2014-09-04  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m: Fix missing clear after unable to register with name
+	server.
+
 2014-09-02  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcControl.m: If a Command server on a host registers and we already

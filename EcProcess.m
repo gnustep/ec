@@ -2349,6 +2349,20 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       [arp release];
       return 2;
     }
+  else
+    {
+      EcAlarm   *a;
+
+      a = [EcAlarm alarmForManagedObject: nil
+        at: nil
+        withEventType: EcAlarmEventTypeProcessingError
+        probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+        specificProblem: @"Unable to register"
+        perceivedSeverity: EcAlarmSeverityCleared
+        proposedRepairAction: nil
+        additionalText: nil];
+      [self alarm: a];
+    }
 
   [c setDelegate: self];
   [[NSNotificationCenter defaultCenter] 
