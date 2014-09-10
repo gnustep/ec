@@ -611,6 +611,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
               [self clearConfigurationFor: managedObject
                           specificProblem: @"Process launch"
                            additionalText: @"Process is now running"];
+              [self clearConfigurationFor: managedObject
+                          specificProblem: @"Fatal configuration error"
+                           additionalText: @"Process is now running"];
             }
 	}
     }

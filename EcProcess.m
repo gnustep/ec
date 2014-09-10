@@ -4373,17 +4373,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
       else
         {
-          EcAlarm       *a;
-
-          a = [EcAlarm alarmForManagedObject: nil
-            at: nil
-            withEventType: EcAlarmEventTypeProcessingError
-            probableCause: EcAlarmConfigurationOrCustomizationError
-            specificProblem: @"Fatal configuration error"
-            perceivedSeverity: EcAlarmSeverityCleared
-            proposedRepairAction: nil
-            additionalText: nil];
-          [alarmDestination alarm: a];
+          [self clearConfigurationFor: nil
+                      specificProblem: @"Fatal configuration error"
+                       additionalText: @"Configuration updated"];
         }
     }
 }
