@@ -1,3 +1,9 @@
+2014-09-16  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcCommand.m: Simplify handling of loss of process and configuration
+	error alarms.  Clear such alarms when we receive a ping from the
+	process.
+
 2014-09-04  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: Fix missing clear after unable to register with name

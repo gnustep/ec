@@ -129,7 +129,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSDictionary		*environment;
   NSMutableDictionary	*launches;
   NSMutableSet		*launching;
-  NSMutableSet		*alarmed;
   unsigned		pingPosition;
   NSTimer		*terminating;
   NSDate		*lastUnanswered;
@@ -584,37 +583,33 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       r = [self findIn: clients byObject: (id)from];
       if (r != nil)
 	{
-          NSString      *n = [r name];
+          NSString	*managedObject;
+          NSString      *n;
+          EcAlarm	*a;
 
 	  [r gnip: num];
+          n = [r name];
 
           /* After the first ping response from a client we assume
            * that client has completed startup and is running OK.
            * We can therefore clear any loss of client alarm.
            */
-          if (nil != [alarmed member: n])
-            {
-              NSString	*managedObject;
-              EcAlarm	*a;
-
-              [alarmed removeObject: n];
-              managedObject = EcMakeManagedObject(host, n, nil);
-              a = [EcAlarm alarmForManagedObject: managedObject
-                at: nil
-                withEventType: EcAlarmEventTypeProcessingError
-                probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-                specificProblem: @"Process availability"
-                perceivedSeverity: EcAlarmSeverityCleared
-                proposedRepairAction: nil
-                additionalText: nil];
-              [self alarm: a];
-              [self clearConfigurationFor: managedObject
-                          specificProblem: @"Process launch"
-                           additionalText: @"Process is now running"];
-              [self clearConfigurationFor: managedObject
-                          specificProblem: @"Fatal configuration error"
-                           additionalText: @"Process is now running"];
-            }
+          managedObject = EcMakeManagedObject(host, n, nil);
+          a = [EcAlarm alarmForManagedObject: managedObject
+            at: nil
+            withEventType: EcAlarmEventTypeProcessingError
+            probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+            specificProblem: @"Process availability"
+            perceivedSeverity: EcAlarmSeverityCleared
+            proposedRepairAction: nil
+            additionalText: nil];
+          [self alarm: a];
+          [self clearConfigurationFor: managedObject
+                      specificProblem: @"Process launch"
+                       additionalText: @"Process is now running"];
+          [self clearConfigurationFor: managedObject
+                      specificProblem: @"Fatal configuration error"
+                       additionalText: @"Process is now running"];
 	}
     }
 }
@@ -1371,7 +1366,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  EcAlarm	*a;
 
 		  s = EcMakeManagedObject(host, name, nil);
-                  [alarmed addObject: name];
 		  a = [EcAlarm alarmForManagedObject: s
 		    at: nil
 		    withEventType: EcAlarmEventTypeProcessingError
@@ -1424,7 +1418,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       [timer invalidate];
     }
-  RELEASE(alarmed);
   RELEASE(launching);
   RELEASE(launches);
   DESTROY(control);
@@ -1610,7 +1603,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       clients = [[NSMutableArray alloc] initWithCapacity: 10];
       launches = [[NSMutableDictionary alloc] initWithCapacity: 10];
       launching = [[NSMutableSet alloc] initWithCapacity: 10];
-      alarmed = [[NSMutableSet alloc] initWithCapacity: 10];
 
       timer = [NSTimer scheduledTimerWithTimeInterval: 5.0
 					       target: self
@@ -1716,7 +1708,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    {
 	      [launching addObject: key];
 	    }
-	  else if (nil == [alarmed member: key])
+	  else
 	    {
               NSString  *managedObject;
 	      EcAlarm	*a;
@@ -1724,7 +1716,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      /* We are re-attempting a launch of a program which never
 	       * contacted us and registered with us ... raise an alarm.
 	       */
-              [alarmed addObject: key];
               managedObject = EcMakeManagedObject(host, key, nil);
 	      a = [EcAlarm alarmForManagedObject: managedObject
 		at: nil
@@ -1807,11 +1798,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		@"bad program name to launch %@"), key];
 	      [self information: m from: nil to: nil type: LT_AUDIT];
 	    }
-          if (nil != failed && nil == [alarmed member: key])
+          if (nil != failed)
             {
               NSString      *managedObject;
 
-              [alarmed addObject: key];
               managedObject = EcMakeManagedObject(host, key, nil);
               [self alarmConfigurationFor: managedObject
                 specificProblem: @"Process launch"
