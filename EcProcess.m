@@ -1495,6 +1495,15 @@ static NSString	*noFiles = @"No log files to archive";
   return cmdSignalled;
 }
 
+- (void) ecLoggersChanged: (NSNotification*)n
+{
+  DESTROY(alertLogger);
+  DESTROY(auditLogger);
+  DESTROY(debugLogger);
+  DESTROY(errorLogger);
+  DESTROY(warningLogger);
+}
+
 - (NSDate*) ecStarted
 {
   return started;
@@ -3813,6 +3822,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	selector: @selector(cmdDefaultsChanged:)
 	name: NSUserDefaultsDidChangeNotification
 	object: [NSUserDefaults standardUserDefaults]];
+
+      [[NSNotificationCenter defaultCenter]
+	addObserver: self
+	selector: @selector(ecLoggersChanged:)
+	name: EcLoggersDidChangeNotification
+	object: nil];
 
       [self cmdMesgCache];
 

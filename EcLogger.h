@@ -112,5 +112,9 @@
 
 @end
 
+/** Notification sent when the logging set of cached loggers is emptied.
+ */
+extern NSString* const EcLoggersDidChangeNotification;
+
 #endif
 

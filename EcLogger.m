@@ -33,6 +33,9 @@
 #import "EcProcess.h"
 #import "EcLogger.h"
 
+NSString* const EcLoggersDidChangeNotification
+  = @"EcLoggersDidChangeNotification";
+
 @implementation	EcLogger
 
 static Class            loggersClass;
@@ -100,11 +103,25 @@ static NSArray          *modes;
 
 + (void) setFactory: (Class)c
 {
+  NSMutableArray        *old = nil;
+
   if (Nil == c) c = [self class];
   NSAssert([c isSubclassOfClass: self], NSInvalidArgumentException);
   [loggersLock lock];
-  loggersClass = c;
+  if (loggersClass != c)
+    {
+      old = loggers;
+      loggers = [NSMutableArray new];
+      loggersClass = c;
+    }
   [loggersLock unlock];
+  if (nil != old)
+    {
+      [old makeObjectsPerformSelector: @selector(flush)];
+      [old release];
+      [[NSNotificationCenter defaultCenter] postNotificationName:
+	EcLoggersDidChangeNotification object: self];
+    }
 }
 
 /* Should only be called on main thread, but doesn't matter.
