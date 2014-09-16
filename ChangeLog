@@ -3,6 +3,8 @@
 	* EcCommand.m: Simplify handling of loss of process and configuration
 	error alarms.  Clear such alarms when we receive a ping from the
 	process.
+	EcLogger.[hm]: Add documentation in the header, plus a new method to
+	make subclassing a bit easier.  Fix bug in naming of config keys.
 
 2014-09-04  Richard Frith-Macdonald <rfm@gnu.org>
 

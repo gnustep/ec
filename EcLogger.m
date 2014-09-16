@@ -35,6 +35,7 @@
 
 @implementation	EcLogger
 
+static Class            loggersClass;
 static NSLock           *loggersLock;
 static NSMutableArray	*loggers;
 static NSArray          *modes;
@@ -49,6 +50,7 @@ static NSArray          *modes;
       loggers = [[NSMutableArray alloc] initWithCapacity: 6];
       objects[0] = NSDefaultRunLoopMode;
       modes = [[NSArray alloc] initWithObjects: objects count: 1];
+      [self setFactory: self];
     }
 }
 
@@ -69,16 +71,16 @@ static NSArray          *modes;
 	  return logger;
 	}
     }
-  logger = [[EcLogger alloc] init];
+  logger = [[loggersClass alloc] init];
   if (logger != nil)
     {
       logger->lock = [NSRecursiveLock new];
       logger->type = t;
       logger->key = [cmdLogKey(t) copy];
       logger->flushKey
-	= [[NSString alloc] initWithFormat: @"BS%@Flush", logger->key];
+	= [[NSString alloc] initWithFormat: @"%@Flush", logger->key];
       logger->serverKey
-	= [[NSString alloc] initWithFormat: @"BS%@Server", logger->key];
+	= [[NSString alloc] initWithFormat: @"%@Server", logger->key];
       logger->interval = 10.0;
       logger->size = 8 * 1024;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
@@ -94,6 +96,15 @@ static NSArray          *modes;
     }
   [loggersLock unlock];
   return logger;
+}
+
++ (void) setFactory: (Class)c
+{
+  if (Nil == c) c = [self class];
+  NSAssert([c isSubclassOfClass: self], NSInvalidArgumentException);
+  [loggersLock lock];
+  loggersClass = c;
+  [loggersLock unlock];
 }
 
 /* Should only be called on main thread, but doesn't matter.
@@ -530,7 +541,7 @@ static NSArray          *modes;
   str = [defs stringForKey: flushKey];
   if (str == nil)
     {
-      str = [defs stringForKey: @"BSDefaultFlush"];	// Default settings.
+      str = [defs stringForKey: @"DefaultFlush"];	// Default settings.
     }
   if (str != nil)
     {
