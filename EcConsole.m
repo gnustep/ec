@@ -449,7 +449,7 @@ static BOOL commandIsRepeat (NSString *string)
 
   if (words == nil || [words count] == 0)
     {
-      cmd = @"";
+      return;
     }
   else
     {
@@ -599,7 +599,11 @@ static BOOL commandIsRepeat (NSString *string)
   wordsEnum = [[_line componentsSeparatedByString: @" "] objectEnumerator];
   while ((word = [wordsEnum nextObject]) != nil)
     {
-      [words addObject: [word stringByTrimmingSpaces]];
+      word = [word stringByTrimmingSpaces];
+      if ([word length] > 0)
+        {
+          [words addObject: word];
+        }
     }
 
   /* invoke server */
