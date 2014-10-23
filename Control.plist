@@ -8,6 +8,10 @@
       /* Common section for all processes on any/all hosts.
        */
     };
+    Feep = {
+      /* Section for the process Feep on any/all hosts.
+       */
+    };
     Foo = {
       /* Section for the process Foo on any/all hosts.
        */
@@ -20,6 +24,10 @@
       /* Common section for any/all processses on localhost.
        */
     };
+    Bar = {
+      /* Section for process Bar on localhost
+       */
+    };
     Foo = {
       /* Section for process Foo on localhost
        */
@@ -29,12 +37,31 @@
        */
       Launch = {
 	Foo = {
-	  Prog = "/usr/GNUstep/Local/Tools/Foo";	// Path to binary
+	  Prog = "/usr/GNUstep/Local/Tools/Foo";	// Full path to binary
 	  Home = "~xxx/Test";				// Directory to run in
 	  Args = ("-Debug", "YES");			// Args to launch with
 	  Auto = NO;					// Auto-launch?
 	};
+	Bar = {
+	  Prog = "Bar";                         	// RName of binary
+	  Home = "~xxx/Test";				// Directory to run in
+	  Args = ("-Debug", "YES");			// Args to launch with
+	  Auto = YES;					// Auto-launch?
+	};
+	Feep = {
+	  Prog = "Feep";                         	// RName of binary
+	  Home = "~xxx/Test";				// Directory to run in
+	  Auto = YES;					// Auto-launch?
+	};
       };
+      /* Specify launch order ... Feep first, Bar second
+       * Processes not listed here are launched in lexicographical order
+       * after any processes which are listed.
+       */
+      LaunchOrder = (
+        Feep,                                   // Launch Feep first
+        Bar                                     // Launch Bar second
+      );
     };
   };
 }

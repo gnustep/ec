@@ -126,6 +126,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSString		*logname;
   NSMutableDictionary	*config;
   NSDictionary		*launchInfo;
+  NSArray               *launchOrder;
   NSDictionary		*environment;
   NSMutableDictionary	*launches;
   NSMutableSet		*launching;
@@ -306,9 +307,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       d = [config objectForKey: [self cmdName]];
       DESTROY(launchInfo);
+      DESTROY(launchOrder);
       DESTROY(environment);
       if ([d isKindOfClass: [NSDictionary class]] == YES)
 	{
+          id                    o;
           NSMutableDictionary   *m;
 	  NSString              *k;
           NSString              *err = nil;
@@ -446,6 +449,67 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		}
 	    }
 	  RETAIN(launchInfo);
+
+          o = [d objectForKey: @"LaunchOrder"];
+          if (NO == [o isKindOfClass: [NSArray class]])
+            {
+              if (nil != o)
+                {
+                  NSLog(@"bad 'LaunchOrder' config (not an array) ignored");
+                }
+              /* The default launch order is alphabetical by server name.
+               */
+              o = [[launchInfo allKeys] sortedArrayUsingSelector:
+                @selector(compare:)];
+              launchOrder = RETAIN(o);
+            }
+          else
+            {
+              NSMutableArray    *m;
+              NSEnumerator      *e;
+              NSString          *k;
+              NSUInteger        c;
+
+              m = AUTORELEASE([o mutableCopy]);
+              c = [m count];
+              while (c-- > 0)
+                {
+                  o = [m objectAtIndex: c];
+                  if (NO == [o isKindOfClass: [NSString class]])
+                    {
+                      NSLog(@"bad 'LaunchOrder' item ('%@' at %u) ignored"
+                        @" (not a server name)", o, (unsigned)c);
+                      [m removeObjectAtIndex: c];
+                    }
+                  else if ([m indexOfObject: o] != c)
+                    {
+                      NSLog(@"bad 'LaunchOrder' item ('%@' at %u) ignored"
+                        @" (repeat of earlier item)", o, (unsigned)c);
+                      [m removeObjectAtIndex: c];
+                    }
+                  else if (nil == [launchInfo objectForKey: o])
+                    {
+                      NSLog(@"bad 'LaunchOrder' item ('%@' at %u) ignored"
+                        @" (not in 'Launch' dictionary)", o, (unsigned)c);
+                      [m removeObjectAtIndex: c];
+                    }
+                }
+              /* Any missing servers are launched after others
+               * they are in lexicographic order.
+               */
+              o = [[launchInfo allKeys] sortedArrayUsingSelector:
+                @selector(compare:)];
+              e = [o objectEnumerator];
+              while (nil != (k = [e nextObject]))
+                {
+                  if (NO == [m containsObject: k])
+                    {
+                      [m addObject: k];
+                    }
+                }
+              launchOrder = [m copy];
+            }
+
 	  environment = [d objectForKey: @"Environment"];
 	  if ([environment isKindOfClass: [NSDictionary class]] == NO)
 	    {
@@ -774,7 +838,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  NSString	*nam = [cmd objectAtIndex: 1];
 		  BOOL		found = NO;
 
-		  enumerator = [launchInfo keyEnumerator];
+		  enumerator = [launchOrder objectEnumerator];
                   if ([nam caseInsensitiveCompare: @"all"] == NSOrderedSame)
                     {
                       NSMutableArray  *names = [NSMutableArray array];
@@ -1058,7 +1122,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      NSEnumerator	*enumerator;
 		      NSString		*key;
 
-		      enumerator = [launchInfo keyEnumerator];
+		      enumerator = [launchOrder objectEnumerator];
 		      while ((key = [enumerator nextObject]) != nil)
 			{
 			  if (comp(wd, key) >= 0)
@@ -1424,6 +1488,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   RELEASE(host);
   RELEASE(clients);
   RELEASE(launchInfo);
+  RELEASE(launchOrder);
   RELEASE(environment);
   RELEASE(lastUnanswered);
   [super dealloc];
@@ -1625,7 +1690,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSDate		*firstDate = nil;
       NSDate		*now = [NSDate date];
 
-      enumerator = [launchInfo keyEnumerator];
+      enumerator = [launchOrder objectEnumerator];
       while ((key = [enumerator nextObject]) != nil)
 	{
 	  EcClientI	*r = [self findIn: clients byName: key];
@@ -1880,7 +1945,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSEnumerator	*enumerator;
       NSString	*key;
 
-      enumerator = [launchInfo keyEnumerator];
+      enumerator = [launchOrder objectEnumerator];
       while ((key = [enumerator nextObject]) != nil)
 	{
 	  [launches setObject: [NSDate distantFuture] forKey: key];

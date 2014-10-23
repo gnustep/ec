@@ -1,3 +1,11 @@
+2014-10-23  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcCommand.m:
+	* Control.plist:
+	Add LaunchOrder config to control the order in which services are
+	handled by the Command server.  By default we now do them in
+	lexicographic order rather than leaving the order undefined.
+
 2014-09-16  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcCommand.m: Simplify handling of loss of process and configuration
