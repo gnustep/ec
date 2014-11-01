@@ -493,6 +493,11 @@ static NSUInteger	memSlot = 0;
 static NSUInteger	memRoll[10];
 #define	memSize (sizeof(memRoll)/sizeof(*memRoll))
 
+#ifndef __MINGW__
+static int              reservedPipe[2] = { 0, 0 };
+static NSInteger        descriptorsMaximum = 0;
+#endif
+
 
 static NSString*
 findAction(NSString *cmd)
@@ -1198,6 +1203,10 @@ static NSString	*noFiles = @"No log files to archive";
     {
       [self setCmdInterval: [str floatValue]];
     }
+
+#ifndef __MINGW__
+  descriptorsMaximum = [cmdDefs integerForKey: @"DescriptorsMaximum"];
+#endif
 
   memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
   if (0 == memAllowed || memAllowed > 100000)
@@ -2135,6 +2144,56 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (void) ecNewMinute: (NSCalendarDate*)when
 {
   struct mallinfo	info;
+
+#ifndef __MINGW__
+  if (NO == cmdIsQuitting)
+    {
+      NSString          *shutdown = nil;
+      int	        p[2];
+
+      if (pipe(p) == 0)
+        {
+          if (0 == reservedPipe[1])
+            {
+              reservedPipe[0] = p[0];
+              reservedPipe[1] = p[1];
+            }
+          else
+            {
+              close(p[0]);
+              close(p[1]);
+            }
+          if (descriptorsMaximum > 0)
+            {
+              if (p[0] > descriptorsMaximum || p[1] > descriptorsMaximum)
+                {
+                  shutdown = [NSString stringWithFormat:
+                    @"Open file descriptor limit (%lu) exceeded",
+                    (unsigned long) descriptorsMaximum];
+                }
+            }
+        }
+      else
+        {
+          shutdown = @"Process ran out of file descriptors";
+        }
+      if (nil != shutdown)
+        {
+          /* We hope that closing two reserved file descriptors will allow
+           * us to shut down gracefully and restart.
+           */
+          if (reservedPipe[1] > 0)
+            {
+              close(reservedPipe[0]); reservedPipe[0] = 0;
+              close(reservedPipe[1]); reservedPipe[1] = 0;
+            }
+          [self cmdError: @"%@", shutdown];
+          cmdIsQuitting = YES;
+          [self cmdQuit: -1];
+          return;
+        }
+    }
+#endif
 
   /* We want to be sure we work with reasonably up to date information.
    */
@@ -3300,6 +3359,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) cmdQuit: (NSInteger)status
 {
+  if (reservedPipe[1] > 0)
+    {
+      close(reservedPipe[0]); reservedPipe[0] = 0;
+      close(reservedPipe[1]); reservedPipe[1] = 0;
+    }
   cmdIsQuitting = YES;
   cmdQuitStatus = status;
   if (cmdPTimer != nil)

@@ -1,3 +1,9 @@
+2014-11-01  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m: Check for descriptor leaks at 1 minute intervals,
+        and shut down if EcDescriptorsMaximum is exceeded or if the
+	process runs out of descriptors.
+
 2014-10-23  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcCommand.m:

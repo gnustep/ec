@@ -63,6 +63,19 @@
 	      Any key of the form EcDebug-xxx turns on the xxx debug level
 	      on program startup.
 	    </desc>
+	    <term>EcDescriptorsMaximum</term>
+	    <desc>
+              To protect against file descriptor leaks, a process will
+              check for the ability to create a pipe once a minute.<br />
+              If it can't do so, it will shut down with an error message.<br />
+              To increase the chances of a successful shutdown, two
+              descriptors are reserved on the first check, and closed
+              when a shutdown is attempted.<br />
+              If EcDescriptorsMaximum is defined to a positive integer value,
+              it is used to trigger earlier shutdown once the specified
+              number of open file descriptors has been reached, rather
+              than waiting for the operating system imposed limit.
+	    </desc>
 	    <term>EcMemory</term>
 	    <desc>
 	      This boolean value determines whether statistics on creation
