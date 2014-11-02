@@ -5,6 +5,9 @@
 	Add method to register a user default / configuration key to have
 	updates for a default automatically trigger a method to handle it,
 	and to provide 'help' documentation for command line arguments.
+	* EcCommand.m:
+	Implement 'restart' command for when we want to quit a server and
+	have it start up again.
 
 2014-11-01  Richard Frith-Macdonald <rfm@gnu.org>
 

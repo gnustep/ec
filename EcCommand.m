@@ -189,6 +189,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      name: (NSString*)n
 		 transient: (BOOL)t;
 - (void) reply: (NSString*) msg to: (NSString*)n from: (NSString*)c;
+- (NSArray*) restartAll;
 - (void) terminate;
 - (void) timedOut: (NSTimer*)t;
 - (void) unregisterByObject: (id)obj;
@@ -754,7 +755,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  if ([wd length] == 0)
 	    {
 	      m = @"Commands are -\n"
-	      @"Help\tArchive\tControl\tLaunch\tList\tMemory\tQuit\tTell\n\n"
+	      @"Help\tArchive\tControl\tLaunch\tList\tMemory\t"
+              @"Quit\tRestart\tTell\n\n"
 	      @"Type 'help' followed by a command word for details.\n"
 	      @"A command line consists of a sequence of words, "
 	      @"the first of which is the command to be executed. "
@@ -817,7 +819,16 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		      @"Quit all\n"
 		      @"Shuts down all client processes.\n"
 		      @"Quit self\n"
-		      @"Shuts down the command server for this host.\n";
+		      @"Shuts down the Command server for this host.\n";
+		}
+	      else if (comp(wd, @"Restart") >= 0)
+		{
+		  m = @"Restart 'name'\n"
+		      @"Shuts down and starts the named client process(es).\n"
+		      @"Restart all\n"
+		      @"Shuts down and starts all client processes.\n"
+		      @"Restart self\n"
+		      @"Shuts down and starts Command server for this host.\n";
 		}
 	      else if (comp(wd, @"Tell") >= 0)
 		{
@@ -1150,6 +1161,93 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  else
 	    {
 	      m = @"Quit what?.\n";
+	    }
+	}
+      else if (comp(wd, @"restart") >= 0)
+	{
+	  wd = cmdWord(cmd, 1);
+	  if ([wd length] > 0)
+	    {
+	      if (comp(wd, @"self") == 0)
+		{
+		  if (terminating == nil)
+		    {
+		      NS_DURING
+			{
+                          [self information: @"Re-starting Command server\n"
+                                       from: t
+                                         to: f
+                                       type: LT_AUDIT];
+			  [control unregister: self];
+			}
+		      NS_HANDLER
+			{
+			  NSLog(@"Exception unregistering from Control: %@",
+			    localException);
+			}
+		      NS_ENDHANDLER
+		      exit(1);          // Watcher should restart us
+		    }
+		  else
+		    {
+		      m = @"Already terminating!\n";
+		    }
+		}
+	      else if (comp(wd, @"all") == 0)
+		{
+		  NSArray       *a;
+
+                  a = [self restartAll];
+		  if ([a count] == 0)
+		    {
+		      m = @"All clients have been shut down for restart.\n";
+		    }
+		  else if ([a count] == 1)
+		    {
+		      m = @"One client did not shut down for restart.\n";
+		    }
+		  else
+		    {
+		      m = @"Some clients did not shut down for restart.\n";
+		    }
+		}
+	      else
+		{
+		  NSArray	*a = [self findAll: clients byAbbreviation: wd];
+		  unsigned	i;
+		  BOOL		found = NO;
+                  NSDate        *when;
+
+                  when = [NSDate dateWithTimeIntervalSinceNow: 30.0 - DLY];
+		  for (i = 0; i < [a count]; i++)
+		    {
+		      EcClientI	*c = [a objectAtIndex: i];
+
+		      NS_DURING
+			{
+			  [launches setObject: when forKey: [c name]];
+			  m = [m stringByAppendingFormat: 
+			    @"  The process '%@' should restart shortly.\n",
+			    [c name]];
+			  [[c obj] cmdQuit: 0];
+			  found = YES;
+			}
+		      NS_HANDLER
+			{
+			  NSLog(@"Caught exception: %@", localException);
+			}
+		      NS_ENDHANDLER
+		    } 
+		  if (NO == found)
+		    {
+		      m = [NSString stringWithFormat: 
+			@"Nothing to restart as '%@'\n", wd];
+		    }
+		}
+	    }
+	  else
+	    {
+	      m = @"Restart what?.\n";
 	    }
 	}
       else if (comp(wd, @"tell") >= 0)
@@ -2170,6 +2268,88 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   else
     {
     }
+}
+
+- (NSArray*) restartAll
+{
+  NSMutableArray	*a = nil;
+
+  /* Quit tasks, but don't suspend them.
+   */
+  if ([clients count] > 0)
+    {
+      unsigned	i;
+      unsigned	j;
+      NSDate    *when;
+
+
+      /* We tell all connected clients to quit.
+       */
+      a = [[clients mutableCopy] autorelease];
+      i = [a count];
+      when = [NSDate dateWithTimeIntervalSinceNow: 30.0 - DLY];
+      while (i-- > 0)
+	{
+	  EcClientI	*c = [a objectAtIndex: i];
+
+	  if ([clients indexOfObjectIdenticalTo: c] == NSNotFound)
+            {
+              [a removeObjectAtIndex: i];
+            }
+          else
+	    {
+	      NS_DURING
+		{
+		  [launches setObject: when forKey: [c name]];
+		  [[c obj] cmdQuit: 0];
+		}
+	      NS_HANDLER
+		{
+		  NSLog(@"Caught exception: %@", localException);
+		}
+	      NS_ENDHANDLER
+	    }
+	}
+
+      /* Give the clients a short time to quit, and re-send
+       * the instruction to any which haven't budged.
+       */
+      for (j = 0; j < 15; j++)
+	{
+	  NSDate	*next = [NSDate dateWithTimeIntervalSinceNow: 2.0];
+
+	  while ([a count] > 0 && [next timeIntervalSinceNow] > 0.0)
+	    {
+	      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+				       beforeDate: next];
+	    }
+	  i = [a count];
+          when = [NSDate dateWithTimeIntervalSinceNow: 30.0 - DLY];
+          while (i-- > 0)
+	    {
+              EcClientI	*c = [a objectAtIndex: i];
+
+              if ([clients indexOfObjectIdenticalTo: c] == NSNotFound)
+                {
+                  [a removeObjectAtIndex: i];
+                }
+              else
+		{
+		  NS_DURING
+		    {
+                      [launches setObject: when forKey: [c name]];
+                      [[c obj] cmdQuit: 0];
+		    }
+		  NS_HANDLER
+		    {
+		      NSLog(@"Caught exception: %@", localException);
+		    }
+		  NS_ENDHANDLER
+		}
+	    }
+	}
+    }
+  return a;
 }
 
 - (NSString*) makeSpace
