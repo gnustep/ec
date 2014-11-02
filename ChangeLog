@@ -1,3 +1,11 @@
+2014-11-02  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Add method to register a user default / configuration key to have
+	updates for a default automatically trigger a method to handle it,
+	and to provide 'help' documentation for command line arguments.
+
 2014-11-01  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: Check for descriptor leaks at 1 minute intervals,

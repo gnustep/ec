@@ -98,6 +98,23 @@
 #define	EC_EFFECTIVE_USER nil
 #endif
 
+
+@interface      EcDefaultRegistration : NSObject
+{
+  NSString      *name;          // The name/key of the default (without prefix)
+  NSString      *type;          // The type text for the default
+  NSString      *help;          // The help text for the default
+  SEL           cmd;            // method to update when default values change
+  id            obj;            // The latest value of the default
+}
++ (void) defaultsChanged: (NSUserDefaults*)defs;
++ (void) registerDefault: (NSString*)name
+            withTypeText: (NSString*)type
+             andHelpText: (NSString*)help
+                  action: (SEL)cmd;
++ (void) showHelp;
+@end
+
 /* Lock for controlling access to per-process singleton instance.
  */
 static NSRecursiveLock	*ecLock = nil;
@@ -958,6 +975,12 @@ findMode(NSDictionary* d, NSString* s)
 
 @end
 
+@interface      EcProcess (Defaults)
+- (void) _defMemory: (id)val;
+- (void) _defRelease: (id)val;
+- (void) _defTesting: (id)val;
+@end
+
 @interface	EcProcess (Private)
 - (void) cmdMesgrelease: (NSArray*)msg;
 - (void) cmdMesgtesting: (NSArray*)msg;
@@ -1028,6 +1051,17 @@ findMode(NSDictionary* d, NSString* s)
   return [NSMutableDictionary dictionaryWithObjects: objects
                                             forKeys: keys
                                               count: 2];
+}
+
++ (void) ecRegisterDefault: (NSString*)name
+              withTypeText: (NSString*)type
+               andHelpText: (NSString*)help
+                    action: (SEL)cmd
+{
+  [EcDefaultRegistration registerDefault: name
+                            withTypeText: type
+                             andHelpText: help
+                                  action: cmd];
 }
 
 + (void) ecSetup
@@ -1171,6 +1205,8 @@ static NSString	*noFiles = @"No log files to archive";
   NSString	*str;
   int           i;
 
+  [EcDefaultRegistration defaultsChanged: cmdDefs];
+
   enumerator = [cmdDebugKnown keyEnumerator];
   while (nil != (mode = [enumerator nextObject]))
     {
@@ -1194,10 +1230,6 @@ static NSString	*noFiles = @"No log files to archive";
       ASSIGN(hostName, [[NSHost currentHost] wellKnownName]);
       [ecLock unlock];
     }
-
-  GSDebugAllocationActive([cmdDefs boolForKey: @"Memory"]);
-  [NSObject enableDoubleReleaseCheck: [cmdDefs boolForKey: @"Release"]];
-  cmdFlagTesting = [cmdDefs boolForKey: @"Testing"];
 
   if ((str = [cmdDefs stringForKey: @"CmdInterval"]) != nil)
     {
@@ -1641,6 +1673,18 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       [cmdDebugModes addObject: cmdDefaultDbg];
 
+      [self ecRegisterDefault: @"Memory"
+                 withTypeText: @"YES/NO"
+                  andHelpText: @"Enable memory allocation checks"
+                       action: @selector(_defMemory:)];
+      [self ecRegisterDefault: @"Release"
+                 withTypeText: @"YES/NO"
+                  andHelpText: @"Turn on double release checks (debug)"
+                       action: @selector(_defRelease:)];
+      [self ecRegisterDefault: @"Testing"
+                 withTypeText: @"YES/NO"
+                  andHelpText: @"Run in test mode (if supported)"
+                       action: @selector(_defTesting:)];
       /*
        * Set the timeouts for the default connection so that
        * they will be inherited by other connections.
@@ -3479,6 +3523,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   else
     {
       NSProcessInfo	*pinfo;
+      NSArray           *args;
       NSFileManager	*mgr;
       NSEnumerator	*enumerator;
       NSString		*str;
@@ -3492,6 +3537,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       started = RETAIN([dateClass date]);
 
       pinfo = [NSProcessInfo processInfo];
+      args = [pinfo arguments];
       mgr = [NSFileManager defaultManager];
       prf = EC_DEFAULTS_PREFIX;
       if (nil == prf)
@@ -3507,28 +3553,69 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [cmdDefs registerDefaults: defs];
 	}
 
-      if ([[pinfo arguments] containsObject: @"--help"])
+      if ([args containsObject: @"--help"] || [args containsObject: @"-H"])
 	{
-	  NSLog(@"Standard command-line arguments ...\n\n"
-	    @"-%@CommandHost [aHost]    Host of command server to use.\n"
-	    @"-%@CommandName [aName]    Name of command server to use.\n"
-	    @"-%@Daemon [YES/NO]        Fork process to run in background?\n"
-	    @"-%@EffectiveUser [aName]  User to run as\n"
+	  GSPrintf(stderr, @"Standard command-line arguments ...\n\n");
+
+          if ([self isKindOfClass: NSClassFromString(@"EcControl")])
+            {
+              GSPrintf(stderr,
+@"-%@Daemon NO              Run process in the foreground.\n",
+                prf);
+            }
+          else if ([self isKindOfClass: NSClassFromString(@"EcConsole")])
+            {
+              GSPrintf(stderr,
+@"-%@ControlHost [aHost]    Host of the Control server to use.\n"
+@"-%@ControlName [aName]    Name of the Control server to use.\n"
+@"-%@Daemon [YES/NO]        Fork process to run in background?\n",
+                prf, prf, prf);
+            }
+          else if ([self isKindOfClass: NSClassFromString(@"EcCommand")])
+            {
+              GSPrintf(stderr,
+@"-%@ControlHost [aHost]    Host of the Control server to use.\n"
+@"-%@ControlName [aName]    Name of the Control server to use.\n"
+@"-%@Daemon NO              Run process in in the foreground.\n",
+                prf, prf, prf);
+            }
+          else
+            {
+              GSPrintf(stderr,
+@"-%@CommandHost [aHost]    Host of the Command server to use.\n"
+@"-%@CommandName [aName]    Name of the Command server to use.\n"
+@"-%@Daemon [YES/NO]        Fork process to run in background?\n",
+@"-%@Transient [YES/NO]     Expect this process be short-lived?\n",
+                prf, prf, prf, prf);
+            }
+
+	  GSPrintf(stderr, @"\n");
+          GSPrintf(stderr,
+	    @"-%@CoreSize [MB]          Maximum core dump size\n"
+            @"                          0 = no dumps, -1 = unlimited\n"
+	    @"-%@DescriptorsMaximum [N]\n"
+            @"                          Set maximum file descriptors to use\n"
+            @"-%@Debug-name [YES/NO]    Turn on/off the named type of debug\n"
+	    @"-%@EffectiveUser [aName]  User to run this process as\n"
 	    @"-%@HomeDirectory [relDir] Relative home within user directory\n"
 	    @"-%@UserDirectory [dir]    Override home directory for user\n"
 	    @"-%@Instance [aNumber]     Instance number for multiple copies\n"
-	    @"-%@Memory [YES/NO]        Enable memory allocation checks?\n"
+	    @"-%@MemoryAllowed [MB]     Expected memory usage (before alerts)\n"
+	    @"-%@MemoryIncrement [KB]   Absolute increase in alert threshold\n"
+	    @"-%@MemoryMaximum [MB]     Maximum memory usage (before restart)\n"
+	    @"-%@MemoryPercentage [N]   Percent increase in alert threshold\n"
 	    @"-%@ProgramName [aName]    Name to use for this program\n"
-	    @"-%@Testing [YES/NO]       Run in test mode (if supported)\n"
 	    @"\n--version to get version information and quit\n\n",
-	    prf, prf, prf, prf, prf, prf, prf, prf, prf, prf
-	    );
+	    prf, prf, prf, prf, prf, prf, prf, prf, prf, prf, prf, prf);
+
+          [EcDefaultRegistration showHelp];
+
 	  RELEASE(self);
 	  [ecLock unlock];
 	  return nil;
 	}
 
-      if ([[pinfo arguments] containsObject: @"--version"])
+      if ([args containsObject: @"--version"])
 	{
 	  NSLog(@"%@ %@", [self ecCopyright], cmdVersion(nil));
 	  RELEASE(self);
@@ -4515,6 +4602,205 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         error: 0];
     }
   [cmdDefs setCommand: val forKey: key];
+}
+
+@end
+
+@implementation EcProcess (Defaults)
+- (void) _defMemory: (id)val
+{
+  GSDebugAllocationActive([val boolValue]);
+}
+- (void) _defRelease: (id)val
+{
+  [NSObject enableDoubleReleaseCheck: [val boolValue]];
+}
+- (void) _defTesting: (id)val
+{
+  cmdFlagTesting = [val boolValue];
+}
+@end
+
+@implementation EcDefaultRegistration
+
+static NSMutableDictionary      *regDefs = nil;
+
++ (void) defaultsChanged: (NSUserDefaults*)defs
+{
+  NSEnumerator  *e;
+  NSString      *n;
+
+  [ecLock lock];
+  e = [[regDefs allKeys] objectEnumerator];  
+  [ecLock unlock];
+  while (nil != (n = [e nextObject]))
+    {
+      EcDefaultRegistration     *d;
+      id                        o = nil;
+      SEL                       c = NULL;
+
+      [ecLock lock];
+      d = [regDefs objectForKey: n];
+      if (nil != d)
+        {
+          o = [defs objectForKey: n];
+          if (o != d->obj && NO == [o isEqual: d->obj])
+            {
+              ASSIGNCOPY(d->obj, o);
+              o = d->obj;
+              c = d->cmd;
+            }
+        }
+      [ecLock unlock];
+      if (NULL != c && [EcProc respondsToSelector: c])
+        {
+          [EcProc performSelector: c withObject: o]; 
+        }
+    }
+}
+
++ (void) initialize
+{
+  regDefs = [NSMutableDictionary new];
+}
+
++ (void) registerDefault: (NSString*)name
+            withTypeText: (NSString*)type
+             andHelpText: (NSString*)help
+                  action: (SEL)cmd
+{
+  static NSCharacterSet *w = nil;
+  EcDefaultRegistration *d;
+
+  if (nil == w)
+    {
+      w = RETAIN([NSCharacterSet whitespaceAndNewlineCharacterSet]);
+    }
+  if ([type length] > 0)
+    {
+      type = [type stringByTrimmingSpaces];
+      if ([type length] == 0)
+        {
+          type = nil;
+        }
+      else
+        {
+          NSUInteger            length = [type length];
+          NSMutableString       *m = nil;
+
+          while (length-- > 0)
+            {
+              unichar   u = [type characterAtIndex: length];
+
+              if (u != ' ' && [w characterIsMember: u])
+                {
+                  if (nil == m)
+                    {
+                      m = AUTORELEASE([type mutableCopy]);
+                      type = m;
+                    }
+                  [m replaceCharactersInRange: NSMakeRange(length, 1)
+                                   withString: @" "];
+                }
+            }
+        }
+    }
+  if ([help length] > 0)
+    {
+      help = [help stringByTrimmingSpaces];
+      if ([help length] == 0)
+        {
+          help = nil;
+        }
+    }
+
+  [ecLock lock];
+  d = [regDefs objectForKey: name];
+  if (nil == d)
+    {
+      d = [EcDefaultRegistration new];
+      ASSIGNCOPY(d->name, name);
+      [regDefs setObject: d forKey: d->name];
+      RELEASE(d);
+    }
+  ASSIGNCOPY(d->type, type);
+  ASSIGNCOPY(d->help, help);
+  if (0 != cmd)
+    {
+      d->cmd = cmd;
+    }
+  [ecLock unlock];
+}
+
++ (void) showHelp
+{
+  NSArray       *keys;
+  NSString      *prf;
+  NSEnumerator  *e;
+  NSString      *k;
+  NSUInteger    max = 0;
+
+  prf = EC_DEFAULTS_PREFIX;
+  if (nil == prf)
+    {
+      prf = @"";
+    }
+
+  keys = [regDefs allKeys];
+  e = [keys objectEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+
+      if (nil != d->type && nil != d->help)
+        {
+          NSUInteger    length = [prf length] + 5;
+
+          length += [k length] + [d->type length];
+          if (length > max)
+            {
+              max = length;
+            }
+        }
+    }
+
+  keys = [keys sortedArrayUsingSelector: @selector(compare:)];
+  e = [keys objectEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+
+      if (nil != d->type && nil != d->help)
+        {
+          /* If the help text is short enough, put it all on one line.
+           */
+          if ([d->help length] + max < 80)
+            {
+              NSMutableString   *m;
+
+              m = [NSMutableString stringWithFormat: @"-%@%@ [%@] ",
+                prf, k, d->type];
+              while ([m length] < max)
+                {
+                  [m appendString: @" "];
+                }
+              GSPrintf(stderr, @"%@%@\n", m, d->help);
+            }
+          else
+            {
+              GSPrintf(stderr, @"-%@%@ [%@]\n  %@\n", prf, k, d->type, d->help);
+            }
+        }
+    }
+}
+
+- (void) dealloc
+{
+  RELEASE(name);
+  RELEASE(type);
+  RELEASE(help);
+  RELEASE(obj);
+  [super dealloc];
 }
 
 @end

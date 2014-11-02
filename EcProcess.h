@@ -430,6 +430,31 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 + (NSMutableDictionary*) ecInitialDefaults;
 
+/** Registers an NSUserDefaults key that the receiver understands.<br />
+ * This is primarily intended for user defaults which can reasonably
+ * be supplied at the command line when a process is started (and for
+ * which the process should therefore supply help information)<br />
+ * The type text must be a a short string saying what kind of value
+ * must be provided (eg 'YES/NO') for the default, or nil if no help
+ * is to be provided for the default.<br />
+ * The help text should be a description of what the default does,
+ * or nil if no help is to be provided for the default.<br />
+ * The action may either be NULL or a selector for a message to be sent
+ * to the EcProc instance with a single argument (the new default value)
+ * when the value of the user default changes.<br />
+ * If the same default name is registered more than once, the values
+ * from the last registration are used, except for the case where the
+ * cmd argument is NULL, in that case the previous selector is kept
+ * in the new rfegistration.<br />
+ * This method should be called in your +initialize method, so that all
+ * supported defaults are already registered by the time your process
+ * tries to respond to being started with a --help command line argument.
+ */
++ (void) ecRegisterDefault: (NSString*)name
+              withTypeText: (NSString*)type
+               andHelpText: (NSString*)help
+                    action: (SEL)cmd;
+
 /** Convenience method to create the singleton EcProcess instance
  * using the initial configuration provided by the +ecInitialDefaults
  * method.<br />
@@ -592,18 +617,17 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdDebug: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
 
 /** Called whenever the user defaults are updated (which may be due to a
- * central configuration in additions to other defaults system changes).<br />
+ * central configuration in additions to local defaults system changes).<br />
  * This is automatically called by -cmdUpdate: (even if the user defaults
- * database has not actually changed), in this case the notification
- * argument is nil.<br />
- * If you override this to handle configuration changes, don't forget
+ * database has not actually changed, in this case the notification
+ * argument is nil).<br />
+ * This method deals with the updates for any defaults registered using
+ * the +ecRegisterDefault:withTypeText:andHelpText:action: method, so
+ * if you override this to handle configuration changes, don't forget
  * to call the superclass implementation.<br />
- * This method is provided to allow subclasses to control the order
- * in which defaults changes are handled by them and their superclasses.<br />
- * Generally, this method is for use handling changes in the local
- * NSUserDefaults database; to handle explict configuration changes from
- * the central configuration in the Control server, you should usually
- * override the -cmdUpdated method instead.
+ * If you wish to manage updates from the central database in a specific
+ * order, you may wish to override the -cmdUpdate: and -cmdUpdated methods
+ * directly.
  */
 - (void) cmdDefaultsChanged: (NSNotification*)n;
 
@@ -700,7 +724,7 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (int) cmdSignalled;
 
-/** Used to tell your application about configuration changes.<br />
+/** Used to tell your application about central configuration changes.<br />
  * This is called before the NSUserDefaults system is updated with the
  * changes, so you may use it to update internal state in the knowledge
  * that code watching for user defaults change notifications will not
@@ -708,30 +732,38 @@ extern NSString*	cmdVersion(NSString *ver);
  * The base class implementation is responsible for updating the user
  * defaults system ... so be sure that your implementation calls the
  * superclass implementation (unless you wish to suppress the configuration
- * update).<br />
+ * update) after performing any pre-update operations.<br />
  * You may alter the info dictionary prior to passing it to the superclass
  * implementation if you wish to adjust the new configuration before it
  * takes effect.<br />
  * The order of execution of a configuration update is therefore as follows:
  * <list>
- *  <item>Any subclass implementation of -cmdUpdate: is entered.
- *  </item>
- *  <item>The base implementation of -cmdUpdate: is entered, the stored
- *    configuration is changed as necessary, the user defaults database is
- *    updated.
- *  </item>
- * <item>The -cmdDefaultsChanged: method is called (either as a result of
- *   a user defaults update, or directly by the base -cmdUpdate: method.
+ * <item>Any subclass implementation of -cmdUpdate: is entered.
  * </item>
- * <item>The base implementation of the -cmdDefaults: method ends.
+ * <item>The base implementation of -cmdUpdate: is entered, the stored
+ *   configuration is changed as necessary, the user defaults database is
+ *   updated.
  * </item>
- * <item>Any subclass implementation of the -cmdDefaults: method ends.
+ * <item>Any subclass of the -cmdDefaultsChanged: method is entere
+ *   (either as a result of the user defaults update,
+ *   or directly by the base -cmdUpdate: method).
+ * </item>
+ * <item>The base implementation of the -cmdDefaultsChanged: method is
+ *   entered, and any messages registered using the
+ *   +ecRegisterDefault:withTypeText:andHelpText:action: method are
+ *   sent if the corresponding default value has changed.
+ * </item>
+ * <item>The base implementation of the -cmdDefaultsChanged: method ends.
+ * </item>
+ * <item>Any subclass implementation of the -cmdDefaultsChanged: method ends.
  * </item>
  * <item>The -cmdUpdated method is called.
  * </item>
  * </list>
- * You should usually override the -cmdUpdated method to handle configuration
- * changes, using this method only when you want to check/override changes
+ * You should usually either register your own methods to handle changes
+ * to particular defaults values, or override the -cmdDefaultsChanged:
+ * method to handle general configuration changes.<br />
+ * Use this method only when you want to check/override changes
  * before they take effect.
  */
 - (void) cmdUpdate: (NSMutableDictionary*)info;
@@ -755,6 +787,9 @@ extern NSString*	cmdVersion(NSString *ver);
  * calls the superclass implementation, and if that returns a non-nil
  * result, you should pass that on as the return value from your own
  * implementation.
+ * Use this method only for handling config changes which must be done
+ * after any code which is watching NSUserDefaultsDidChangNotification
+ * has run, or for situations where a config error may be fatal.
  */
 - (NSString*) cmdUpdated;
 
@@ -867,7 +902,7 @@ extern NSString*	cmdVersion(NSString *ver);
  * If 'EcHomeDirectory' is not present in the defaults system (or is
  * an empty string) then no directory change is done.<br />
  * Please note, that the base implementation of this method may
- * cause other methods (eg -cmdUpdated and -cmdDefaultsChaned) to be called,
+ * cause other methods (eg -cmdUpdated and -cmdDefaultsChanged:) to be called,
  * so you must take care that when you override those methods, your own
  * implementations do not depend on initialisation having completed.
  * It's therefore recommended that you use 'lazy' initialisation of subclass
