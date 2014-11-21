@@ -1762,7 +1762,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	{
 	  exit(0);
 	}
-      host = RETAIN([[NSHost currentHost] name]);
+      host = RETAIN([[NSHost currentHost] wellKnownName]);
       clients = [[NSMutableArray alloc] initWithCapacity: 10];
       launches = [[NSMutableDictionary alloc] initWithCapacity: 10];
       launching = [[NSMutableSet alloc] initWithCapacity: 10];
