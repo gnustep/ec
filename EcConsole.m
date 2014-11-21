@@ -762,7 +762,7 @@ static BOOL commandIsRepeat (NSString *string)
       NSString          *s;
 
       interactive = YES;
-      local = [[[NSHost currentHost] name] retain];
+      local = [[[NSHost currentHost] wellKnownName] retain];
       name = [defs stringForKey: @"ControlName"];
       if (name == nil)
 	{
