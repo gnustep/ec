@@ -412,6 +412,12 @@
 
 - (void) _timeout: (NSTimer*)t
 {
+  /* We hold a lock while modifying the internal data structures,
+   * but must release it while forwarding things to their eventual
+   * destination (in case the forwarding is done in another thread
+   * which needs to grab the lock or where a DO message causes an
+   * attempt to grab the lock).
+   */
   [_alarmLock lock];
   if (NO == _inTimeout && YES == _isRunning)
     {
@@ -424,7 +430,10 @@
 
 	      while ([_alarmQueue count] > 0)
 		{
-		  id	o = [_alarmQueue objectAtIndex: 0];
+		  id	o;
+
+		  o = [[[_alarmQueue objectAtIndex: 0] retain] autorelease];
+		  [_alarmQueue removeObjectAtIndex: 0];
 
 		  if (YES == [o isKindOfClass: [EcAlarm class]])
 		    {
@@ -487,9 +496,19 @@
 			  if (nil == [_managedObjects member: m])
 			    {
 			      [_managedObjects addObject: m];
-			      [self domanageFwd: m];
 			    }
+                          else
+                            {
+                              m = nil;
+                            }
+
+                          [_alarmLock unlock];
+                          if (nil != m)
+                            {
+			      [self domanageFwd: m];
+                            }
                           [self alarmFwd: next];
+                          [_alarmLock lock];
                         }
 		    }
 		  else
@@ -503,7 +522,9 @@
 			  if (nil == [_managedObjects member: m])
 			    {
 			      [_managedObjects addObject: m];
+                              [_alarmLock unlock];
 			      [self domanageFwd: m];
+                              [_alarmLock lock];
 			    }
 			}
 		      else if (YES == [s hasPrefix: @"unmanage "])
@@ -512,8 +533,10 @@
 
 			  if (nil != [_managedObjects member: m])
 			    {
+                              [_alarmLock unlock];
                               [self _unmanage: m];
 			      [self unmanageFwd: m];
+                              [_alarmLock lock];
 			    }
 
 			  /* When we unmanage an object, we also
@@ -531,7 +554,9 @@
 				{
 				  if (YES == [s hasPrefix: m])
 				    {
+                                      [_alarmLock unlock];
                                       [self unmanageFwd: s];
+                                      [_alarmLock lock];
 				    }
 				}
 			    }
@@ -541,7 +566,6 @@
 			  NSLog(@"ERROR ... unexpected command '%@'", s);
 			}
 		    }
-		  [_alarmQueue removeObjectAtIndex: 0];
 		}
 	    }
 	  _inTimeout = NO;
@@ -562,6 +586,10 @@
 	  NSLog(@"%@ %@", NSStringFromClass([self class]), localException);
 	}
       NS_ENDHANDLER
+    }
+  else
+    {
+      [_alarmLock unlock];
     }
 }
 
