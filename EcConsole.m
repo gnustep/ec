@@ -770,7 +770,7 @@ static BOOL commandIsRepeat (NSString *string)
 	}
       if (nil != (host = [NSHost controlWellKnownName]))
         {
-          host = [[NSHost hostWithWellKnownName: host] wellKnownName];
+          host = [[NSHost hostWithWellKnownName: host] name];
         }
       if (nil == host)
 	{

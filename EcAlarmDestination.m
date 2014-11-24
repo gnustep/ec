@@ -38,7 +38,7 @@
 
 /* Make connection to destination host.
  */
-- (void) _connect;
+- (id<EcAlarmDestination>) _connect;
 
 /* Loss of connection ... clear destination.
  */
@@ -354,45 +354,55 @@
 
 @implementation	EcAlarmDestination (Private)
 
-- (void) _connect
+- (id<EcAlarmDestination>) _connect
 {
-  if (nil == (id)_destination)
-    {
-      if (nil != _name)
-        {
-          id	proxy;
+  id<EcAlarmDestination>        d = nil;
 
-          if (nil == _host)
-            {
-              proxy = [NSConnection
-                rootProxyForConnectionWithRegisteredName: _name
-                                                    host: _host
-                usingNameServer:
-                  [NSMessagePortNameServer sharedInstance]];
-            }
-          else
-            {
-              proxy = [NSConnection
-                rootProxyForConnectionWithRegisteredName: _name
-                                                    host: _host
-                usingNameServer:
-                  [NSSocketPortNameServer sharedInstance]];
-            }
+  [_alarmLock lock];
+  NS_DURING
+    if (nil == (id)_destination)
+      {
+        if (nil != _name)
+          {
+            id	proxy;
 
-          if (proxy != nil)
-            {
-              id connection = [proxy connectionForProxy];
+            if (nil == _host)
+              {
+                proxy = [NSConnection
+                  rootProxyForConnectionWithRegisteredName: _name
+                                                      host: _host
+                  usingNameServer:
+                    [NSMessagePortNameServer sharedInstance]];
+              }
+            else
+              {
+                proxy = [NSConnection
+                  rootProxyForConnectionWithRegisteredName: _name
+                                                      host: _host
+                  usingNameServer:
+                    [NSSocketPortNameServer sharedInstance]];
+              }
 
-              [connection setDelegate: self];
-              [[NSNotificationCenter defaultCenter]
-                addObserver: self
-                selector: @selector(_connectionBecameInvalid:)
-                name: NSConnectionDidDieNotification
-                object: connection];
-              [self setDestination: (id<EcAlarmDestination>)proxy];
-            }
-        }
-    }
+            if (proxy != nil)
+              {
+                id connection = [proxy connectionForProxy];
+
+                [connection setDelegate: self];
+                [[NSNotificationCenter defaultCenter]
+                  addObserver: self
+                  selector: @selector(_connectionBecameInvalid:)
+                  name: NSConnectionDidDieNotification
+                  object: connection];
+                [self setDestination: (id<EcAlarmDestination>)proxy];
+              }
+          }
+      }
+    d = [(id)_destination retain];
+  NS_HANDLER
+    NSLog(@"Problem connecting to destination ... %@", localException);
+  NS_ENDHANDLER
+  [_alarmLock unlock];
+  return [(id)d autorelease];
 }
 
 - (void) _connectionBecameInvalid: (id)connection
@@ -590,75 +600,72 @@
 {
   if (NO == [NSThread isMainThread])
     {
-      [self performSelectorOnMainThread: _cmd withObject: event waitUntilDone: NO];
+      [self performSelectorOnMainThread: _cmd
+                             withObject: event
+                          waitUntilDone: NO];
       return;
     }
-  [_alarmLock lock];
   NS_DURING
-    [self _connect];
-    [_destination alarm: event];
+    [[self _connect] alarm: event];
     NS_DURING
-      [_backups makeObjectsPerformSelector: @selector(alarm:)
-				withObject: event];
+      [[self backups] makeObjectsPerformSelector: @selector(alarm:)
+                                      withObject: event];
     NS_HANDLER
-      DESTROY(_backups);
+      [self setBackups: nil];
       NSLog(@"Problem sending alarm to backups ... %@", localException);
     NS_ENDHANDLER
   NS_HANDLER
     [self setDestination: nil];
     NSLog(@"Problem sending alarm to destination ... %@", localException);
   NS_ENDHANDLER
-  [_alarmLock unlock];
 }
 
 - (void) domanageFwd: (NSString*)managedObject
 {
   if (NO == [NSThread isMainThread])
     {
-      [self performSelectorOnMainThread: _cmd withObject: managedObject waitUntilDone: NO];
+      [self performSelectorOnMainThread: _cmd
+                             withObject: managedObject
+                          waitUntilDone: NO];
       return;
     }
-  [_alarmLock lock];
   NS_DURING
-    [self _connect];
-    [_destination domanage: managedObject];
+    [[self _connect] domanage: managedObject];
     NS_DURING
-      [_backups makeObjectsPerformSelector: @selector(domanage:)
-				withObject: managedObject];
+      [[self backups] makeObjectsPerformSelector: @selector(domanage:)
+                                      withObject: managedObject];
     NS_HANDLER
-      DESTROY(_backups);
+      [self setBackups: nil];
       NSLog(@"Problem with domanage to backups ... %@", localException);
     NS_ENDHANDLER
   NS_HANDLER
     [self setDestination: nil];
     NSLog(@"Problem with domanage to destination ... %@", localException);
   NS_ENDHANDLER
-  [_alarmLock unlock];
 }
 
 - (void) unmanageFwd: (NSString*)managedObject
 {
   if (NO == [NSThread isMainThread])
     {
-      [self performSelectorOnMainThread: _cmd withObject: managedObject waitUntilDone: NO];
+      [self performSelectorOnMainThread: _cmd
+                             withObject: managedObject
+                          waitUntilDone: NO];
       return;
     }
-  [_alarmLock lock];
   NS_DURING
-    [self _connect];
-    [_destination unmanage: managedObject];
+    [[self _connect] unmanage: managedObject];
     NS_DURING
-      [_backups makeObjectsPerformSelector: @selector(unmanage:)
-				withObject: managedObject];
+      [[self backups] makeObjectsPerformSelector: @selector(unmanage:)
+                                      withObject: managedObject];
     NS_HANDLER
-      DESTROY(_backups);
+      [self setBackups: nil];
       NSLog(@"Problem with unmanage to backups ... %@", localException);
     NS_ENDHANDLER
   NS_HANDLER
     [self setDestination: nil];
     NSLog(@"Problem with unmanage to destination ... %@", localException);
   NS_ENDHANDLER
-  [_alarmLock unlock];
 }
 
 @end
