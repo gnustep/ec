@@ -1,3 +1,8 @@
+2014-11-26  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m: Make -cmdLastIP, -cmdLastOP (and their setters)
+	thread-safe.
+
 2014-11-02  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

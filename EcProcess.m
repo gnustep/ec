@@ -131,9 +131,9 @@ static NSUserDefaults	*cmdDefs = nil;
 static NSString		*cmdDebugName = nil;
 static NSMutableDictionary	*cmdLogMap = nil;
 
-static NSDate	*started = nil;	/* Time object was created.		*/
-static NSDate	*lastIP = nil;	/* Time of last input to object.	*/
-static NSDate	*lastOP = nil;	/* Time of last output by object.	*/
+static NSDate	*started = nil;	        /* Time object was created. */
+static NSTimeInterval	lastIP = 0.0;	/* Time of last input to object. */
+static NSTimeInterval	lastOP = 0.0;	/* Time of last output by object. */
 
 static Class	cDateClass = 0;
 static Class	dateClass = 0;
@@ -1021,8 +1021,6 @@ findMode(NSDictionary* d, NSString* s)
       DESTROY(errorLogger);
       DESTROY(homeDir);
       DESTROY(hostName);
-      DESTROY(lastIP);
-      DESTROY(lastOP);
       DESTROY(noNetConfig);
       DESTROY(replyBuffer);
       DESTROY(servers);
@@ -1363,12 +1361,20 @@ static NSString	*noFiles = @"No log files to archive";
 
 - (NSDate*) cmdLastIP
 {
-  return lastIP;
+  if (0.0 == lastIP)
+    {
+      return nil;
+    }
+  return [dateClass dateWithTimeIntervalSinceReferenceDate: lastIP];
 }
 
 - (NSDate*) cmdLastOP
 {
-  return lastOP;
+  if (0.0 == lastOP)
+    {
+      return nil;
+    }
+  return [dateClass dateWithTimeIntervalSinceReferenceDate: lastOP];
 }
 
 - (void) cmdLogEnd: (NSString*)name
@@ -2396,20 +2402,26 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) ecHadIP: (NSDate*)when
 {
-  if (when == nil)
+  if (nil == when)
     {
-      when = [dateClass date];
+      lastIP = [dateClass timeIntervalSinceReferenceDate];
     }
-  ASSIGN(lastIP, when);
+  else
+    {
+      lastIP = [when timeIntervalSinceReferenceDate];
+    }
 }
 
 - (void) ecHadOP: (NSDate*)when
 {
-  if (when == nil)
+  if (nil == when)
     {
-      when = [dateClass date];
+      lastOP = [dateClass timeIntervalSinceReferenceDate];
     }
-  ASSIGN(lastOP, when);
+  else
+    {
+      lastOP = [when timeIntervalSinceReferenceDate];
+    }
 }
 
 - (NSUInteger) ecNotLeaked
@@ -3340,11 +3352,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     {
       [self cmdPrintf: @"\n%@ on %@ running since %@\n",
 	cmdLogName(), ecHostName(), [self ecStarted]];
-      if ([self cmdLastIP] != nil)
+      if (lastIP > 0.0)
 	{
 	  [self cmdPrintf: @"Last IP at %@\n", [self cmdLastIP]];
 	}
-      if ([self cmdLastOP] != nil)
+      if (lastOP > 0.0)
 	{
 	  [self cmdPrintf: @"Last OP at %@\n", [self cmdLastOP]];
 	}
