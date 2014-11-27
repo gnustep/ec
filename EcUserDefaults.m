@@ -100,12 +100,10 @@ static NSLock 		*lock = nil;
   return [defs dictionaryForKey: [self _getKey: aKey]];
 }
 
-#if 0
 - (double) doubleForKey: (NSString*)aKey
 {
   return [defs doubleForKey: [self _getKey: aKey]];
 }
-#endif
 
 - (float) floatForKey: (NSString*)aKey
 {
