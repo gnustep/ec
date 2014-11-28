@@ -472,6 +472,8 @@ init_EcAlarmSink(void)
   
   /* Now use the dotted integer format 'alarms' OID as the basis to set up
    * all the alarm data OIDs.
+   * The OID buffer needs to allow for two more OIDs after the 'alarms'
+   * OID because the alarmsTable (in the alarms OID) has entries in it.
    */
   oidString = alarmsOID = [[defaults stringForKey: @"AlarmsOID"] copy];
   if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.1";
@@ -485,9 +487,10 @@ init_EcAlarmSink(void)
   oids[len] = 0;	// alarmsTable
   oids[len+1] = 0;	// alarmsEntry
 
-  alarmsTable_len = len + 2;
+  alarmsTable_len = len + 1;
   alarmsTable_oid = (oid*)malloc(sizeof(oid) * alarmsTable_len);
-  memcpy(alarmsTable_oid, oids, sizeof(oid) * (len + 2));
+  memcpy(alarmsTable_oid, oids, sizeof(oid) * (len + 1));
+  alarmsTable_oid[len] = 1;
 
   resyncFlag_len = len + 1;
   resyncFlag_oid = (oid*)malloc(sizeof(oid) * resyncFlag_len);
