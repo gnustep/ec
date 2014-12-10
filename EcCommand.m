@@ -657,7 +657,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
           /* After the first ping response from a client we assume
            * that client has completed startup and is running OK.
-           * We can therefore clear any loss of client alarm.
+           * We can therefore clear any loss of client alarm, any
+           * alarm for being unable to register, and launch failure
+           * or fatal configuration alarms.
            */
           managedObject = EcMakeManagedObject(host, n, nil);
           a = [EcAlarm alarmForManagedObject: managedObject
@@ -665,6 +667,15 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
             withEventType: EcAlarmEventTypeProcessingError
             probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
             specificProblem: @"Process availability"
+            perceivedSeverity: EcAlarmSeverityCleared
+            proposedRepairAction: nil
+            additionalText: nil];
+          [self alarm: a];
+          a = [EcAlarm alarmForManagedObject: managedObject
+            at: nil
+            withEventType: EcAlarmEventTypeProcessingError
+            probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+            specificProblem: @"Unable to register"
             perceivedSeverity: EcAlarmSeverityCleared
             proposedRepairAction: nil
             additionalText: nil];
