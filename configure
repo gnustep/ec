@@ -4444,7 +4444,7 @@ fi
 
   if test "x$NETSNMPCONFIG" != "xno" ; then
     ac_save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS `$NETSNMPCONFIG --cflags`"
+    CPPFLAGS="$CPPFLAGS `$NETSNMPCONFIG --cflags | sed -e 's/-fstack-protector-strong//'`"
 
 for ac_header in net-snmp/net-snmp-config.h
 do
@@ -4591,8 +4591,9 @@ fi
 
 done
 
+    CPPFLAGS="$ac_save_CPPFLAGS"
     if test "x$ac_cv_header_net_snmp_net_snmp_config_h" = "xyes"; then
-      CFLAGS="$CFLAGS `$NETSNMPCONFIG --cflags`"
+      CFLAGS="$CFLAGS `$NETSNMPCONFIG --cflags | sed -e 's/-fstack-protector-strong//'`"
       SNMP_LIBS=`$NETSNMPCONFIG --libs`
 
 cat >>confdefs.h <<\_ACEOF
@@ -4601,8 +4602,6 @@ _ACEOF
 
       WITH_NET_SNMP="yes"
     fi
-  else
-    CPPFLAGS="$ac_save_CPPFLAGS"
   fi
   if test $WITH_NET_SNMP = "no"; then
     { { $as_echo "$as_me:$LINENO: error: Unable to find/use net-snmp ... you must install the net-snmp development package for your system or disable the use of net-snmp" >&5

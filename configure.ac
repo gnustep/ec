@@ -51,16 +51,15 @@ if test $enable_net_snmp = "yes"; then
   AC_PATH_PROG(NETSNMPCONFIG, net-snmp-config, no, )
   if test "x$NETSNMPCONFIG" != "xno" ; then
     ac_save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS `$NETSNMPCONFIG --cflags`"
+    CPPFLAGS="$CPPFLAGS `$NETSNMPCONFIG --cflags | sed -e 's/-fstack-protector-strong//'`"
     AC_CHECK_HEADERS(net-snmp/net-snmp-config.h)
+    CPPFLAGS="$ac_save_CPPFLAGS"
     if test "x$ac_cv_header_net_snmp_net_snmp_config_h" = "xyes"; then
-      CFLAGS="$CFLAGS `$NETSNMPCONFIG --cflags`"
+      CFLAGS="$CFLAGS `$NETSNMPCONFIG --cflags | sed -e 's/-fstack-protector-strong//'`"
       SNMP_LIBS=`$NETSNMPCONFIG --libs`
       AC_DEFINE(WITH_NET_SNMP, 1, [Define to enable support for NET-SNMP])
       WITH_NET_SNMP="yes"
     fi
-  else
-    CPPFLAGS="$ac_save_CPPFLAGS"
   fi	
   if test $WITH_NET_SNMP = "no"; then
     AC_MSG_ERROR([Unable to find/use net-snmp ... you must install the net-snmp development package for your system or disable the use of net-snmp])
