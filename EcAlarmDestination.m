@@ -292,29 +292,38 @@
 
 - (void) shutdown
 {
-  NSDate	*begin;
+  BOOL		wasShuttingDown;
 
   [_alarmLock lock];
+  wasShuttingDown = _shouldStop;
   _shouldStop = YES;
   [_host release];
   _host = nil;
   [_name release];
   _name = nil;
   [_alarmLock unlock];
-  begin = [NSDate date];
-  while (YES == [self isRunning])
+  if (NO == wasShuttingDown)
     {
-      NSDate    *when;
+      NSDate	*begin;
 
-      if ([begin timeIntervalSinceNow] < -5.0)
+      /* Unless we are called recursively, lets wait for a while for
+       * the alarm thread to terminate.
+       */
+      begin = [NSDate date];
+      while (YES == [self isRunning])
 	{
-	  NSLog(@"alarm thread failed to stop within 5 seconds");
-	  return;
+	  NSDate    *when;
+
+	  if ([begin timeIntervalSinceNow] < -5.0)
+	    {
+	      NSLog(@"alarm thread failed to stop within 5 seconds");
+	      return;
+	    }
+	  when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
+	  [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
+				   beforeDate: when];
+	  [when release];
 	}
-      when = [[NSDate alloc] initWithTimeIntervalSinceNow: 0.1];
-      [[NSRunLoop currentRunLoop] runMode: NSDefaultRunLoopMode
-                               beforeDate: when];
-      [when release];
     }
 }
 
