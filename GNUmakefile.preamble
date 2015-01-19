@@ -48,7 +48,7 @@ LIBRARIES_DEPEND_UPON += $(ECCL_LIBS)
 # Extras for when building with SNMP support
 #
 ifeq ($(WITH_NET_SNMP),yes)
-  EcAlarmSinkSNMP.m_FILE_FLAGS += $(shell net-snmp-config --cflags | sed -e 's/-l[^ ]*//g' | sed -d 's/-fstack-protect-strong//g')
+  EcAlarmSinkSNMP.m_FILE_FLAGS += $(shell net-snmp-config --cflags | sed -e 's/-l[^ ]*//g' | sed -e 's/-fstack-protect-strong//g')
   LIBRARIES_DEPEND_UPON += $(shell net-snmp-config --agent-libs)
 endif
 

@@ -1,10 +1,14 @@
+2015-01-19  Wolfgang Lux  <wolfgang.lux@gmail.com>
+
+	* GNUmakefile.preamble: Fix wrong option letter in sed command.
+
 2015-01-15  Richard Frith-Macdonald <rfm@gnu.org>
 
         * EcAlarmDestination.m: When shutting down, only wait for the
 	background thread first time ... otherwise we could get into a
 	recursive loop calling the -shutdown method while
 	waiting for shutdown to complete.
-				
+
 2015-01-07  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* configure.ac:
