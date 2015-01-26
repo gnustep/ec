@@ -164,6 +164,11 @@
     }
 }
 
+- (int) processIdentifier
+{
+  return processIdentifier;
+}
+
 - (void) setConfig: (NSData*)c
 {
   ASSIGN(config, c);
@@ -177,6 +182,11 @@
 - (void) setObj: (id)o
 {
   ASSIGN(obj, o);
+}
+
+- (void) setProcessIdentifier: (int)p
+{
+  processIdentifier = p;
 }
 
 - (void) setTransient: (BOOL)flag

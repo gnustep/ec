@@ -1032,11 +1032,13 @@ findMode(NSDictionary* d, NSString* s)
 
 + (NSMutableDictionary*) ecInitialDefaults
 {
+  NSProcessInfo *pi;
   id		objects[2];
   id		keys[2];
   NSString	*prefix;
 
-  objects[0] = [[NSProcessInfo processInfo] processName];
+  pi = [NSProcessInfo processInfo];
+  objects[0] = [pi processName];
   objects[1] = @".";
   prefix = EC_DEFAULTS_PREFIX;
   if (nil == prefix)
@@ -1621,6 +1623,17 @@ static NSString	*noFiles = @"No log files to archive";
 - (oneway void) unmanage: (in bycopy NSString*)managedObject
 {
   [alarmDestination unmanage: managedObject];
+}
+
+- (int) processIdentifier
+{
+  static int    pi = 0;
+
+  if (0 == pi)
+    {
+      pi = [[NSProcessInfo processInfo] processIdentifier];
+    }
+  return pi;
 }
 
 - (void) setCmdInterval: (NSTimeInterval)interval
@@ -2620,9 +2633,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 }
 
-- (void) cmdGnip: (id <CmdPing>)from
-	sequence: (unsigned)num
-	   extra: (NSData*)data
+- (oneway void) cmdGnip: (id <CmdPing>)from
+	       sequence: (unsigned)num
+		  extra: (in bycopy NSData*)data
 {
   [self cmdDbg: cmdConnectDbg msg: @"cmdGnip: %lx sequence: %u extra: %lx",
     (unsigned long)from, num, (unsigned long)data];
@@ -3386,9 +3399,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 }
 
 
-- (void) cmdPing: (id <CmdPing>)from
-	sequence: (unsigned)num
-	   extra: (NSData*)data
+- (oneway void) cmdPing: (id <CmdPing>)from
+	       sequence: (unsigned)num
+		  extra: (in bycopy NSData*)data
 {
   [self cmdDbg: cmdConnectDbg msg: @"cmdPing: %lx sequence: %u extra: %lx",
     (unsigned long)from, num, (unsigned long)data];
@@ -4057,7 +4070,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	      format: @"Illegal method call"];
 }
 
-- (void) requestConfigFor: (id<CmdConfig>)c
+- (oneway void) requestConfigFor: (id<CmdConfig>)c
 {
   [NSException raise: NSGenericException
 	      format: @"Illegal method call"];
@@ -4071,7 +4084,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	      format: @"Illegal method call"];
 }
 
-- (void) updateConfig: (NSData*)info
+- (oneway void) updateConfig: (in bycopy NSData*)info
 {
   id	plist = [NSPropertyListSerialization
     propertyListWithData: info

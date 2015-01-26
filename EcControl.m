@@ -2169,7 +2169,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
 }
 
-- (void) requestConfigFor: (id<CmdConfig>)c
+- (oneway void) requestConfigFor: (id<CmdConfig>)c
 {
   return;
 }

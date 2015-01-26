@@ -129,7 +129,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSArray               *launchOrder;
   NSDictionary		*environment;
   NSMutableDictionary	*launches;
-  NSMutableSet		*launching;
+  NSMutableDictionary   *launching;
   unsigned		pingPosition;
   NSTimer		*terminating;
   NSDate		*lastUnanswered;
@@ -171,6 +171,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		from: (NSString*)s
 		  to: (NSString*)d
 		type: (EcLogType)t;
+- (void) killAll;
 - (void) launch;
 - (void) logMessage: (NSString*)msg
 	       type: (EcLogType)t
@@ -1776,7 +1777,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       host = RETAIN([[NSHost currentHost] wellKnownName]);
       clients = [[NSMutableArray alloc] initWithCapacity: 10];
       launches = [[NSMutableDictionary alloc] initWithCapacity: 10];
-      launching = [[NSMutableSet alloc] initWithCapacity: 10];
+      launching = [[NSMutableDictionary alloc] initWithCapacity: 10];
 
       timer = [NSTimer scheduledTimerWithTimeInterval: 5.0
 					       target: self
@@ -1786,6 +1787,32 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       [self timedOut: nil];
     }
   return self;
+}
+
+- (void) killAll
+{
+#ifndef __MINGW__
+  NSUInteger    i = [clients count];
+
+  if (i > 0)
+    {
+      while (i-- > 0)
+	{
+	  EcClientI	*c;
+
+	  c = [clients objectAtIndex: i];
+	  if (nil != c)
+	    {
+              int       p = [c processIdentifier];
+
+	      if (p > 0)
+		{
+		  kill(p, SIGKILL);
+		}
+	    }
+	}
+    }
+#endif
 }
 
 - (void) launch
@@ -1857,6 +1884,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  NSDictionary	*addE = [taskInfo objectForKey: @"AddE"];
 	  NSDictionary	*setE = [taskInfo objectForKey: @"SetE"];
           NSString      *failed = nil;
+          NSTask        *task = nil;
           NSString	*m;
 
           /* As a convenience, the 'Home' option sets the -HomeDirectory
@@ -1878,11 +1906,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  /* Record time of launch start and the fact that this is launching.
 	   */
 	  [launches setObject: now forKey: key];
-	  if (nil == [launching member: key])
-	    {
-	      [launching addObject: key];
-	    }
-	  else
+	  if (nil != [launching objectForKey: key])
 	    {
               NSString  *managedObject;
 	      EcAlarm	*a;
@@ -1901,10 +1925,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		additionalText: @"failed to register after launch"];
 	      [self alarm: a];
 	    }
+          task = [NSTask new];
+          [launching setObject: task forKey: key];
+          RELEASE(task);
 
 	  if (prog != nil && [prog length] > 0)
 	    {
-	      NSTask		*task;
 	      NSFileHandle	*hdl;
 
 	      if (setE != nil)
@@ -1922,7 +1948,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  [e addEntriesFromDictionary: addE];
 		  env = AUTORELEASE(e);
 		}
-	      task = [NSTask new];
 	      [task setEnvironment: env];
 	      hdl = [NSFileHandle fileHandleWithNullDevice];
 	      NS_DURING
@@ -1963,7 +1988,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
                   [self information: m from: nil to: nil type: LT_AUDIT];
 		}
 	      NS_ENDHANDLER
-	      RELEASE(task);
 	    }
 	  else
 	    {
@@ -2063,8 +2087,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if ([clients count] > 0)
     {
-      unsigned		i;
-      unsigned		j;
+      NSUInteger	i;
+      NSUInteger	j;
       NSMutableArray	*a;
 
       /* Now we tell all connected clients to quit.
@@ -2202,10 +2226,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       RELEASE(obj);
       [clients sortUsingSelector: @selector(compare:)];
 
+      [obj setProcessIdentifier: [c processIdentifier]];
+
       /* This client has launched ... remove it from the set of launching
        * clients.
        */
-      [launching removeObject: n];
+      [launching removeObjectForKey: n];
 
       /*
        * If this client is in the list of launchable clients, set
@@ -2294,7 +2320,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSDate    *when;
 
 
-      /* We tell all connected clients to quit.
+      /* We tell all connected clients to quit ... allow at most 30 seconds.
        */
       a = [[clients mutableCopy] autorelease];
       i = [a count];
@@ -2616,7 +2642,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
  */
 - (void) terminate: (NSTimer*)t
 {
-  if (terminating == nil)
+  if (nil == terminating)
     {
       [self information: @"Handling shutdown."
 		   from: nil
@@ -2638,12 +2664,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     {
       NSDate	*when = (NSDate*)[t userInfo];
 
-      if ([when timeIntervalSinceNow] < -60.0)
+      if ([when timeIntervalSinceNow] < -30.0)
 	{
 	  [[self cmdLogFile: logname]
 	    puts: @"Final shutdown.\n"];
 	  [terminating invalidate];
 	  terminating = nil;
+          [self killAll];
 	  [self cmdQuit: tStatus];
 	}
     }

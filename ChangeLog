@@ -1,3 +1,14 @@
+2015-01-26  Richard Frith-Macdonald <rfm@gnu.org>
+        * GNUmakefile.preamble: fixup gcc flag filtering
+        * EcClientI.h:
+        * EcClientI.m:
+        * EcCommand.m:
+        * EcControl.m:
+        * EcProcess.h:
+        * EcProcess.m:
+        Implement forced kill by -terminate method if a client fails to
+        close down gracefully within 30 seconds.
+
 2015-01-19  Wolfgang Lux  <wolfgang.lux@gmail.com>
 
 	* GNUmakefile.preamble: Fix wrong option letter in sed command.

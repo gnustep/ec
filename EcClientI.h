@@ -40,9 +40,9 @@
 @interface	EcClientI : NSObject
 {
   id<CmdClient>	theServer;
-  id		obj;
-  NSString	*name;
-  NSDate	*lastUnanswered;	/* Last unanswered ping.	*/
+  id		obj;                    /* The proxy object of client.  */
+  NSString	*name;                  /* The name of the client.      */
+  NSDate        *lastUnanswered;        /* Last unanswered ping.        */
   unsigned	fwdSequence;		/* Last ping sent TO client.	*/
   unsigned	revSequence;		/* Last gnip sent BY client.	*/
   NSMutableSet	*files;			/* Want update info for these.	*/
@@ -50,6 +50,7 @@
   BOOL		pingOk;                 /* Can remote end accept ping?  */
   BOOL		transient;              /* Is this a transient client?  */
   BOOL		unregistered;           /* Has client unregistered?     */
+  int           processIdentifier;	/* Process ID if known (or 0).	*/
 }
 - (NSComparisonResult) compare: (EcClientI*)other;
 - (NSData*) config;
@@ -62,9 +63,11 @@
 - (NSString*) name;
 - (id) obj;
 - (void) ping;
+- (int) processIdentifier;
 - (void) setConfig: (NSData*)c;
 - (void) setName: (NSString*)n;
 - (void) setObj: (id)o;
+- (void) setProcessIdentifier: (int)p;
 - (void) setTransient: (BOOL)flag;
 - (void) setUnregistered: (BOOL)flag;
 - (BOOL) transient;

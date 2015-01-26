@@ -231,6 +231,7 @@ typedef enum    {
 @protocol	CmdClient <CmdPing,CmdConfig>
 - (oneway void) cmdMesgData: (in bycopy NSData*)dat from: (NSString*)name;
 - (oneway void) cmdQuit: (NSInteger)status;
+- (int) processIdentifier;
 @end
 
 /** Messages a Command logging process can be expected to handle.
@@ -268,7 +269,10 @@ typedef enum    {
 - (oneway void) reply: (NSString*)msg
 		   to: (NSString*)n
 		 from: (NSString*)c;
-/** Shut down the Command server and all its clients */
+/** Shut down the Command server and all its clients.<br />
+ * Clients which fail to shut down gracefully within 30 seconds
+ * make be killed.
+ */
 - (oneway void) terminate;
 
 /** This is an exceptional method which may be used without registering
@@ -950,6 +954,10 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdMesgmemory: (NSArray*)msg;
 - (void) cmdMesgnodebug: (NSArray*)msg;
 - (void) cmdMesgstatus: (NSArray*)msg;
+
+/** Returns the system process identifier for the client process.
+ */
+- (int) processIdentifier;
 
 /**
  * Returns a proxy object to a[n automatically managed] server process.<br />
