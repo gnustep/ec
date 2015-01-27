@@ -137,9 +137,15 @@
 
       <section>
         <heading>The Terminate command line tool</heading>
-        <p>The Terminate command line tool provides a mechanism to shut down
-          an ECCL host.  This tool contacts a Command server and tells it to
-          shut down all it's local client process and the shut itsself down.
+        <p>The Terminate command line tool provides a mechanism to shut
+          down an ECCL host.  This tool contacts a Command server and
+          tells it to shut down all it's local client process and then
+          shut itsself down.<br />
+          Each client of the Command server is given thirty seconds to
+          shut down gracefully, and if it has not shut down when this
+          period is over, the Command server is free to kill it.<br />
+          You can expect Command servers to have shut down within forty
+          seconds of the Terminate command being run.
         </p>
         <p>You may use '-CommandHost' and '-CommandName' to specify a Command
           server to contact, otherwise the default local Command server is

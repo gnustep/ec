@@ -2320,11 +2320,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSDate    *when;
 
 
-      /* We tell all connected clients to quit ... allow at most 30 seconds.
+      /* We tell all connected clients to quit ...
+       * clients are allowed 30 seconds to terminate
+       * (though we give them 35 to allow for delays).
        */
       a = [[clients mutableCopy] autorelease];
       i = [a count];
-      when = [NSDate dateWithTimeIntervalSinceNow: 30.0 - DLY];
+      when = [NSDate dateWithTimeIntervalSinceNow: 35.0 - DLY];
       while (i-- > 0)
 	{
 	  EcClientI	*c = [a objectAtIndex: i];
