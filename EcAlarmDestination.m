@@ -71,6 +71,22 @@
 	{
 	  [_alarmQueue addObject: event];
 	}
+      else if ([event perceivedSeverity] == EcAlarmSeverityCleared)
+        {
+          NSUInteger    index;
+
+          /* Event clears may only be coalesced with other clears,
+           * otherwise we might have a case where a clear is sent
+           * to the alarm sink without a corresponding alarm having
+           * been raised.
+           */
+          index = [_alarmQueue indexOfObject: event];
+	  [_alarmQueue addObject: event];
+          if (NSNotFound != index)
+            {
+              [_alarmQueue removeObjectAtIndex: index];
+            }
+        }
       else
 	{
 	  [event retain];

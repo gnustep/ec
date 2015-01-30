@@ -1,4 +1,12 @@
+2015-01-30  Richard Frith-Macdonald <rfm@gnu.org>
+
+        * EcAlarmDestination.m: When coalescing alarms, do not coalesce a
+	clear with anything other than an earlier clear for the same event.
+	We do not want to risk forwarding a clear without a preceding
+	event raising the alarm.
+
 2015-01-26  Richard Frith-Macdonald <rfm@gnu.org>
+
         * GNUmakefile.preamble: fixup gcc flag filtering
         * EcClientI.h:
         * EcClientI.m:
