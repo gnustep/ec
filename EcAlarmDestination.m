@@ -84,7 +84,11 @@
 	  [_alarmQueue addObject: event];
           if (NSNotFound != index)
             {
-              [_alarmQueue removeObjectAtIndex: index];
+	      event = [_alarmQueue objectAtIndex: index];
+	      if ([event perceivedSeverity] == EcAlarmSeverityCleared)
+		{
+		  [_alarmQueue removeObjectAtIndex: index];
+		}
             }
         }
       else
