@@ -97,6 +97,7 @@
   NSString			*_name;
   id<EcAlarmDestination>	_destination;
   NSArray			*_backups;
+  BOOL                          _debug;
 }
 
 /** Passes an alarm to the destination by adding it to a queue of alarm
@@ -171,6 +172,12 @@
  * the same perceivedSeverity level, which are never passed one).
  */
 - (BOOL) setCoalesce: (BOOL)coalesce;
+
+/** Sets debug on/off.  When debugging is on, we generate logs of
+ * forwarding to the destination and of coalescing of alams.<br />
+ * Returns the previous value of the setting.
+ */
+- (BOOL) setDebug: (BOOL)debug;
 
 /** Sets the destination to which alarms should be forwarded.<br />
  * If nil this turns off forwarding until it is re-set to a non-nil

@@ -84,19 +84,34 @@
 	  [_alarmQueue addObject: event];
           if (NSNotFound != index)
             {
-	      event = [_alarmQueue objectAtIndex: index];
-	      if ([event perceivedSeverity] == EcAlarmSeverityCleared)
+	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
+
+	      if ([old perceivedSeverity] == EcAlarmSeverityCleared)
 		{
+                  if (YES == _debug)
+                    {
+                      NSLog(@"Coalesce %@ by removing %@", event, old);
+                    }
 		  [_alarmQueue removeObjectAtIndex: index];
 		}
             }
         }
       else
 	{
-	  [event retain];
-	  [_alarmQueue removeObject: event];
+          NSUInteger    index;
+
+          index = [_alarmQueue indexOfObject: event];
 	  [_alarmQueue addObject: event];
-	  [event release];
+          if (NSNotFound != index)
+            {
+	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
+
+              if (YES == _debug)
+                {
+                  NSLog(@"Coalesce %@ by removing %@", event, old);
+                }
+              [_alarmQueue removeObjectAtIndex: index];
+            }
 	}
       [_alarmLock unlock];
     }
@@ -206,8 +221,17 @@
 	}
       else
 	{
-	  [_alarmQueue removeObject: event];
-	  [_alarmQueue addObject: event];
+          NSUInteger    index = [_alarmQueue indexOfObject: event];
+
+          [_alarmQueue addObject: event];
+          if (NSNotFound != index)
+            {
+              if (YES == _debug)
+                {
+                  NSLog(@"Coalesce %@", event);
+                }
+              [_alarmQueue removeObjectAtIndex: index];
+            }
 	}
       [_alarmLock unlock];
     }
@@ -292,6 +316,17 @@
   return old;
 }
 
+- (BOOL) setDebug: (BOOL)debug
+{
+  BOOL	old;
+
+  [_alarmLock lock];
+  old = _debug;
+  _debug = (YES == debug) ? YES : NO;
+  [_alarmLock unlock];
+  return old;
+}
+
 - (id<EcAlarmDestination>) setDestination: (id<EcAlarmDestination>)destination
 {
   id	old;
@@ -372,8 +407,17 @@
 	}
       else
 	{
-	  [_alarmQueue removeObject: event];
-	  [_alarmQueue addObject: event];
+          NSUInteger    index = [_alarmQueue indexOfObject: event];
+
+          [_alarmQueue addObject: event];
+          if (NSNotFound != index)
+            {
+              if (YES == _debug)
+                {
+                  NSLog(@"Coalesce %@", event);
+                }
+              [_alarmQueue removeObjectAtIndex: index];
+            }
 	}
       [_alarmLock unlock];
     }
@@ -664,6 +708,10 @@
     }
   NS_DURING
     [[self _connect] alarm: event];
+    if (YES == _debug)
+      {
+        NSLog(@"%@ %@", NSStringFromSelector(_cmd), event);
+      }
     NS_DURING
       [[self backups] makeObjectsPerformSelector: @selector(alarm:)
                                       withObject: event];
@@ -688,6 +736,10 @@
     }
   NS_DURING
     [[self _connect] domanage: managedObject];
+    if (YES == _debug)
+      {
+        NSLog(@"%@ %@", NSStringFromSelector(_cmd), managedObject);
+      }
     NS_DURING
       [[self backups] makeObjectsPerformSelector: @selector(domanage:)
                                       withObject: managedObject];
@@ -712,6 +764,10 @@
     }
   NS_DURING
     [[self _connect] unmanage: managedObject];
+    if (YES == _debug)
+      {
+        NSLog(@"%@ %@", NSStringFromSelector(_cmd), managedObject);
+      }
     NS_DURING
       [[self backups] makeObjectsPerformSelector: @selector(unmanage:)
                                       withObject: managedObject];
