@@ -2887,7 +2887,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       d = [config objectForKey: @"*"];
       if ([d isKindOfClass: [NSDictionary class]])
         {
-          d = [config objectForKey: @"*"];
+          d = [d objectForKey: @"*"];
         }
       if (YES == [d isKindOfClass: [NSDictionary class]])
         {
