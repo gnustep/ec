@@ -218,12 +218,10 @@ static NSLock 		*lock = nil;
   return [defs setCommand: val forKey: [self key: key]];
 }
 
-#if 0
 - (void) setDouble: (double)value forKey: (NSString*)aKey
 {
   [defs setDouble: value forKey: [self key: aKey]];
 }
-#endif
 
 - (void) setFloat: (float)value forKey: (NSString*)aKey
 {
