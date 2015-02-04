@@ -2881,6 +2881,23 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if (YES == changed)
     {
+      /* Merge the globalconfiguration into this process' user defaults.
+       * Don't forget to preserve the Alerter config.
+       */
+      d = [config objectForKey: @"*"];
+      if ([d isKindOfClass: [NSDictionary class]])
+        {
+          d = [config objectForKey: @"*"];
+        }
+      if (YES == [d isKindOfClass: [NSDictionary class]])
+        {
+          dict = [d mutableCopy];
+          [dict setObject: [[self cmdDefaults] objectForKey: @"Alerter"]
+                   forKey: @"Alerter"];
+          [[self cmdDefaults] setConfiguration: dict];
+          [dict release];
+        }
+
       dict = [NSMutableDictionary dictionaryWithCapacity: 3];
 
       /*

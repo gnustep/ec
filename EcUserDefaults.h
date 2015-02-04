@@ -53,6 +53,11 @@
 + (NSUserDefaults*) userDefaultsWithPrefix: (NSString*)aPrefix
 				    strict: (BOOL)enforcePrefix;
 
+/** Returns the current configuration settings dictionary (as set using
+ * the -setConfiguration: method).
+ */
+- (NSDictionary*) configuration;
+
 /** Returns the prefix used by the receiver, or nil if no prefix is in use.
  */
 - (NSString*) defaultsPrefix;

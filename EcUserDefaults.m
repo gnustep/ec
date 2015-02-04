@@ -280,6 +280,11 @@ static NSLock 		*lock = nil;
     aPrefix strict: enforcePrefix] autorelease];
 }
 
+- (NSDictionary*) configuration
+{
+  return [self volatileDomainForName: @"EcConfiguration"];
+}
+
 - (NSString*) defaultsPrefix
 {
   return nil;	// No prefix in use ... this is not a proxy
