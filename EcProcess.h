@@ -371,11 +371,6 @@ extern NSString*	cmdVersion(NSString *ver);
  * values from the network configuration system.
  * </p>
  * <deflist>
- *   <term>EcAuditLocal</term>
- *   <desc>A boolean used to specify that audit information should
- *   be logged locally rather than sending it to be logged centrally.<br />
- *   Default value is NO.
- *   </desc>
  *   <term>EcAuditFlush</term>
  *   <desc>A flush interval in seconds (optionally followed by a colon
  *   and a buffer size in KiloBytes) to control flushing of audit logs.<br />
@@ -387,11 +382,6 @@ extern NSString*	cmdVersion(NSString *ver);
  *   <desc>A boolean used to ensure that the debug mode named 'XXX' is either
  *   turned on or turned off.  The value of 'XXX' must match
  *   the name of a debug mode used by the program!
- *   </desc>
- *   <term>EcDebugLocal</term>
- *   <desc>A boolean used to specify that debug information should
- *   be logged locally rather than sending it to be logged centrally.<br />
- *   Default value is YES.
  *   </desc>
  *   <term>EcDebugFlush</term>
  *   <desc>A flush interval in seconds (optionally followed by a colon
