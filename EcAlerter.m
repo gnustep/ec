@@ -636,7 +636,7 @@ replaceFields(NSDictionary *fields, NSString *template)
         }
       NS_HANDLER
         {
-          NSLog(@"Exception handling database log for rule: %@",
+          NSLog(@"Exception handling log for rule: %@",
             localException);
         }
       NS_ENDHANDLER

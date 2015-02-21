@@ -216,11 +216,7 @@
  *   by this message (not present if this is not an alarm).</desc>
  * </deflist>
  * <p>The <em>Log</em> array specifies a list of log destinations which are
- * normally treated as filenames (stored in the standard log directory).
- * However, a value beginning 'database:' * is logged to a
- * database (the default database configured for SQLClient).<br />
- * After the colon you may place a table name, but if you don't then
- * the message will be logged to the 'Alert' table.<br />
+ * normally treated as filenames (stored in the standard log directory).<br />
  * The values logged in separate fields are the Timestamp, Type, Server, Host,
  * Extra1, Extra2, and full log text (as produced by the Replacement config)
  * is written into the Message field of the table after having been truncated
@@ -282,7 +278,7 @@
  *     message identifier.</desc>
  * </deflist>
  *
- * <p>When an ExAlerter instance is used by a Control server process,
+ * <p>When an EcAlerter instance is used by a Control server process,
  *  The 'Alerter' configuration dictionary may contain some extra
  *  configuration used to define the way the Control server uses the
  *  alerter.<br />
