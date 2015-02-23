@@ -6,6 +6,7 @@
 	* EcCommand.m: Put our logs in 'Logs' by default.
 	* EcControl.m: Put our logs in 'Logs' by default.
 	Change default logging locations.
+	*GNUmakefile: bump version for release
 
 2015-02-02  Richard Frith-Macdonald <rfm@gnu.org>
 
