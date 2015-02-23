@@ -325,6 +325,7 @@ extern NSString*	cmdLogsDir(NSString *date);
 extern NSString*	cmdLogKey(EcLogType t);
 extern NSString*	cmdLogName();
 extern NSString*	cmdLogFormat(EcLogType t, NSString *fmt);
+extern void             ecSetLogsSubdirectory(NSString *pathComponent);
 
 /* Set/get version/compilation date.
  */

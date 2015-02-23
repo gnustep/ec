@@ -1693,6 +1693,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 - (id) initWithDefaults: (NSDictionary*)defs
 {
+  ecSetLogsSubdirectory(@"Logs");
   self = [super initWithDefaults: defs];
   if (self != nil)
     {

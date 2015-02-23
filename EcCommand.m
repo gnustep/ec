@@ -1761,6 +1761,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
 - (id) initWithDefaults: (NSDictionary*)defs
 {
+  ecSetLogsSubdirectory(@"Logs");
   if (nil != (self = [super initWithDefaults: defs]))
     {
       uncompressed = 0.0;

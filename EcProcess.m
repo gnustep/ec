@@ -234,6 +234,21 @@ cmdSetHome(NSString *home)
   ASSIGNCOPY(homeDir, home);
 }
 
+static NSString *logsDir = nil;
+
+NSString*
+ecLogsSubdirectory()
+{
+  return logsDir;
+}
+
+void
+ecSetLogsSubdirectory(NSString *pathComponent)
+{
+  ASSIGNCOPY(logsDir, pathComponent);
+}
+
+
 static NSString	*userDir = nil;
 
 static NSString*
@@ -273,6 +288,7 @@ cmdLogsDir(NSString *date)
 {
   NSFileManager	*mgr = [NSFileManager defaultManager];
   NSString	*str = cmdUserDir();
+  NSString      *component;
   BOOL		flag;
 
   if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
@@ -299,7 +315,12 @@ cmdLogsDir(NSString *date)
       return nil;
     }
 
-  str = [str stringByAppendingPathComponent: @"Logs"];
+  component = ecLogsSubdirectory();
+  if (nil == component)
+    {
+      component = @"DebugLogs";
+    }
+  str = [str stringByAppendingPathComponent: component];
   if ([mgr fileExistsAtPath: str isDirectory: &flag] == NO)
     {
       if ([mgr createDirectoryAtPath: str
@@ -1337,13 +1358,6 @@ static NSString	*noFiles = @"No log files to archive";
 	  [server update];
 	}
     }
-}
-
-- (NSString*) cmdDebugPath
-{
-  if (cmdDebugName == nil)
-    return nil;
-  return [cmdLogsDir(nil) stringByAppendingPathComponent: cmdDebugName]; 
 }
 
 - (NSString*) cmdInstance

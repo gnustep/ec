@@ -1,5 +1,14 @@
 2015-02-02  Richard Frith-Macdonald <rfm@gnu.org>
 
+	* EcAlerter.h: Add options for time-limiting rule activity
+	* EcAlerter.m: Implement those options
+	* EcProcess.m: Put debug logs in 'DebugLogs' by default.
+	* EcCommand.m: Put our logs in 'Logs' by default.
+	* EcControl.m: Put our logs in 'Logs' by default.
+	Change default logging locations.
+
+2015-02-02  Richard Frith-Macdonald <rfm@gnu.org>
+
         * EcAlarmDestination.m: When coalescing alarms, do not coalesce a
 	clear with anything other than an earlier clear for the same event.
 	We do not want to risk forwarding a clear without a preceding
