@@ -235,10 +235,12 @@ replaceFields(NSDictionary *fields, NSString *template)
 {
   NSUserDefaults	*d;
   NSDictionary		*c;
+  BOOL                  ok;
 
   d = [EcProc cmdDefaults];
   c = [d dictionaryForKey: @"Alerter"];
-  return [self configureWithDefaults: c];
+  ok = [self configureWithDefaults: c];
+  return ok;
 }
 
 - (BOOL) configureWithDefaults: (NSDictionary*)c
@@ -475,7 +477,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                       NSLog(@"ActiveTimes='%@' with missing HH:MM", obj);
                       return NO;
                     }
-                  if (1 != c) m = 0;
+                  if (1 == c) m = 0;
                   if (h < 0 || h > 23)
                     {
                       NSLog(@"ActiveTimes='%@' with hour out of range", obj);
@@ -494,7 +496,7 @@ replaceFields(NSDictionary *fields, NSString *template)
                       NSLog(@"ActiveTimes='%@' with missing HH:MM", obj);
                       return NO;
                     }
-                  if (1 != c) m = 0;
+                  if (1 == c) m = 0;
                   if (h < 0 || h > 24 || (24 == h && 0 != m))
                     {
                       NSLog(@"ActiveTimes='%@' with hour out of range", obj);
