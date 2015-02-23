@@ -42,7 +42,7 @@
  * Catagory so that NSHost objects can be safely used as dictionary keys.
  */
 @implementation	NSHost (ControlExtension)
-- (id) copyWithZone: (NSZone)z
+- (id) copyWithZone: (NSZone*)z
 {
   return RETAIN(self);
 }
