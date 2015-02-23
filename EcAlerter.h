@@ -119,6 +119,42 @@
  *   of enhanced posix regular expressions.  If this is not present,
  *   any message text will match.
  *   </desc>
+ *   <term>ActiveFrom</term>
+ *   <desc>A date/time specifying the earliest point at which this rule
+ *   may match any alarm.  If the current date/time is earlier than
+ *   this (optional) value then the rule simply can't match.
+ *   </desc>
+ *   <term>ActiveTo</term>
+ *   <desc>A date/time specifying the latest point at which this rule
+ *   may match any alarm.  If the current date/time is later than
+ *   this (optional) value then the rule simply can't match.
+ *   </desc>
+ *   <term>ActiveTimes</term>
+ *   <desc>Either a string containing a comma separated list of ranges
+ *   of times specified using a 24 hour clock, or a dictionary of such 
+ *   strings keyed on the days of the week (Monday, Tuesday, Wednesday,
+ *   Thursday, Friday, Saturday, Sunday), possibly with an asterisk used
+ *   as the key for a default string to be used for any day not listed. <br />
+ *   If a simple string, the list applies to all days of the week
+ *   (equivalent to a dictionary containing a single string keyed on
+ *   an asterisk).<br />
+ *   The times are in HH:MM format or may simply be the hours (HH) with
+ *   a minute value of zero implied.<br />
+ *   The range separator is a dash/minus, and the range includes the
+ *   first value and excludes the second one.<br />
+ *   eg. 10:45-11 means that the rule is active in the 15 minute interval
+ *   from 10:45 until 11:00 but becomes inactive again at 11:00<br />
+ *   The end of each range must be later than the start of the range,
+ *   and the starts of each successive range must be later than or equal
+ *   to the end of the preceding range.<br />
+ *   As a special case the time 24:00 may be used as the end of the
+ *   last range in a list.<br />
+ *   If this field is simply omitted, the rule is active all day every day.
+ *   </desc>
+ *   <term>ActiveTimezone</term>
+ *   <desc>The formal name of the time zone in which the system checks
+ *   active date/time information.  If omitted, the GMT timezone is assumed.
+ *   </desc>
  *   <term>Stop</term>
  *   <desc>A boolean (YES or NO) saying whether rule matching should
  *   stop if this rule is matched.  If this is NO (the default) then

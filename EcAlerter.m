@@ -253,12 +253,13 @@ replaceFields(NSDictionary *fields, NSString *template)
 
 - (BOOL) setRules: (NSArray*)ra
 {
-  NSUInteger    i = 0;
   NSMutableArray        *r = AUTORELEASE([ra mutableCopy]); 
+  NSUInteger            i;
 
   for (i = 0; i < [r count]; i++)
     {
       NSMutableDictionary	*md;
+      NSObject                  *obj;
       NSString			*str;
       Regex			*val;
 
@@ -344,6 +345,204 @@ replaceFields(NSDictionary *fields, NSString *template)
 	  RELEASE(val);
 	}
 
+      str = [md objectForKey: @"ActiveFrom"];
+      if (nil != str)
+        {
+          NSDate        *d = [NSDate dateWithString: str];
+
+          if (nil == d)
+            {
+              NSLog(@"ActiveFrom='%@' is not a valid date/time", str);
+              return NO;
+            }
+          else
+            {
+              [md setObject: d forKey: @"ActiveFrom"];
+            }
+        }
+      str = [md objectForKey: @"ActiveTo"];
+      if (nil != str)
+        {
+          NSDate        *d = [NSDate dateWithString: str];
+
+          if (nil == d)
+            {
+              NSLog(@"ActiveTo='%@' is not a valid date/time", str);
+              return NO;
+            }
+          else
+            {
+              [md setObject: d forKey: @"ActiveTo"];
+            }
+        }
+      str = [md objectForKey: @"ActiveTimezone"];
+      if (nil != str)
+        {
+          NSTimeZone    *d = [NSTimeZone timeZoneWithName: str];
+
+          if (nil == d)
+            {
+              NSLog(@"ActiveTimezone='%@' is not a valid time zone", str);
+              return NO;
+            }
+          [md setObject: d forKey: @"ActiveTimeZone"];
+        }
+      obj = [md objectForKey: @"ActiveTimes"];
+      if ([obj isKindOfClass: [NSString class]])
+        {
+          obj = (NSString*)[NSDictionary dictionaryWithObjectsAndKeys:
+            obj, @"*", nil];
+        }
+      if ([obj isKindOfClass: [NSDictionary class]])
+        {
+          NSMutableDictionary   *t = [[obj mutableCopy] autorelease];
+          NSEnumerator          *e = [[t allKeys] objectEnumerator];
+
+          while (nil != (str = [e nextObject]))
+            {
+              NSString          *k = [str stringByTrimmingSpaces];
+              NSMutableArray    *a;
+              NSUInteger        j;
+              NSInteger         lastMinute = 0;
+
+              if (YES == [k isEqual: @"*"])
+                {
+                  k = @"*";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Monday"])
+                {
+                  k = @"Monday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Tuesday"])
+                {
+                  k = @"Tuesday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Wednesday"])
+                {
+                  k = @"Wednesday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Thursday"])
+                {
+                  k = @"Thursday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Friday"])
+                {
+                  k = @"Friday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Saturday"])
+                {
+                  k = @"Saturday";
+                }
+              else if (YES == [k caseInsensitiveCompare: @"Sunday"])
+                {
+                  k = @"Sunday";
+                }
+              else
+                {
+                  NSLog(@"ActiveTimes='%@' with bad day of week", obj);
+                  return NO;
+                }
+              a = [[[[t  objectForKey: str] componentsSeparatedByString: @","]
+                mutableCopy] autorelease];
+              j = [a count];
+              while (j-- > 0)
+                {
+                  NSMutableArray        *r;
+                  int                   from;
+                  int                   to;
+                  int                   h;
+                  int                   m;
+                  int                   c;
+
+                  str = [[a objectAtIndex: j] stringByTrimmingSpaces];
+                  if ([str length] == 0)
+                    {
+                      [a removeObjectAtIndex: j];
+                      continue;
+                    }
+                  r = [[[str componentsSeparatedByString: @"-"]
+                    mutableCopy] autorelease];
+                  if ([r count] != 2)
+                    {
+                      NSLog(@"ActiveTimes='%@' with missing '-' in time range",
+                        obj);
+                      return NO;
+                    }
+                  str = [r objectAtIndex: 0];
+                  c = sscanf([str UTF8String], "%d:%d", &h, &m);
+                  if (0 == c)
+                    {
+                      NSLog(@"ActiveTimes='%@' with missing HH:MM", obj);
+                      return NO;
+                    }
+                  if (1 != c) m = 0;
+                  if (h < 0 || h > 23)
+                    {
+                      NSLog(@"ActiveTimes='%@' with hour out of range", obj);
+                    }
+                  if (m < 0 || m > 59)
+                    {
+                      NSLog(@"ActiveTimes='%@' with minute out of range", obj);
+                      return NO;
+                    }
+                  from = (h * 60) + m;
+                  
+                  str = [r objectAtIndex: 1];
+                  c = sscanf([str UTF8String], "%d:%d", &h, &m);
+                  if (0 == c)
+                    {
+                      NSLog(@"ActiveTimes='%@' with missing HH:MM", obj);
+                      return NO;
+                    }
+                  if (1 != c) m = 0;
+                  if (h < 0 || h > 24 || (24 == h && 0 != m))
+                    {
+                      NSLog(@"ActiveTimes='%@' with hour out of range", obj);
+                    }
+                  if (m < 0 || m > 59)
+                    {
+                      NSLog(@"ActiveTimes='%@' with minute out of range", obj);
+                      return NO;
+                    }
+                  if (0 == h && 0 == m)
+                    {
+                      h = 24;
+                    }
+                  to = (h * 60) + m;
+ 
+                  if (to <= from)
+                    {
+                      NSLog(@"ActiveTimes='%@' range end earlier than start",
+                        obj);
+                      return NO;
+                    }
+                  if (from < lastMinute)
+                    {
+                      NSLog(@"ActiveTimes='%@' range start earlier than"
+                        @" preceding one", obj);
+                      return NO;
+                    }
+                  lastMinute = to;
+                  [r replaceObjectAtIndex: 0
+                               withObject: [NSNumber numberWithInt: from]];
+                  [r replaceObjectAtIndex: 1
+                               withObject: [NSNumber numberWithInt: to]];
+                  [a replaceObjectAtIndex: j withObject: r];
+                }
+              if (0 == [a count])
+                {
+                  NSLog(@"ActiveTimes='%@' with empty time range", obj);
+                  return NO;
+                }
+              [t setObject: a forKey: k];
+            }
+          [md setObject: obj forKey: @"ActiveTimes"];
+        }
+      else if (obj != nil)
+        {
+          NSLog(@"ActiveTimes='%@' is not valid", obj);
+          return NO;
+        }
     }
   ASSIGN(rules, r);
   return YES;
@@ -440,12 +639,17 @@ replaceFields(NSDictionary *fields, NSString *template)
 - (void) applyRules: (NSArray*)rulesArray
             toEvent: (EcAlerterEvent*)event
 {
-  CREATE_AUTORELEASE_POOL(pool);
-  BOOL          found = NO;
-  NSUInteger    i;
+  NSAutoreleasePool     *pool = nil;
+  NSTimeZone            *tz = nil;
+  BOOL                  found = NO;
+  NSCalendarDate        *now = [NSCalendarDate date];
+  NSUInteger            minuteOfDay = 0;
+  NSUInteger            dayOfWeek = 0;
+  NSUInteger            i;
 
   for (i = 0; i < [rulesArray count]; i++)
     {
+      NSDictionary	*times;
       NSDictionary	*d;
       NSString	        *match = nil;
       Regex		*e;
@@ -455,6 +659,80 @@ replaceFields(NSDictionary *fields, NSString *template)
       RELEASE(pool);
       pool = [NSAutoreleasePool new];
       d = [rulesArray objectAtIndex: i];
+
+      times = [d objectForKey: @"ActiveTimes"];
+      if (nil != times)
+        {
+          NSDate        *from = [d objectForKey: @"ActiveFrom"];
+          NSDate        *to = [d objectForKey: @"ActiveTo"];
+          BOOL          match = NO;
+
+          if ((nil == from || [from earlierDate: now] == from)
+            && (nil == to || [to laterDate: now] == to))
+            {
+              NSTimeZone        *z = [d objectForKey: @"ActiveTimezone"];
+              NSArray           *ranges;
+              NSUInteger        index;
+
+              if (nil == z)
+                {
+                  static NSTimeZone *gmt = nil;
+
+                  if (nil == gmt)
+                    {
+                      gmt = [[NSTimeZone timeZoneWithName: @"GMT"] retain];
+                    }
+                  z = gmt;
+                }
+              if (NO == [z isEqual: tz])
+                {
+                  ASSIGN(tz, z);
+                  [now setTimeZone: tz];
+                  minuteOfDay = [now hourOfDay] * 60 + [now minuteOfHour];
+                  dayOfWeek = [now dayOfWeek];
+                }
+
+              switch (dayOfWeek)
+                {
+                  case 0: ranges = [times objectForKey: @"Sunday"]; break;
+                  case 1: ranges = [times objectForKey: @"Monday"]; break;
+                  case 2: ranges = [times objectForKey: @"Tuesday"]; break;
+                  case 3: ranges = [times objectForKey: @"Wednesday"]; break;
+                  case 4: ranges = [times objectForKey: @"Thursday"]; break;
+                  case 5: ranges = [times objectForKey: @"Friday"]; break;
+                  default: ranges = [times objectForKey: @"Saturday"]; break;
+                }
+              if (nil == ranges)
+                {
+                  ranges = [times objectForKey: @"*"];
+                }
+              index = [ranges count];
+              while (index-- > 0)
+                {
+                  NSArray           *range;
+                  NSUInteger        start;
+                  
+                  range = [ranges objectAtIndex: index];
+                  start = [[range objectAtIndex: 0] unsignedIntegerValue];
+
+                  if (minuteOfDay >= start)
+                    {
+                      NSUInteger    end;
+
+                      end = [[range objectAtIndex: 1] unsignedIntegerValue];
+                      if (minuteOfDay < end)
+                        {
+                          match = YES;
+                        }
+                      break;
+                    }
+                }
+            }
+          if (NO == match)
+            {
+              continue;
+            }
+        }
 
       s = [d objectForKey: @"Tagged"];
       if (s != nil && NO == [s isEqual: [event->m objectForKey: @"Tag"]])
@@ -816,6 +1094,7 @@ replaceFields(NSDictionary *fields, NSString *template)
           NSLog(@"No match of %@ with %@", event->m, rulesArray);
         }
     }
+  DESTROY(tz);
   RELEASE(pool);
 }
 
