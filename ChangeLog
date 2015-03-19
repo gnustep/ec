@@ -1,3 +1,9 @@
+2015-03-19  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m:
+	* EcAlerter.m:
+	Use milliseconds in logging timestamps.
+
 2015-02-02  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcAlerter.h: Add options for time-limiting rule activity
@@ -19,7 +25,7 @@
 
         * GNUmakefile.preamble: fixup gcc flag filtering
         * EcClientI.h:
-        * EcClientI.m:
+          EcClientI.m:
         * EcCommand.m:
         * EcControl.m:
         * EcProcess.h:

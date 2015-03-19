@@ -460,7 +460,7 @@ cmdLogFormat(EcLogType t, NSString *fmt)
     {
       l = [[cmdDefs dictionaryRepresentation] copy];
     }
-  d = [c descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S %z" locale: l];
+  d = [c descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S.%F %z" locale: l];
   result = [stringClass stringWithFormat: @"%@(%@): %@ %@ - %@\n",
     n, h, d, f, fmt];
   RELEASE(c);

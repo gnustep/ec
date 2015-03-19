@@ -1259,7 +1259,15 @@ replaceFields(NSDictionary *fields, NSString *template)
 	    }
 	  timestamp = [NSCalendarDate
             dateWithString: [str substringToIndex: r.location]
-            calendarFormat: @"%Y-%m-%d %H:%M:%S %z"];
+            calendarFormat: @"%Y-%m-%d %H:%M:%S.%F %z"];
+          if (nil == timestamp)
+            {
+              /* Old style.
+               */
+              timestamp = [NSCalendarDate
+                dateWithString: [str substringToIndex: r.location]
+                calendarFormat: @"%Y-%m-%d %H:%M:%S %z"];
+            }
 
 	  str = [str substringFromIndex: NSMaxRange(r)];
 
