@@ -426,6 +426,7 @@ static NSArray          *modes;
    * a flush real soon.
    */
   [lock lock];
+  pendingFlush = NO;
   if (reset != nil)
     {
       if (timer != nil && [[timer fireDate] timeIntervalSinceNow] > 0.001)
@@ -487,7 +488,11 @@ static NSArray          *modes;
   [message appendString: text];
   if ([message length] >= size || (interval > 0.0 && timer == nil))
     {
-      shouldFlush = YES;
+      if (NO == pendingFlush)
+        {
+          shouldFlush = YES;
+          pendingFlush = YES;
+        }
     }
   [lock unlock];
 
@@ -586,10 +591,13 @@ static NSArray          *modes;
       /*
        * Ensure new values take effect real soon.
        */
-      [self performSelectorOnMainThread: @selector(_scheduleFlush:)
-                             withObject: self
-                          waitUntilDone: NO
-                                  modes: modes];
+      if (NO == pendingFlush)
+        {
+          [self performSelectorOnMainThread: @selector(_scheduleFlush:)
+                                 withObject: self
+                              waitUntilDone: NO
+                                      modes: modes];
+        }
     }
 }
 @end
