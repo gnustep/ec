@@ -76,6 +76,14 @@
               number of open file descriptors has been reached, rather
               than waiting for the operating system imposed limit.
 	    </desc>
+	    <term>EcKeepStandardError</term>
+	    <desc>
+              This boolean value determines whether the standard error output
+              should be kept as it is on process startup, or should be merged
+              with the local debug log to file.<br />
+              The default (EcKeepStandardError set to NO) is to merge the
+              standard error logging with the debug logging.
+	    </desc>
 	    <term>EcMemory</term>
 	    <desc>
 	      This boolean value determines whether statistics on creation

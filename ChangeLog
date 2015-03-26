@@ -1,3 +1,16 @@
+2015-03-26  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* Control.plist:
+	* EcCommand.m:
+	* EcProcess.h:
+	* EcProcess.m:
+	New options for dealing with I/O.  In EcProcess we can set
+	EcKeepStandardError to keep the stderr stream separate from the
+	debug logging file.
+	When a process is launched from the Command server, we can define
+	KeepStandardInput, KeepStandardOutput, and KeepStandardError flags
+	in the task info to stop the standard streams from being closed.
+
 2015-03-19  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m:

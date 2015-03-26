@@ -41,6 +41,9 @@
 	  Home = "~xxx/Test";				// Directory to run in
 	  Args = ("-Debug", "YES");			// Args to launch with
 	  Auto = NO;					// Auto-launch?
+          KeepStandardInput = YES;                      // Don't close stdin
+          KeepStandardOutput = YES;                     // Don't close stdout
+          KeepStandardError = YES;                      // Don't close stderr
 	};
 	Bar = {
 	  Prog = "Bar";                         	// RName of binary

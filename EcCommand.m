@@ -1965,9 +1965,26 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		    }
 		  if (prog != nil)
 		    {
-		      [task setStandardInput: hdl];
-		      [task setStandardOutput: hdl];
-		      [task setStandardError: hdl];
+                      NSString  *s;
+
+                      s = [taskInfo objectForKey: @"KeepStandardInput"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardInput: hdl];
+                        }
+                      s = [taskInfo objectForKey: @"KeepStandardOutput"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardOutput: hdl];
+                        }
+                      s = [taskInfo objectForKey: @"KeepStandardError"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardError: hdl];
+                        }
 		      if (home != nil && [home length] > 0)
 			{
 			  [task setCurrentDirectoryPath: home];

@@ -123,6 +123,7 @@ static BOOL		cmdFlagDaemon = NO;
 static BOOL		cmdFlagTesting = NO;
 static BOOL		cmdIsQuitting = NO;
 static BOOL		cmdIsRunning = NO;
+static BOOL		cmdKeepStderr = NO;
 static NSInteger        cmdQuitStatus = 0;
 static NSString		*cmdInst = nil;
 static NSString		*cmdName = nil;
@@ -1514,7 +1515,7 @@ static NSString	*noFiles = @"No log files to archive";
        * As a special case, if this is the default debug file
        * we must set it up to write to stderr.
        */
-      if ([name isEqual: cmdDebugName] == YES)
+      if (NO == cmdKeepStderr && [name isEqual: cmdDebugName] == YES)
 	{
 	  int	desc;
 
@@ -3740,6 +3741,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	      [cmdDefs registerDefaults: defs];
 	    }
 	}
+
+      /* See if we should keep stderr separate, or merge it with
+       * our debug output (the default).
+       */
+      cmdKeepStderr = [cmdDefs boolForKey: @"KeepStandardError"];
 
       if (nil == noNetConfig)
 	{
