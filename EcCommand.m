@@ -2427,7 +2427,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   when = [NSCalendarDate date];
   now = [when timeIntervalSinceReferenceDate];
 
-  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"DebugLogs"];
 
   /* When trying to make space, we can delete up to the point when we
    * would start compressing but no further ... we don't want to delete

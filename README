@@ -16,7 +16,8 @@ Key points ...
 1. You may want to use 'defaults write NSGlobalDomain EcvEffectiveUser xxx'
 where 'xxx' is your username, to tell the system it should be running as you.
 
-2. Debug files are written in ~xxx/Logs ... look there to diagnose problems.
+2. Debug files are written in ~xxx/DebugLogs ...
+look there to diagnose problems.
 
 3. Configuration is in ~xxx/Data.  Specifically, you need to configure
 ~xxx/Data/Command/Control.plist, ~xxx/Data/Command/Operators.plist, and

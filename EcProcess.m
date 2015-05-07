@@ -446,7 +446,6 @@ NSString*
 cmdLogFormat(EcLogType t, NSString *fmt)
 {
   static NSString	*h = nil;
-  static NSDictionary	*l = nil;
   NSCalendarDate	*c = [[cDateClass alloc] init];
   NSString	*f = cmdLogKey(t);
   NSString	*n = cmdLogName();
@@ -457,11 +456,7 @@ cmdLogFormat(EcLogType t, NSString *fmt)
     {
       h = [[[NSHost currentHost] wellKnownName] copy];
     }
-  if (l == nil)
-    {
-      l = [[cmdDefs dictionaryRepresentation] copy];
-    }
-  d = [c descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S.%F %z" locale: l];
+  d = [c descriptionWithCalendarFormat: @"%Y-%m-%d %H:%M:%S.%F %z" locale: nil];
   result = [stringClass stringWithFormat: @"%@(%@): %@ %@ - %@\n",
     n, h, d, f, fmt];
   RELEASE(c);
