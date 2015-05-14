@@ -1410,7 +1410,10 @@ static NSString	*noFiles = @"No log files to archive";
        * Ensure that all data is written to file.
        */
       fflush(stderr);
-      [hdl closeFile];
+      NS_DURING
+        [hdl closeFile];
+      NS_HANDLER
+      NS_HANDLER
 
       /*
        * If the file is empty, remove it, otherwise move to archive directory.
@@ -1518,7 +1521,10 @@ static NSString	*noFiles = @"No log files to archive";
 	  if (desc != 2)
 	    {
 	      dup2(desc, 2);
-	      [hdl closeFile];
+              NS_DURING
+                [hdl closeFile];
+              NS_HANDLER
+              NS_HANDLER
 	      hdl = [NSFileHandle fileHandleWithStandardError];
 	    }
 	}
