@@ -1399,6 +1399,8 @@ static NSString	*noFiles = @"No log files to archive";
       return;
     }
   name = [name lastPathComponent];
+
+  [self ecDoLock];
   hdl = [cmdLogMap objectForKey: name];
   if (hdl != nil)
     {
@@ -1413,7 +1415,7 @@ static NSString	*noFiles = @"No log files to archive";
       NS_DURING
         [hdl closeFile];
       NS_HANDLER
-      NS_HANDLER
+      NS_ENDHANDLER
 
       /*
        * If the file is empty, remove it, otherwise move to archive directory.
@@ -1444,6 +1446,7 @@ static NSString	*noFiles = @"No log files to archive";
        */
       [cmdLogMap removeObjectForKey: name];
     }
+  [self ecUnLock];
 }
 
 - (NSFileHandle*) cmdLogFile: (NSString*)name
@@ -1457,6 +1460,7 @@ static NSString	*noFiles = @"No log files to archive";
       return nil;
     }
   name = [name lastPathComponent];
+  [self ecDoLock];
   hdl = [cmdLogMap objectForKey: name];
   if (hdl == nil)
     {
@@ -1507,6 +1511,7 @@ static NSString	*noFiles = @"No log files to archive";
 	}
       if (hdl == nil)
 	{
+          [self ecUnLock];
 	  return nil;
 	}
       /*
@@ -1524,7 +1529,7 @@ static NSString	*noFiles = @"No log files to archive";
               NS_DURING
                 [hdl closeFile];
               NS_HANDLER
-              NS_HANDLER
+              NS_ENDHANDLER
 	      hdl = [NSFileHandle fileHandleWithStandardError];
 	    }
 	}
@@ -1537,7 +1542,9 @@ static NSString	*noFiles = @"No log files to archive";
 	  NSLog(@"%@", status);
 	}
     }
-  return hdl;
+  [hdl retain];
+  [self ecUnLock];
+  return [hdl autorelease];
 }
 
 - (void) cmdLostConnectionToServer: (NSString*)name
@@ -1794,16 +1801,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        *	Cause timeout to go off really soon so we will try to
        *	re-establish the link to the server.
        */
-      if (cmdPTimer != nil)
-	{
-	  [cmdPTimer invalidate];
-	  cmdPTimer = nil;
-	}
-      cmdPTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1
-					      target: self
-					    selector: @selector(_timedOut:)
-					    userInfo: nil
-					     repeats: NO];
+      [self triggerCmdTimeout];
     }
   else
     {
@@ -1840,9 +1838,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
-      NSEnumerator	*enumerator = [[cmdLogMap allKeys] objectEnumerator];
+      NSEnumerator	*enumerator;
       NSString		*name;
 
+      [self ecDoLock];
+      enumerator = [[cmdLogMap allKeys] objectEnumerator];
+      [self ecUnLock];
       if (subdir == nil)
 	{
 	  NSCalendarDate	*when = [NSCalendarDate date];
@@ -2607,6 +2608,13 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) triggerCmdTimeout
 {
+  if (NO == [NSThread isMainThread])
+    {
+      [self performSelectorOnMainThread: _cmd
+                             withObject: nil
+                          waitUntilDone: NO];
+      return;
+    }
   if (cmdPTimer != nil)
     {
       /*
@@ -4448,7 +4456,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             }
           NS_HANDLER
             {
-              NSLog(@"Exception performing regular timeout: %@", localException);
+              NSLog(@"Exception performing regular timeout: %@",
+                localException);
               delay = YES;	// Avoid runaway logging.
             }
           NS_ENDHANDLER
