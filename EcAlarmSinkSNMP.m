@@ -225,6 +225,21 @@ static size_t	trapSequenceNumber_len = 0;
 static oid	*trendIndicator_oid = 0;
 static size_t	trendIndicator_len = 0;
 
+static int
+logSNMP(int major, int minor, void* server, void* client)
+{
+  struct snmp_log_message *slm = (struct snmp_log_message *)server;
+
+  if (nil == EcProc)
+    {
+      NSLog(@"%s", slm->msg);
+    }
+  else
+    {
+      [EcProc cmdAlert: @"%s", slm->msg];
+    }
+  return 0;
+}
 
 static const char *
 stringFromDate(NSDate *d)
@@ -1087,8 +1102,14 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   NSString		*p;
   NSDictionary		*d;
 
+  init_snmp_logging();
+  snmp_disable_filelog();
+  snmp_disable_stderrlog();
   snmp_enable_calllog();
-  snmp_enable_stderrlog();
+
+  /* register the callback function to record SNMP errors */
+  snmp_register_callback(SNMP_CALLBACK_LIBRARY, SNMP_CALLBACK_LOGGING,
+    logSNMP, NULL);
 
   /* Make us an agentx client.
    */
