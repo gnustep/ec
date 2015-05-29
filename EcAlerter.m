@@ -547,6 +547,10 @@ replaceFields(NSDictionary *fields, NSString *template)
         }
     }
   ASSIGN(rules, r);
+  if (YES == debug)
+    {
+      NSLog(@"Installed Rules: %@", rules);
+    }
   return YES;
 }
 
