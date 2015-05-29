@@ -2637,7 +2637,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   base = [self cmdDataDirectory];
   path = [base stringByAppendingPathComponent: @"AlertConfig.plist"];
   if ([mgr isReadableFileAtPath: path] == NO
-    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil)
+    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil
+    || (d = [self recursiveInclude: d]) == nil)
     {
       [[self cmdLogFile: logname]
 	printf: @"Failed to load %@\n", path];
@@ -2717,7 +2718,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   path = [base stringByAppendingPathComponent: @"Operators.plist"];
   if ([mgr isReadableFileAtPath: path] == NO
-    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil)
+    || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil
+    || (d = [self recursiveInclude: d]) == nil)
     {
       [[self cmdLogFile: logname]
 	printf: @"Failed to load %@\n", path];
