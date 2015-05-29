@@ -5,10 +5,9 @@
   Debug = NO;                   /* Defaults ... do not log email alerts sent */
 
   /* If we wish to extend/oeverride the function of the EcAlerter class in
-   * handling alerts, we may do so by specifying the name (or full path) of
-   * a bundle whose principal class is a subclass of EcAlerter.  The alerter
-   * object used will then use the class from the bundle rather than the
-   * EcAlerter class.
+   * handling alerts, we may do so by specifying the name of a subclass of
+   * EcAlerter.  The Control server used will attempt to find a bundle with
+   * that name, and load it to obtain the class to use in place of EcAlerter.
   AlerterBundle = "foo";
   */
 

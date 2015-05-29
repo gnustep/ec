@@ -2696,7 +2696,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  alerterClass = 
 		    [self _loadClassFromBundle: alerterDef];
 		}
-
 	    }
 	  if (Nil == alerterClass)
 	    {
