@@ -242,7 +242,7 @@ logSNMP(int major, int minor, void* server, void* client)
     }
   else
     {
-      [EcProc cmdAlert: @"%s", slm->msg];
+      [EcProc cmdError: @"%s", slm->msg];
     }
   return 0;
 }

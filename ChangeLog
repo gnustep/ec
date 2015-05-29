@@ -2,6 +2,8 @@
 
 	* EcAlarmSinkSNMP.m: log SNMP errors via the main logging mechanism
 	or NSLog.
+	* EcControl.m: fix failure to perform includes in some cases.
+	* EcAlerter.m: tidyups
 
 2015-03-26  Richard Frith-Macdonald <rfm@gnu.org>
 
