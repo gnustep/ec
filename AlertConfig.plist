@@ -4,6 +4,14 @@
    */
   Debug = NO;                   /* Defaults ... do not log email alerts sent */
 
+  /* If we wish to extend/oeverride the function of the EcAlerter class in
+   * handling alerts, we may do so by specifying the name (or full path) of
+   * a bundle whose principal class is a subclass of EcAlerter.  The alerter
+   * object used will then use the class from the bundle rather than the
+   * EcAlerter class.
+  AlerterBundle = "foo";
+  */
+
   /* Default setup is to alert for high priority alarms and to
    * send out reminders at five minute intervals.
    * Individual rules should use the ReminderInterval option to
