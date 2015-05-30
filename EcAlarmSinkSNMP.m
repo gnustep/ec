@@ -242,7 +242,27 @@ logSNMP(int major, int minor, void* server, void* client)
     }
   else
     {
-      [EcProc cmdError: @"%s", slm->msg];
+      switch (slm->priority)
+        {
+          case LOG_EMERG:
+          case LOG_ALERT:
+          case LOG_CRIT:
+            [EcProc cmdAlert: @"%s", slm->msg]; break;
+
+          case LOG_ERR:
+            [EcProc cmdError: @"%s", slm->msg]; break;
+
+          case LOG_WARNING:
+          case LOG_NOTICE:
+            [EcProc cmdWarn: @"%s", slm->msg]; break;
+
+          case LOG_INFO:
+          case LOG_DEBUG:
+            [EcProc cmdDebug: @"%s", slm->msg]; break;
+          
+          default:
+            [EcProc cmdError: @"%s", slm->msg];
+        }
     }
   return 0;
 }
