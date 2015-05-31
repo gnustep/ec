@@ -234,7 +234,17 @@ static NSArray          *modes;
         {
           buf = [str dataUsingEncoding: NSUTF8StringEncoding];
         }
+#if     defined(GNUSTEP_BASE_LIBRARY)
+      {
+        NSRecursiveLock *l = GSLogLock();
+
+        [l lock];
+        fwrite([buf bytes], 1, [buf length], stderr);
+        [l unlock];
+      }
+#else
       fwrite([buf bytes], 1, [buf length], stderr);
+#endif
       if (LT_DEBUG != type)
         {
           if (nil == serverName)
