@@ -11,19 +11,26 @@ locations for something like RedHat Linux.
    If you are using your own MIB, replace all ocurrances below of
    GNUSTEP-MIB.txt with the name of your own MIB file.
 
-1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs
+1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs and/or ~/.snmp/mibs
+   depending on whether this is a system-wide installation or one for a
+   single user/account.
 
-2. edit '/etc/sysconfig/snmpd.options' to contain:
-   OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmpd"
-   export OPTIONS
-   so that any debug for the gnustep module would be logged
+
+2. For diagnosing problems in snmpd,
+   edit '/etc/sysconfig/snmpd' to contain:
+   OPTIONS="-Dgnustep -Lf /var/log/snmpd"
+   so that any debug for the gnustep MIB would be logged
    in /var/log/snmpd
+   or use '-Dgnustep -LS0-6d' for logging via syslog.
 
-3. edit '/etc/sysconfig/snmptrapd.options' to contain:
-   OPTIONS="$OPTIONS -Dgnustep -Lf /var/log/snmptrapd"
-   export OPTIONS
-   so that any debug for the gnustep module would be logged
+
+3. For diagnosign problems in snmptrapd,
+   edit '/etc/sysconfig/snmptrapd' to contain:
+   OPTIONS="-Dgnustep -Lf /var/log/snmptrapd"
+   so that any debug for the gnustep MIB would be logged
    in /var/log/snmptrapd
+   or use '-Dgnustep -LS0-6d' for logging via syslog.
+
 
 4. edit /etc/snmp/snmpd.conf to get it to send traps to snmptrapd ...
 
@@ -40,15 +47,36 @@ master          agentx
    host and port if you wish (see the EcAlarmSinkSNMP initialisation for
    details).
 
+   NB. Your system may be configured to disallow access via 'public', in
+   which case the line
+rwcommunity     public
+   will not be sufficient to grant access to the alarm tables and you will
+   need to either configure appropriate snmp access control settings for
+   your system, or completely replace the file (but that would give
+   unrestricted access, and therefore be a security problem ... so you
+   should only do it for temporary testing of an isolated system).
+
+
 5. restart with '/sbin/service snmpd restart'
    If you are starting snmp for the first time on a RedHat system then:
    # /sbin/chkconfig snmpd on
    # /sbin/service snmpd start
    should enable the snmp service and then start it.
 
-6. build/install/run the Control server
 
-7. test with snmpwalk ...
+6. For diagnostics and control of the net-snmp copmponent, you can use a
+   gnustep.conf file in any of the standard locations read by netsnmp.
+   Typically ~/.snmp/gnustep.conf (where ~ is the home directory of the
+   account running the Control server).
+   The contents of the file to enable debug logging would typically be
+[snmp]
+    doDebugging 1
+    debugTokens gnustep
+
+
+7. build/install/run the Control server
+
+8. test with snmpwalk ...
 
 To look at EVERYTHING:
 snmpwalk -v 1 -c public localhost GNUSTEP-MIB::gnustep

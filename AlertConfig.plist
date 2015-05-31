@@ -61,7 +61,6 @@
     {
       Type = "Alarm";
       DurationAbove = "59";     /* Alarm outstanding for an hour or more */
-      ReminderInterval
       Rewrite = "{Original}\n\nAlarm outstanding for {Hours} hours.";
     },
     {

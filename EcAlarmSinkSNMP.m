@@ -254,14 +254,10 @@ logSNMP(int major, int minor, void* server, void* client)
 
           case LOG_WARNING:
           case LOG_NOTICE:
-            [EcProc cmdWarn: @"%s", slm->msg]; break;
-
           case LOG_INFO:
           case LOG_DEBUG:
-            [EcProc cmdDebug: @"%s", slm->msg]; break;
-          
           default:
-            [EcProc cmdError: @"%s", slm->msg];
+            NSLog(@"%s", slm->msg); break;
         }
     }
   return 0;
@@ -398,7 +394,7 @@ heartbeat(time_t now)
    * Send the trap to the list of configured destinations
    *  and clean up
    */
-  DEBUGMSGTL(("EcAlarmSink", "Sending heartbeat trap.\n"));
+  DEBUGMSGTL(("EcAlarmSinkHeartbeat", "Sending trap.\n"));
   send_v2trap(var_list);
   snmp_free_varbind(var_list);
   return YES;
@@ -502,7 +498,7 @@ init_EcAlarmSink(void)
    * of net-snmp oid values.
    */
   oidString = trapOID = [[defaults stringForKey: @"TrapOID"] copy];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.3.0.1";
+  if (nil == oidString) oidString = trapOID = @"1.3.6.1.4.1.39543.3.0.1";
   array = [oidString componentsSeparatedByString: @"."];
   alarmTrap_len = [array count];
   alarmTrap_oid = (oid*)malloc(sizeof(oid) * alarmTrap_len);
@@ -517,7 +513,7 @@ init_EcAlarmSink(void)
    * OID because the alarmsTable (in the alarms OID) has entries in it.
    */
   oidString = alarmsOID = [[defaults stringForKey: @"AlarmsOID"] copy];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.1";
+  if (nil == oidString) oidString = alarmsOID = @"1.3.6.1.4.1.39543.1";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
   oids = (oid*)malloc(sizeof(oid) * (len + 2));
@@ -526,11 +522,11 @@ init_EcAlarmSink(void)
       oids[i] = [[array objectAtIndex: i] intValue];
     }
   oids[len] = 0;	// alarmsTable
-  oids[len+1] = 0;	// alarmsEntry
+  oids[len + 1] = 0;	// alarmsEntry
 
-  alarmsTable_len = len + 1;
+  alarmsTable_len = len + 2;
   alarmsTable_oid = (oid*)malloc(sizeof(oid) * alarmsTable_len);
-  memcpy(alarmsTable_oid, oids, sizeof(oid) * (len + 1));
+  memcpy(alarmsTable_oid, oids, sizeof(oid) * len + 2);
   alarmsTable_oid[len] = 1;
 
   resyncFlag_len = len + 1;
@@ -600,8 +596,9 @@ init_EcAlarmSink(void)
   trendIndicator_oid[len+2] = 11;
 
   free(oids);
+
   oidString = objectsOID = [[defaults stringForKey: @"ObjectsOID"] copy];
-  if (nil == oidString) oidString = @"1.3.6.1.4.1.39543.2";
+  if (nil == oidString) oidString = objectsOID = @"1.3.6.1.4.1.39543.2";
   array = [oidString componentsSeparatedByString: @"."];
   len = [array count];
   objectID_len = len + 3;
@@ -616,7 +613,7 @@ init_EcAlarmSink(void)
 
   objectsTable_len = len + 1;
   objectsTable_oid = (oid*)malloc(sizeof(oid) * objectsTable_len);
-  memcpy(objectsTable_oid, objectID_oid, sizeof(oid) * (len + 1));
+  memcpy(objectsTable_oid, objectID_oid, sizeof(oid) * objectsTable_len);
 
   /* Create the managed objects table as a read-only item for SNMP.
    */
@@ -626,14 +623,21 @@ init_EcAlarmSink(void)
     objectsTable_oid,
     objectsTable_len,
     HANDLER_CAN_RONLY);
+  if (NULL == reg)
+    snmp_perror("register objectsTable"); 
+
   objectsTable = netsnmp_tdata_create_table("objectsTable", 0);
+  if (NULL == objectsTable)
+    snmp_perror("create objectsTable"); 
+
   tinfo = SNMP_MALLOC_TYPEDEF(netsnmp_table_registration_info);
   netsnmp_table_helper_add_indexes(tinfo,
     ASN_OCTET_STR, /* index: objectID */
     0);
   tinfo->min_column = COLUMN_OBJECTID;
   tinfo->max_column = COLUMN_OBJECTID;
-  netsnmp_tdata_register(reg, objectsTable, tinfo);
+  if (netsnmp_tdata_register(reg, objectsTable, tinfo) != SNMPERR_SUCCESS)
+    snmp_perror("register objectsTable tdata"); 
 
   /* Create the alarms table as a read-only item for SNMP.
    */
@@ -643,14 +647,21 @@ init_EcAlarmSink(void)
     alarmsTable_oid,
     alarmsTable_len,
     HANDLER_CAN_RONLY);
+  if (NULL == reg)
+    snmp_perror("register alarmsTable"); 
+
   alarmsTable = netsnmp_tdata_create_table("alarmsTable", 0);
+  if (NULL == alarmsTable)
+    snmp_perror("create alarmsTable"); 
+
   tinfo = SNMP_MALLOC_TYPEDEF(netsnmp_table_registration_info);
   netsnmp_table_helper_add_indexes(tinfo,
     ASN_INTEGER,   /* index: notificationID */
     0);
   tinfo->min_column = COLUMN_NOTIFICATIONID;
   tinfo->max_column = COLUMN_TRENDINDICATOR;
-  netsnmp_tdata_register(reg, alarmsTable, tinfo);
+  if (netsnmp_tdata_register(reg, alarmsTable, tinfo) != SNMPERR_SUCCESS)
+    snmp_perror("register alarmsTable tdata"); 
 
   /* Register scalar watchers for each of the MIB objects.
    */
@@ -660,12 +671,13 @@ init_EcAlarmSink(void)
     resyncFlag_oid,
     resyncFlag_len,
     HANDLER_CAN_RWRITE);
+  if (NULL == reg)
+    snmp_perror("register resyncFlag"); 
+
   winfo = netsnmp_create_watcher_info(&resyncFlag,
     sizeof(int32_t), ASN_INTEGER, WATCHER_FIXED_SIZE);
-  if (netsnmp_register_watched_scalar(reg, winfo) < 0)
-    {
-      snmp_log(LOG_ERR, "Failed to register watched resyncFlag");
-    }
+  if (netsnmp_register_watched_scalar(reg, winfo) != MIB_REGISTERED_OK)
+    snmp_perror("register watched resyncFlag");
 
   reg = netsnmp_create_handler_registration(
     "trapSequenceNumber",
@@ -673,12 +685,13 @@ init_EcAlarmSink(void)
     trapSequenceNumber_oid,
     trapSequenceNumber_len,
     HANDLER_CAN_RONLY);
+  if (NULL == reg)
+    snmp_perror("register trapSequenceNumber"); 
+
   winfo = netsnmp_create_watcher_info(&trapSequenceNumber,
     sizeof(int32_t), ASN_INTEGER, WATCHER_FIXED_SIZE);
-  if (netsnmp_register_watched_scalar(reg, winfo) < 0)
-    {
-      snmp_log(LOG_ERR, "Failed to register watched trapSequenceNumber");
-    }
+  if (netsnmp_register_watched_scalar(reg, winfo) != MIB_REGISTERED_OK)
+    snmp_perror("register watched trapSequenceNumber");
 
   reg = netsnmp_create_handler_registration(
     "pollHeartBeat",
@@ -686,16 +699,18 @@ init_EcAlarmSink(void)
     pollHeartBeat_oid,
     pollHeartBeat_len,
     HANDLER_CAN_RWRITE);
+  if (NULL == reg)
+    snmp_perror("register pollHeartBeat"); 
+
   winfo = netsnmp_create_watcher_info(&pollHeartBeat,
     sizeof(int32_t), ASN_INTEGER, WATCHER_FIXED_SIZE);
-  if (netsnmp_register_watched_scalar(reg, winfo) < 0)
-    {
-      snmp_log(LOG_ERR, "Failed to register watched pollHeartBeat");
-    }
+  if (netsnmp_register_watched_scalar(reg, winfo) != MIB_REGISTERED_OK)
+    snmp_perror("register watched pollHeartBeat");
 
   /* get alarms at one second intervals to do housekeeping.
    */
-  snmp_alarm_register(1, SA_REPEAT, housekeeping, NULL);
+  if (snmp_alarm_register(1, SA_REPEAT, housekeeping, NULL) == 0)
+    snmp_perror("register housekeeping alarm"); 
 }
 
 
@@ -724,7 +739,9 @@ alarmsTable_createEntry(int32_t notificationID)
   entry->notificationID = notificationID;
   netsnmp_tdata_row_add_index(row,
     ASN_INTEGER, &(entry->notificationID), sizeof(entry->notificationID));
-  netsnmp_tdata_add_row(alarmsTable, row);
+  if (netsnmp_tdata_add_row(alarmsTable, row) != SNMPERR_SUCCESS)
+    snmp_perror("add alarmsTable entry"); 
+
   return row;
 }
 
@@ -738,7 +755,7 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
   int32_t	*pollHeartBeat_cache = NULL;
   int32_t	tmp;
 
-  DEBUGMSGTL(("EcAlarmSink", "Got instance request:\n"));
+  DEBUGMSGTL(("EcAlarmSink", "Got pollHeartBeat_handler request:\n"));
 
   switch (reqinfo->mode)
     {
@@ -815,6 +832,7 @@ alarmsTable_handler(netsnmp_mib_handler *handler,
   netsnmp_table_request_info	*table_info;
   struct alarmsTable_entry	*table_entry;
 
+  DEBUGMSGTL(("EcAlarmSink", "Got alarmsTable_handler request:\n"));
   switch (reqinfo->mode)
     {
       /*
@@ -1002,7 +1020,9 @@ objectsTable_createEntry(NSString *objectID)
   strcpy(entry->objectID, str);
   netsnmp_tdata_row_add_index(row, ASN_OCTET_STR,
     entry->objectID, entry->objectID_len);
-  netsnmp_tdata_add_row(objectsTable, row);
+  if (netsnmp_tdata_add_row(objectsTable, row) != SNMPERR_SUCCESS)
+    snmp_perror("add alarmsTable entry"); 
+
   return row;
 }
 
@@ -1018,6 +1038,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   netsnmp_table_request_info	*table_info;
   struct objectsTable_entry	*table_entry;
 
+  DEBUGMSGTL(("EcAlarmSink", "Got objectsTable_handler request:\n"));
   switch (reqinfo->mode)
     {
       /*
@@ -1167,9 +1188,9 @@ objectsTable_handler(netsnmp_mib_handler *handler,
    */
   init_EcAlarmSink();
 
-  /* Will read ecAlarmSinkSNMP.conf files.
+  /* Will read gnustep.conf file from standard locations (such as ~/.snmp)
    */
-  init_snmp("EcAlarmSinkSNMP");
+  init_snmp("gnustep");
 
   /* Populate tables and set scalar values from  contents of files.
    */
@@ -1231,6 +1252,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 	  setAlarmTableEntry(row, alarm);
 	}
     }
+
   if (nil == managedObjects)
     {
       managedObjects = [NSMutableArray new];
@@ -1243,7 +1265,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   [pool release];
   pool = [NSAutoreleasePool new];
 
-  // snmp_log(LOG_INFO,"EcAlarmSinkSNMP startup.\n");
+  snmp_log(LOG_INFO,"EcAlarmSinkSNMP startup.\n");
 
   _isRunning = YES;
   while (YES == _isRunning)
@@ -1254,7 +1276,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
     }
   [pool release];
 
-  // snmp_log(LOG_INFO,"EcAlarmSinkSNMP shutdown.\n");
+  snmp_log(LOG_INFO,"EcAlarmSinkSNMP shutdown.\n");
   /* at shutdown time */
   snmp_shutdown("EcAlarmSink");
   SOCK_CLEANUP;
@@ -1508,7 +1530,7 @@ objectsTable_handler(netsnmp_mib_handler *handler,
   time_t	now;
   BOOL	changed = NO;
 
-  DEBUGMSGTL(("EcAlarmSink", "Housekeeping timer called.\n"));
+  DEBUGMSGTL(("EcAlarmSinkHousekeeping", "Timer called.\n"));
 
   [_alarmLock lock];
   if (NO == _inTimeout && YES == _isRunning)
@@ -1747,22 +1769,6 @@ objectsTable_handler(netsnmp_mib_handler *handler,
     {
       classLock = [NSLock new];
     }
-}
-
-- (id) init
-{
-  [classLock lock];
-  if (nil == alarmSink)
-    {
-      alarmSink = self = [super init];
-    }
-  else
-    {
-      [self release];
-      self = [alarmSink retain];
-    }
-  [classLock unlock];
-  return self;
 }
 
 - (id) initWithHost: (NSString*)host name: (NSString*)name
