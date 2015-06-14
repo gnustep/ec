@@ -2466,12 +2466,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   return AUTORELEASE(gone);
 }
 
-/* Perform this one in another thread.
- * The sweep operation may compress really large logfiles and could be
- * very slow, so it's performed in a separate thread to avoid blocking
- * normal operations.
- */
-- (void) sweep: (NSCalendarDate*)when
+- (void) _sweep: (NSString*)logs at: (NSCalendarDate*)when
 {
   NSInteger             compressAfter;
   NSInteger             deleteAfter;
@@ -2480,21 +2475,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   NSTimeInterval        now;
   NSTimeInterval        ti;
   NSFileManager         *mgr;
-  NSString		*logs;
   NSString		*file;
   NSAutoreleasePool	*arp;
 
   arp = [NSAutoreleasePool new];
-  if (nil == when)
-    {
-      now = [NSDate timeIntervalSinceReferenceDate];
-    }
-  else
-    {
-      now = [when timeIntervalSinceReferenceDate];
-    } 
-
-  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+  now = [when timeIntervalSinceReferenceDate];
 
   /* get number of days after which to do log compression/deletion.
    */
@@ -2640,6 +2625,25 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   DESTROY(arp);
   sweeping = NO;
+}
+
+/* Perform this one in another thread.
+ * The sweep operation may compress really large logfiles and could be
+ * very slow, so it's performed in a separate thread to avoid blocking
+ * normal operations.
+ */
+- (void) sweep: (NSCalendarDate*)when
+{
+  NSString		*logs;
+
+  if (nil == when)
+    {
+      when = [NSDate date];
+    }
+  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"DebugLogs"];
+  [self _sweep: logs at: when];
+  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+  [self _sweep: logs at: when];
 }
 
 - (void) ecNewHour: (NSCalendarDate*)when
