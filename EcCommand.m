@@ -137,8 +137,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   unsigned		revSequence;
   float			nodesFree;
   float			spaceFree;
-  NSTimeInterval        uncompressed;
-  NSTimeInterval        undeleted;
+  NSTimeInterval        debUncompressed;
+  NSTimeInterval        debUndeleted;
+  NSTimeInterval        logUncompressed;
+  NSTimeInterval        logUndeleted;
   BOOL                  sweeping;
 }
 - (NSFileHandle*) openLog: (NSString*)lname;
@@ -1764,8 +1766,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   ecSetLogsSubdirectory(@"Logs");
   if (nil != (self = [super initWithDefaults: defs]))
     {
-      uncompressed = 0.0;
-      undeleted = 0.0;
+      debUncompressed = 0.0;
+      debUndeleted = 0.0;
+      logUncompressed = 0.0;
+      logUndeleted = 0.0;
       nodesFree = 0.1;
       spaceFree = 0.1;
 
@@ -2441,11 +2445,11 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   mgr = [NSFileManager defaultManager];
 
-  if (0.0 == undeleted)
+  if (0.0 == debUndeleted)
     {
-      undeleted = now - 365.0 * day;
+      debUndeleted = now - 365.0 * day;
     }
-  ti = undeleted;
+  ti = debUndeleted;
   latestDeleteAt = now - day * deleteAfter;
   while (nil == gone && ti < latestDeleteAt)
     {
@@ -2460,21 +2464,24 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         }
       ti += day;
     }
-  undeleted = ti;
+  debUndeleted = ti;
   RETAIN(gone);
   DESTROY(arp);
   return AUTORELEASE(gone);
 }
 
-- (void) _sweep: (NSString*)logs at: (NSCalendarDate*)when
+- (void) _sweep: (BOOL)deb at: (NSCalendarDate*)when
 {
   NSInteger             compressAfter;
   NSInteger             deleteAfter;
+  NSTimeInterval        uncompressed;
+  NSTimeInterval        undeleted;
   NSTimeInterval        latestCompressAt;
   NSTimeInterval        latestDeleteAt;
   NSTimeInterval        now;
   NSTimeInterval        ti;
   NSFileManager         *mgr;
+  NSString		*dir;
   NSString		*file;
   NSAutoreleasePool	*arp;
 
@@ -2500,6 +2507,19 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   mgr = [[NSFileManager new] autorelease];
 
+  dir = [self ecUserDirectory];
+  if (YES == deb)
+    {
+      dir = [dir stringByAppendingPathComponent: @"DebugLogs"];
+      uncompressed = debUncompressed;
+      undeleted = debUndeleted;
+    }
+  else
+    {
+      dir = [dir stringByAppendingPathComponent: @"Logs"];
+      uncompressed = logUncompressed;
+      undeleted = logUndeleted;
+    }
   if (0.0 == undeleted)
     {
       undeleted = now - 365.0 * day;
@@ -2511,7 +2531,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSAutoreleasePool *pool = [NSAutoreleasePool new];
 
       when = [NSCalendarDate dateWithTimeIntervalSinceReferenceDate: ti];
-      file = [[logs stringByAppendingPathComponent:
+      file = [[dir stringByAppendingPathComponent:
         [when descriptionWithCalendarFormat: @"%Y-%m-%d"]]
         stringByStandardizingPath];
       if ([mgr fileExistsAtPath: file])
@@ -2521,7 +2541,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       ti += day;
       [pool release];
     }
-  undeleted = ti;
+  if (YES == deb) debUndeleted = ti;
+  else logUndeleted = ti;
 
   if (uncompressed < undeleted)
     {
@@ -2537,7 +2558,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       NSString                  *base;
 
       when = [NSCalendarDate dateWithTimeIntervalSinceReferenceDate: ti];
-      base = [[logs stringByAppendingPathComponent:
+      base = [[dir stringByAppendingPathComponent:
         [when descriptionWithCalendarFormat: @"%Y-%m-%d"]]
         stringByStandardizingPath];
       if ([mgr fileExistsAtPath: base isDirectory: &isDirectory] == NO
@@ -2621,7 +2642,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       ti += day;
       [pool release];
     }
-  uncompressed = ti;
+  if (YES == deb) debUncompressed = ti;
+  else logUncompressed = ti;
 
   DESTROY(arp);
   sweeping = NO;
@@ -2634,16 +2656,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
  */
 - (void) sweep: (NSCalendarDate*)when
 {
-  NSString		*logs;
-
   if (nil == when)
     {
       when = [NSDate date];
     }
-  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"DebugLogs"];
-  [self _sweep: logs at: when];
-  logs = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
-  [self _sweep: logs at: when];
+  [self _sweep: YES at: when];
+  [self _sweep: NO at: when];
 }
 
 - (void) ecNewHour: (NSCalendarDate*)when
