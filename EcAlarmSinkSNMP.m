@@ -524,9 +524,9 @@ init_EcAlarmSink(void)
   oids[len] = 0;	// alarmsTable
   oids[len + 1] = 0;	// alarmsEntry
 
-  alarmsTable_len = len + 2;
+  alarmsTable_len = len + 1;
   alarmsTable_oid = (oid*)malloc(sizeof(oid) * alarmsTable_len);
-  memcpy(alarmsTable_oid, oids, sizeof(oid) * len + 2);
+  memcpy(alarmsTable_oid, oids, sizeof(oid) * len + 1);
   alarmsTable_oid[len] = 1;
 
   resyncFlag_len = len + 1;
