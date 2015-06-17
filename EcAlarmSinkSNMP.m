@@ -1580,8 +1580,8 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 				  struct alarmsTable_entry *entry;
 
 				  entry = (struct alarmsTable_entry *)
-				    netsnmp_tdata_remove_and_delete_row(alarmsTable,
-				    row);
+				    netsnmp_tdata_remove_and_delete_row(
+                                      alarmsTable, row);
 				  if (0 != entry)
 				    {
 				      SNMP_FREE(entry);
@@ -1617,12 +1617,12 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 
 			      if (nil == prev)
 				{
-				  row = alarmsTable_createEntry
-				    ([next notificationID]);
 				  /* Add and send the new alarm
 				   */
 				  if (++notificationID <= 0) notificationID = 1;
 				  [next setNotificationID: notificationID];
+				  row = alarmsTable_createEntry(
+                                    [next notificationID]);
 				}
 			      else
 				{
@@ -1631,7 +1631,8 @@ objectsTable_handler(netsnmp_mib_handler *handler,
 				  row = (netsnmp_tdata_row*)[prev extra];
 				  /* send the clear for the entry.
 				   */
-				  [next setNotificationID: [prev notificationID]];
+				  [next setNotificationID:
+                                    [prev notificationID]];
 				  [alarmSink _trap: prev forceClear: YES];
 				}
 
