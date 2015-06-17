@@ -2646,7 +2646,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   else logUncompressed = ti;
 
   DESTROY(arp);
-  sweeping = NO;
 }
 
 /* Perform this one in another thread.
@@ -2662,6 +2661,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   [self _sweep: YES at: when];
   [self _sweep: NO at: when];
+  sweeping = NO;
 }
 
 - (void) ecNewHour: (NSCalendarDate*)when
