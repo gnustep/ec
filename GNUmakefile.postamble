@@ -18,13 +18,16 @@
 # before-install::
 
 # Things to do after installing
-# after-install::
+after-install::
+	$(MKDIRS) ~/.snmp/mibs
+	cp GNUSTEP-MIB.txt ~/.snmp/mibs
 
 # Things to do before uninstalling
 # before-uninstall::
 
 # Things to do after uninstalling
-# after-uninstall::
+after-uninstall::
+	rm ~/.snmp/mibs/GNUSTEP-MIB.txt
 
 # Things to do before cleaning
 # before-clean::
