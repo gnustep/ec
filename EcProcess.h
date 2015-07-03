@@ -54,7 +54,7 @@
 	    <desc>
 	      Specifies the maximum size (in MB) for any core-dump of the
               process.<br />
-              If this is not set, the default size of 1GB is used.<br />
+              If this is not set, the default size of 2GB is used.<br />
               If this is negative, the size is unlimited.<br />
 	      If this is zero then no core dumping is performed.
 	    </desc>
@@ -94,10 +94,10 @@
 	    </desc>
 	    <term>EcMemoryAllowed</term>
 	    <desc>
-              This may be used to specify the heap memory allocation allowed
+              This may be used to specify the total process memory usage
               (in megabytes) before memory usage alerting may begin.<br />
               If this is not specified (or a negative value is specified)
-              the default of 50 megabytes is used.
+              the default of 500 megabytes is used.
 	    </desc>
 	    <term>EcMemoryIncrement</term>
 	    <desc>
@@ -114,12 +114,11 @@
 	    </desc>
 	    <term>EcMemoryMaximum</term>
 	    <desc>
-              This may be used to specify the heap memory allocation allowed
+              This may be used to specify the total process memory allowed
               (in megabytes) before the process is forced to quit due to
               excessive memory usage.<br />
-              If the memory usage (heap usage minus -ecNotLeaked) reaches
-              this threshold, the -cmdQuit: method will be called with an
-              argument of -1.<br />
+              If the total memory usage of the process reaches this threshold,
+              the -cmdQuit: method will be called with an argument of -1.<br />
               If this is not specified (or a negative value is specified)
               the process will never shut down due to excessive memory usage.
             </desc>

@@ -1,3 +1,10 @@
+2015-07-03  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Revamp memory handling code to work with total process memory rather
+	than heap size.  Report usage in same units as the 'ps' command.
+
 2015-06-17  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcAlarmSinkSNMP.m: Fix stupid mistake setting notificationID.

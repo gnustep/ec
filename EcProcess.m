@@ -60,8 +60,6 @@
 #import "EcUserDefaults.h"
 #import "EcBroadcastProxy.h"
 
-#include "malloc.h"
-
 #include "config.h"
 
 #ifdef	HAVE_SYS_SIGNAL_H
@@ -85,6 +83,7 @@
 #ifdef	HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#include <stdio.h>
 
 
 
@@ -183,7 +182,7 @@ qhandler(int sig)
    * have interrupted some vital library (eg malloc()) and left it in a
    * state such that our code can't continue.  For instance if we try to
    * cleanup after a signal and call free(), the process may hang waiting
-   * for a lock that the interupted malloc() functioin still holds.
+   * for a lock that the interupted function still holds.
    */
   if (0 == cmdSignalled)
     {
@@ -518,14 +517,16 @@ ecHostName()
   return [name autorelease];
 }
 
-#define	DEFMEMALLOWED	50
+#define	DEFMEMALLOWED	500
 static NSUInteger       memMaximum = 0;
 static NSUInteger	memAllowed = DEFMEMALLOWED;      // In KB
+static NSUInteger	memAvge = 0;
 static NSUInteger	memLast = 0;
 static NSUInteger	memPeak = 0;
+static NSUInteger	memWarn = 0;
 static NSUInteger	memSlot = 0;
 static NSUInteger	memRoll[10];
-#define	memSize (sizeof(memRoll)/sizeof(*memRoll))
+#define	MEMCOUNT (sizeof(memRoll)/sizeof(*memRoll))
 
 #ifndef __MINGW__
 static int              reservedPipe[2] = { 0, 0 };
@@ -1258,13 +1259,13 @@ static NSString	*noFiles = @"No log files to archive";
 #endif
 
   memAllowed = (NSUInteger)[cmdDefs integerForKey: @"MemoryAllowed"];
-  if (0 == memAllowed || memAllowed > 100000)
+  if (0 == memAllowed || memAllowed > 200000)
     {
-      memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
+      memAllowed = DEFMEMALLOWED;
     }
 
   memMaximum = (NSUInteger)[cmdDefs integerForKey: @"MemoryMaximum"];
-  if (memMaximum > 100000)
+  if (memMaximum > 200000)
     {
       memMaximum = 0;	                // Disabled
     }
@@ -1272,7 +1273,7 @@ static NSString	*noFiles = @"No log files to archive";
   str = [cmdDefs stringForKey: @"CoreSize"];
   if (nil == str)
     {
-      i = 1024;         // 1 GB default
+      i = 2*1024;       // 2 GB default
     }
   else
     {
@@ -2223,8 +2224,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) ecNewMinute: (NSCalendarDate*)when
 {
-  struct mallinfo	info;
-  NSUInteger            bytes;
+  FILE          *fptr;
+  int	        i;
 
 #ifndef __MINGW__
   if (NO == cmdIsQuitting)
@@ -2280,153 +2281,138 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
    */
   [NSHost flushHostCache];
 
-  info = mallinfo();
-  bytes = info.uordblks + info.hblkhd;
-  if (bytes <= 0) bytes = 1;
+  /* /proc/pid/statm reports the process memory size in 4KB pages
+   */
+  fptr = fopen([[NSString stringWithFormat: @"/proc/%d/statm",
+    [[NSProcessInfo processInfo] processIdentifier]] UTF8String], "r");
+  memLast = 1;
+  if (NULL != fptr)
+    {
+      if (fscanf(fptr, "%"PRIuPTR, &memLast) != 1)
+        {
+          memLast = 1;
+        }
+      else
+        {
+          memLast *= (4 * 1024);
+          if (memLast <= 0) memLast = 1;
+        }
+      fclose(fptr);
+    }
 
   /* Do initial population so we can work immediately.
    */
   if (0 == memRoll[0])
     {
-      while (memSlot < memSize)
+      for (i = 0; i < MEMCOUNT; i++)
         {
-          memRoll[memSlot++] = bytes;
+          memRoll[i] = memLast;
         }
-      memLast = bytes;
-      memPeak = bytes;
+      memAvge = memLast;
     }
-  if (memSlot >= memSize)
+  else
     {
-      NSUInteger	average;
-      NSUInteger	notLeaked;
-      int	        i;
-
-      notLeaked = [self ecNotLeaked];
-
-      /* Next slot to record in will be zero.
-       */
-      memSlot = 0;
+      if (memSlot >= MEMCOUNT)
+        {
+          /* Next slot to record in will be zero.
+           */
+          memSlot = 0;
+        }
+      memRoll[memSlot++] = memLast;
 
       /* Find the average usage over the last set of samples.
        * Round up to a block size.
        */
-      for (average = i = 0; i < memSize; i++)
-	{
-	  average += memRoll[i];
-	}
-      average /= memSize;
-
-      /* The cache size should probably be less than the heap usage 
-       * though some objects in the cache could actually be using
-       * memory which didn't come from the heap, so subtracting one
-       * from the other is not completely reliable.
-       */
-      average = (notLeaked < average) ? average - notLeaked : 0;
-
-      /* Convert to 1KB blocks.
-       */
-      average = ((average / 1024) + 1) * 1024;
-      if (average > memPeak)
-	{
-          NSInteger     inc;
-          NSInteger     pct;
-          NSInteger     iMax = 0;
-          NSInteger     pMax = 0;
-
-	  /* Alert if the we have peaked above the allowed size.
-	   */
-	  if (average > (memAllowed * 1024 * 1024))
-	    {
-              if (notLeaked > 1024)
-                {
-                  [self cmdError: @"Average heap usage grown to %"PRIuPTR
-                    "KB (plus %"PRIuPTR"KB not leaked)",
-                    average / 1024, notLeaked / 1024];
-                }
-              else
-                {
-                  [self cmdError: @"Average heap usage grown to %"PRIuPTR"KB",
-                    average / 1024];
-                }
-	    }
-
-	  /* Set the peak memory from the last set of readings.
-	   */
-	  memLast = memPeak;
-	  for (i = 0; i < memSize; i++)
-	    {
-	      unsigned	size = memRoll[i];
-
-	      size = (notLeaked < size) ? size - notLeaked : 0;
-	      if (size > memPeak)
-		{
-		  memPeak = size;
-		}
-	    }
-
-          /* If we have a defined maximum memory usage for the process,
-           * we should shut down with a non-zero status to get a restart.
-           */
-          if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
-            {
-              if (NO == cmdIsQuitting)
-                {
-                  cmdIsQuitting = YES;
-                  [self cmdQuit: -1];
-                }
-            }
-
-          /* We increase the threshold for the next alert by a percentage
-           * of the existing usage or by a fixed increment, whichever is
-           * the larger.
-           */
-          pct = [cmdDefs integerForKey: @"MemoryPercentage"];
-          if (pct < 1 || pct > 1000) pct = 0;
-          inc = [cmdDefs integerForKey: @"MemoryIncrement"];
-          if (inc < 10 || inc > 1000000) inc = 0;
-          if (0 == inc && 0 == pct)
-            {
-              if (YES == [cmdDefs boolForKey: @"Memory"])
-                {
-                  /* We want detailed memory information, so we set the next
-                   * alerting threshold from 20 to 40 KB above the current
-                   * peak usage.
-                   */
-                  inc = 20;
-                  pct = 0;
-                }
-              else
-                {
-                  /* We do not want detailed memory information,
-                   * so we set the next alerting threshold from
-                   * 5 to 10 MB above the current peak usage,
-                   * ensuring that only serious increases
-                   * in usage will generate an alert.
-                   */
-                  inc = 5000;
-                  pct = 10;     // Use ten percent if more than fixed increment
-                }
-            }
-          if (inc > 0)
-            {
-              iMax = ((memPeak / (inc * 1024)) + 2) * (inc * 1024);
-            }
-          if (pct > 0)
-            {
-              pMax = (((memPeak * (100 + pct)) / 1024 + 1) * 1024);
-            }
-          memPeak = (iMax > pMax) ? iMax : pMax;
-	}
+      memAvge = 0;
+      for (i = 0; i < MEMCOUNT; i++)
+        {
+          memAvge += memRoll[i];
+        }
+      memAvge /= MEMCOUNT;
     }
-  /* Record the latest memory usage.
+  /* Convert to 1KB blocks.
    */
-  memRoll[memSlot] = bytes;
+  memAvge = ((memAvge / 1024) + 1) * 1024;
+
+  /* If we have a defined maximum memory usage for the process,
+   * we should shut down with a non-zero status to get a restart.
+   */
+  if (memLast > memPeak)
+    {
+      memPeak = memLast;
+    }
+  if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
+    {
+      if (NO == cmdIsQuitting)
+        {
+          cmdIsQuitting = YES;
+          [self cmdQuit: -1];
+        }
+    }
+
+  if (memWarn < (memAllowed * 1024 * 1024))
+    {
+      memWarn = (memAllowed * 1024 * 1024);
+    }
+  if (memAvge > memWarn)
+    {
+      NSInteger     inc;
+      NSInteger     pct;
+      NSInteger     iMax = 0;
+      NSInteger     pMax = 0;
+
+      /* Alert if the average has risen above the allowed size.
+       */
+      [self cmdError: @"Average heap usage grown to %"PRIuPTR"KB",
+        memAvge / 1024];
+
+      /* We increase the threshold for the next alert by a percentage
+       * of the existing usage or by a fixed increment, whichever is
+       * the larger.
+       */
+      pct = [cmdDefs integerForKey: @"MemoryPercentage"];
+      if (pct < 1 || pct > 1000) pct = 0;
+      inc = [cmdDefs integerForKey: @"MemoryIncrement"];
+      if (inc < 10 || inc > 1000000) inc = 0;
+      if (0 == inc && 0 == pct)
+        {
+          if (YES == [cmdDefs boolForKey: @"Memory"])
+            {
+              /* We want detailed memory information, so we set the next
+               * alerting threshold from 20 to 40 KB above the current
+               * peak usage.
+               */
+              inc = 20;
+              pct = 0;
+            }
+          else
+            {
+              /* We do not want detailed memory information,
+               * so we set the next alerting threshold from
+               * 5 to 10 MB above the current peak usage,
+               * ensuring that only serious increases
+               * in usage will generate an alert.
+               */
+              inc = 5000;
+              pct = 10;     // Use ten percent if more than fixed increment
+            }
+        }
+      if (inc > 0)
+        {
+          iMax = ((memWarn / (inc * 1024)) + 2) * (inc * 1024);
+        }
+      if (pct > 0)
+        {
+          pMax = (((memWarn * (100 + pct)) / 1024 + 1) * 1024);
+        }
+      memWarn = (iMax > pMax) ? iMax : pMax;
+    }
+
   if (YES == [cmdDefs boolForKey: @"Memory"])
     {
       [self cmdDbg: cmdDetailDbg
-	       msg: @"Memory usage %"PRIuPTR, memRoll[memSlot]];
+	       msg: @"Memory usage %"PRIuPTR, memLast];
     }
-  memSlot++;
 
   return;
 }
@@ -3410,9 +3396,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-      [self cmdPrintf: @"Memory usage: %"PRIuPTR"KB (peak), %"PRIuPTR
-        "KB (current), %"PRIuPTR"KB (exempt)\n",
-        memPeak / 1024, memLast / 1024, [self ecNotLeaked] / 1024];
+      [self cmdPrintf: @"Memory usage: %"PRIuPTR"KB (current),"
+        @" %"PRIuPTR"KB (peak)\n",
+        memLast/1024, memPeak/1024];
+      [self cmdPrintf: @"              %"PRIuPTR"KB (average),"
+        @" %"PRIuPTR"KB (exempt)\n",
+        memAvge/1024, [self ecNotLeaked]/1024];
       [self cmdPrintf:
         @"Memory error reporting after usage: %"PRIuPTR"KB\n",
         memAllowed * 1024];
