@@ -519,8 +519,8 @@ ecHostName()
 }
 
 #define	DEFMEMALLOWED	50
-static uint64_t	        memMaximum = 0;
-static uint64_t	        memAllowed = DEFMEMALLOWED;
+static NSUInteger       memMaximum = 0;
+static NSUInteger	memAllowed = DEFMEMALLOWED;
 static NSUInteger	memLast = 0;
 static NSUInteger	memPeak = 0;
 static NSUInteger	memSlot = 0;
@@ -1257,13 +1257,13 @@ static NSString	*noFiles = @"No log files to archive";
   descriptorsMaximum = [cmdDefs integerForKey: @"DescriptorsMaximum"];
 #endif
 
-  memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
+  memAllowed = (NSUInteger)[cmdDefs integerForKey: @"MemoryAllowed"];
   if (0 == memAllowed || memAllowed > 100000)
     {
       memAllowed = DEFMEMALLOWED;	// Fifty megabytes default
     }
 
-  memMaximum = (uint64_t)[cmdDefs integerForKey: @"MemoryMaximum"];
+  memMaximum = (NSUInteger)[cmdDefs integerForKey: @"MemoryMaximum"];
   if (memMaximum > 100000)
     {
       memMaximum = 0;	                // Disabled
@@ -2366,7 +2366,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
           /* If we have a defined maximum memory usage for the process,
            * we should shut down with a non-zero status to get a restart.
            */
-          if (memMaximum > 0 && memPeak > memMaximum * 1024 * 1024)
+          if (memMaximum > 0 && memSize > (memMaximum * 1024 * 1024))
             {
               if (NO == cmdIsQuitting)
                 {
@@ -2899,7 +2899,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
               for (index = 1; index < count; index++)
                 {
-                  uint64_t      addr;
+                  NSUInteger    addr;
                   NSString      *arg = [msg objectAtIndex: index];
 
                   if ([arg caseInsensitiveCompare: _(@"all")]
@@ -2915,7 +2915,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                           [alarmDestination alarm: alarm];
                         }
                     }
-                  else if (1 == sscanf([arg UTF8String], "%" PRIx64, &addr))
+                  else if (1 == sscanf([arg UTF8String], "%" PRIxPTR, &addr))
                     {
                       NSUInteger	i;
 
@@ -2923,7 +2923,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                       for (i = 0; i < alarmCount; i++)
                         {
                           alarm = [a objectAtIndex: i];
-                          if ((uint64_t)(uintptr_t)alarm == addr)
+                          if ((NSUInteger)alarm == addr)
                             {
                               break;
                             }
@@ -3413,11 +3413,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         " (current), %"PRIuPTR" (exempt)\n",
         memPeak, memLast, [self ecNotLeaked]];
       [self cmdPrintf:
-        @"Memory error reporting after usage: %"PRIu64"MB\n", memAllowed];
+        @"Memory error reporting after usage: %"PRIuPTR"MB\n", memAllowed];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
-            @"Memory usage exceeded shutdown after: %"PRIu64"MB\n", memMaximum];
+            @"Memory usage exceeded shutdown after: %"PRIuPTR"MB\n", memMaximum];
         }
     }
 }

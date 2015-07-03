@@ -11,10 +11,12 @@ locations for something like RedHat Linux.
    If you are using your own MIB, replace all ocurrances below of
    GNUSTEP-MIB.txt with the name of your own MIB file.
 
-1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs and/or ~/.snmp/mibs
-   depending on whether this is a system-wide installation or one for a
-   single user/account.
-
+1. install GNUSTEP-MIB.txt in /usr/share/snmp/mibs or wherever net-snmp
+   keeps its MIBs on your system.  This manual installation is required
+   for a system-wide installation, but if you only want to have access
+   to the MIB yourself, the default installation process will have put
+   the MIB in your local directory(~/.snmp/mibs) which is correct for
+   net-snmp on most systems.
 
 2. For diagnosing problems in snmpd,
    edit '/etc/sysconfig/snmpd' to contain:
