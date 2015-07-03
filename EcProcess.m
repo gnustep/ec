@@ -2224,6 +2224,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 - (void) ecNewMinute: (NSCalendarDate*)when
 {
   struct mallinfo	info;
+  NSUInteger            bytes;
 
 #ifndef __MINGW__
   if (NO == cmdIsQuitting)
@@ -2280,20 +2281,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [NSHost flushHostCache];
 
   info = mallinfo();
+  bytes = info.uordblks + info.hblkhd;
+  if (bytes <= 0) bytes = 1;
+
   /* Do initial population so we can work immediately.
    */
   if (0 == memRoll[0])
     {
-      NSUInteger        b;
-
-      b = info.uordblks + info.hblkhd;
-      if (b <= 0) b = 1;
       while (memSlot < memSize)
         {
-          memRoll[memSlot++] = b;
+          memRoll[memSlot++] = bytes;
         }
-      memLast = b;
-      memPeak = b;
+      memLast = bytes;
+      memPeak = bytes;
     }
   if (memSlot >= memSize)
     {
@@ -2420,7 +2420,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   /* Record the latest memory usage.
    */
-  memRoll[memSlot] = info.uordblks;
+  memRoll[memSlot] = bytes;
   if (YES == [cmdDefs boolForKey: @"Memory"])
     {
       [self cmdDbg: cmdDetailDbg
