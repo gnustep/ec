@@ -520,7 +520,7 @@ ecHostName()
 
 #define	DEFMEMALLOWED	50
 static NSUInteger       memMaximum = 0;
-static NSUInteger	memAllowed = DEFMEMALLOWED;
+static NSUInteger	memAllowed = DEFMEMALLOWED;      // In KB
 static NSUInteger	memLast = 0;
 static NSUInteger	memPeak = 0;
 static NSUInteger	memSlot = 0;
@@ -2284,8 +2284,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
    */
   if (0 == memRoll[0])
     {
-      int       b = info.uordblks;
+      NSUInteger        b;
 
+      b = info.uordblks + info.hblkhd;
       if (b <= 0) b = 1;
       while (memSlot < memSize)
         {
@@ -2366,7 +2367,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
           /* If we have a defined maximum memory usage for the process,
            * we should shut down with a non-zero status to get a restart.
            */
-          if (memMaximum > 0 && memSize > (memMaximum * 1024 * 1024))
+          if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
             {
               if (NO == cmdIsQuitting)
                 {
@@ -3409,15 +3410,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-      [self cmdPrintf: @"Memory usage: %"PRIuPTR" (peak), %"PRIuPTR
-        " (current), %"PRIuPTR" (exempt)\n",
-        memPeak, memLast, [self ecNotLeaked]];
+      [self cmdPrintf: @"Memory usage: %"PRIuPTR"KB (peak), %"PRIuPTR
+        "KB (current), %"PRIuPTR"KB (exempt)\n",
+        memPeak / 1024, memLast / 1024, [self ecNotLeaked] / 1024];
       [self cmdPrintf:
-        @"Memory error reporting after usage: %"PRIuPTR"MB\n", memAllowed];
+        @"Memory error reporting after usage: %"PRIuPTR"KB\n",
+        memAllowed * 1024];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
-            @"Memory usage exceeded shutdown after: %"PRIuPTR"MB\n", memMaximum];
+            @"Memory usage exceeded shutdown after: %"PRIuPTR"KB\n",
+            memMaximum * 1024];
         }
     }
 }
