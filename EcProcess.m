@@ -2385,7 +2385,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NSInteger     iMax = 0;
       NSInteger     pMax = 0;
 
-      /* Alert if the average has risen above the allowed size.
+      /* Alert because the average has risen above the allowed size.
        */
       [self cmdError: @"Average memory usage grown to %"PRIuPTR"KB",
         memAvge / 1024];
@@ -2423,11 +2423,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
       if (inc > 0)
         {
-          iMax = ((memWarn / (inc * 1024)) + 2) * (inc * 1024);
+          iMax = memWarn + (inc * 1024);
+          if (iMax % 1024)
+            {
+              iMax = (iMax / 1024 + 1) * 1024;
+            }
         }
       if (pct > 0)
         {
-          pMax = (((memWarn * (100 + pct)) / 1024 + 1) * 1024);
+          pMax = (memWarn * (100 + pct)) / 100;
+          if (pMax % 1024)
+            {
+              pMax = (pMax / 1024 + 1) * 1024;
+            }
         }
       memWarn = (iMax > pMax) ? iMax : pMax;
     }
