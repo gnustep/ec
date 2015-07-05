@@ -2326,22 +2326,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
    */
   memAvge = ((memAvge / 1024) + 1) * 1024;
 
-  /* If we have a defined maximum memory usage for the process,
-   * we should shut down with a non-zero status to get a restart.
+  /* Update peak memory usage if necessary.
    */
   if (memLast > memPeak)
     {
       memPeak = memLast;
     }
-  if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
-    {
-      if (NO == cmdIsQuitting)
-        {
-          cmdIsQuitting = YES;
-          [self cmdQuit: -1];
-        }
-    }
 
+  /* Make sure we have a warning threshold set for leak detection.
+   */
   if (memSlot < MEMCOUNT)
     {
       /* During the first ten minutes, we either use a configured
@@ -2369,6 +2362,22 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
     }
 
+  /* If we have a defined maximum memory usage for the process,
+   * we should shut down with a non-zero status to get a restart.
+   */
+  if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
+    {
+      if (NO == cmdIsQuitting)
+        {
+          cmdIsQuitting = YES;
+          [self cmdQuit: -1];
+        }
+      return;
+    }
+
+  /* If the average memory usage is above the warning threshold,
+   * we should warn and reset the threshold.
+   */
   if (memAvge > memWarn)
     {
       NSInteger     inc;
@@ -3418,12 +3427,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         @" %"PRIuPTR"KB (exempt)\n",
         memAvge/1024, [self ecNotLeaked]/1024];
       [self cmdPrintf:
-        @"Memory error reporting after usage: %"PRIuPTR"KB\n",
+        @"Memory error reporting after average usage: %"PRIuPTR"KB\n",
         memWarn / 1024];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
-            @"Memory usage exceeded shutdown after: %"PRIuPTR"KB\n",
+            @"Memory exceeded shutdown after peak usage: %"PRIuPTR"KB\n",
             memMaximum * 1024];
         }
     }
