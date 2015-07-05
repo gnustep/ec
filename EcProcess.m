@@ -3419,7 +3419,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         memAvge/1024, [self ecNotLeaked]/1024];
       [self cmdPrintf:
         @"Memory error reporting after usage: %"PRIuPTR"KB\n",
-        memAllowed * 1024];
+        memWarn / 1024];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
