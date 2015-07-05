@@ -2378,7 +2378,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       /* Alert if the average has risen above the allowed size.
        */
-      [self cmdError: @"Average heap usage grown to %"PRIuPTR"KB",
+      [self cmdError: @"Average memory usage grown to %"PRIuPTR"KB",
         memAvge / 1024];
 
       /* We increase the threshold for the next alert by a percentage
