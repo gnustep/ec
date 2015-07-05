@@ -517,14 +517,14 @@ ecHostName()
   return [name autorelease];
 }
 
-static NSUInteger       memMaximum = 0;
-static NSUInteger	memAllowed = 0;
-static NSUInteger	memAvge = 0;
-static NSUInteger	memLast = 0;
-static NSUInteger	memPeak = 0;
-static NSUInteger	memWarn = 0;
-static NSUInteger	memSlot = 0;
-static NSUInteger	memRoll[10];
+static uint64_t memMaximum = 0;
+static uint64_t	memAllowed = 0;
+static uint64_t	memAvge = 0;
+static uint64_t	memLast = 0;
+static uint64_t	memPeak = 0;
+static uint64_t	memWarn = 0;
+static uint64_t	memSlot = 0;
+static uint64_t	memRoll[10];
 #define	MEMCOUNT (sizeof(memRoll)/sizeof(*memRoll))
 
 #ifndef __MINGW__
@@ -1257,13 +1257,13 @@ static NSString	*noFiles = @"No log files to archive";
   descriptorsMaximum = [cmdDefs integerForKey: @"DescriptorsMaximum"];
 #endif
 
-  memAllowed = (NSUInteger)[cmdDefs integerForKey: @"MemoryAllowed"];
+  memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
   if (memAllowed > 200000)
     {
       memAllowed = 0;
     }
 
-  memMaximum = (NSUInteger)[cmdDefs integerForKey: @"MemoryMaximum"];
+  memMaximum = (uint64_t)[cmdDefs integerForKey: @"MemoryMaximum"];
   if (memMaximum > 200000)
     {
       memMaximum = 0;	                // Disabled
@@ -2287,7 +2287,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   memLast = 1;
   if (NULL != fptr)
     {
-      if (fscanf(fptr, "%"PRIuPTR, &memLast) != 1)
+      if (fscanf(fptr, "%"PRIu64, &memLast) != 1)
         {
           memLast = 1;
         }
@@ -2393,7 +2393,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       /* Alert because the average has risen above the allowed size.
        */
-      [self cmdError: @"Average memory usage grown to %"PRIuPTR"KB",
+      [self cmdError: @"Average memory usage grown to %"PRIu64"KB",
         memAvge / 1024];
 
       /* We increase the threshold for the next alert by a percentage
@@ -2445,7 +2445,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   if (YES == [cmdDefs boolForKey: @"Memory"])
     {
       [self cmdDbg: cmdDetailDbg
-	       msg: @"Memory usage %"PRIuPTR, memLast];
+	       msg: @"Memory usage %"PRIu64, memLast];
     }
 
   return;
@@ -3430,19 +3430,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	    }
 	}
 
-      [self cmdPrintf: @"Memory usage: %"PRIuPTR"KB (current),"
-        @" %"PRIuPTR"KB (peak)\n",
+      [self cmdPrintf: @"Memory usage: %"PRIu64"KB (current),"
+        @" %"PRIu64"KB (peak)\n",
         memLast/1024, memPeak/1024];
-      [self cmdPrintf: @"              %"PRIuPTR"KB (average),"
-        @" %"PRIuPTR"KB (exempt)\n",
+      [self cmdPrintf: @"              %"PRIu64"KB (average),"
+        @" %"PRIu64"KB (exempt)\n",
         memAvge/1024, [self ecNotLeaked]/1024];
       [self cmdPrintf:
-        @"Memory error reporting after average usage: %"PRIuPTR"KB\n",
+        @"Memory error reporting after average usage: %"PRIu64"KB\n",
         memWarn/1024];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
-            @"Memory exceeded shutdown after peak usage: %"PRIuPTR"KB\n",
+            @"Memory exceeded shutdown after peak usage: %"PRIu64"KB\n",
             memMaximum * 1024];
         }
     }
