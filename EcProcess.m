@@ -2301,13 +2301,12 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   /* Do initial population so we can work immediately.
    */
-  if (0 == memRoll[0])
+  if (0 == memSlot)
     {
-      for (i = 0; i < MEMCOUNT; i++)
+      for (i = 1; i < MEMCOUNT; i++)
         {
           memRoll[i] = memLast;
         }
-      memAvge = memLast;
     }
   memRoll[memSlot % MEMCOUNT] = memLast;
   memSlot++;
@@ -2324,7 +2323,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
   /* Convert to 1KB blocks.
    */
-  memAvge = ((memAvge / 1024) + 1) * 1024;
+  if (memAvge % 1024)
+    {
+      memAvge = ((memAvge / 1024) + 1) * 1024;
+    }
 
   /* Update peak memory usage if necessary.
    */
@@ -2359,6 +2361,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
                */
               memWarn = memPeak + 16 * 1024;
             }
+        }
+      if (memWarn % 1024)
+        {
+          memWarn = (memWarn / 1024 + 1) * 1024;
         }
     }
 
@@ -2424,20 +2430,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       if (inc > 0)
         {
           iMax = memWarn + (inc * 1024);
-          if (iMax % 1024)
-            {
-              iMax = (iMax / 1024 + 1) * 1024;
-            }
         }
       if (pct > 0)
         {
           pMax = (memWarn * (100 + pct)) / 100;
-          if (pMax % 1024)
-            {
-              pMax = (pMax / 1024 + 1) * 1024;
-            }
         }
       memWarn = (iMax > pMax) ? iMax : pMax;
+      if (memWarn % 1024)
+        {
+          memWarn = (memWarn / 1024 + 1) * 1024;
+        }
     }
 
   if (YES == [cmdDefs boolForKey: @"Memory"])
@@ -3436,7 +3438,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         memAvge/1024, [self ecNotLeaked]/1024];
       [self cmdPrintf:
         @"Memory error reporting after average usage: %"PRIuPTR"KB\n",
-        memWarn / 1024];
+        memWarn/1024];
       if (memMaximum > 0)
         {
           [self cmdPrintf:
