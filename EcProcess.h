@@ -96,8 +96,10 @@
 	    <desc>
               This may be used to specify the total process memory usage
               (in megabytes) before memory usage alerting may begin.<br />
-              If this is not specified (or a negative value is specified)
-              the default of 500 megabytes is used.
+              If this is not specified (or a negative or excessive value
+              is specified) then memory is monitored for ten minutes and
+              the threshold is set at the peak during that period plus a
+              small margin to allow further memory growth before warning.
 	    </desc>
 	    <term>EcMemoryIncrement</term>
 	    <desc>

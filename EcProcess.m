@@ -517,9 +517,8 @@ ecHostName()
   return [name autorelease];
 }
 
-#define	DEFMEMALLOWED	500
 static NSUInteger       memMaximum = 0;
-static NSUInteger	memAllowed = DEFMEMALLOWED;      // In KB
+static NSUInteger	memAllowed = 0;
 static NSUInteger	memAvge = 0;
 static NSUInteger	memLast = 0;
 static NSUInteger	memPeak = 0;
@@ -1259,9 +1258,9 @@ static NSString	*noFiles = @"No log files to archive";
 #endif
 
   memAllowed = (NSUInteger)[cmdDefs integerForKey: @"MemoryAllowed"];
-  if (0 == memAllowed || memAllowed > 200000)
+  if (memAllowed > 200000)
     {
-      memAllowed = DEFMEMALLOWED;
+      memAllowed = 0;
     }
 
   memMaximum = (NSUInteger)[cmdDefs integerForKey: @"MemoryMaximum"];
@@ -2310,26 +2309,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
       memAvge = memLast;
     }
-  else
-    {
-      if (memSlot >= MEMCOUNT)
-        {
-          /* Next slot to record in will be zero.
-           */
-          memSlot = 0;
-        }
-      memRoll[memSlot++] = memLast;
+  memRoll[memSlot % MEMCOUNT] = memLast;
+  memSlot++;
 
-      /* Find the average usage over the last set of samples.
-       * Round up to a block size.
-       */
-      memAvge = 0;
-      for (i = 0; i < MEMCOUNT; i++)
-        {
-          memAvge += memRoll[i];
-        }
-      memAvge /= MEMCOUNT;
+  /* Find the average usage over the last set of samples.
+   * Round up to a block size.
+   */
+  memAvge = 0;
+  for (i = 0; i < MEMCOUNT; i++)
+    {
+      memAvge += memRoll[i];
     }
+  memAvge /= MEMCOUNT;
+
   /* Convert to 1KB blocks.
    */
   memAvge = ((memAvge / 1024) + 1) * 1024;
@@ -2350,10 +2342,33 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
     }
 
-  if (memWarn < (memAllowed * 1024 * 1024))
+  if (memSlot < MEMCOUNT)
     {
-      memWarn = (memAllowed * 1024 * 1024);
+      /* During the first ten minutes, we either use a configured
+       * limit for warning, or we build one abive the paek memory
+       * which will be used after the inital ten minutes.
+       */
+      if (memAllowed > 0)
+        {
+          memWarn = (memAllowed * 1024 * 1024);
+        }
+      else
+        {
+          /* Use the peak memory, plus half the difference between
+           * average and peak in order to provide some room for
+           * growth before warning.
+           */
+          memWarn = memPeak + (memPeak - memAvge) / 2;
+          if (memWarn < memPeak + 16 * 1024)
+            {
+              /* If the room for growth was very small, increase
+               * to at least 16KB.
+               */
+              memWarn = memPeak + 16 * 1024;
+            }
+        }
     }
+
   if (memAvge > memWarn)
     {
       NSInteger     inc;
