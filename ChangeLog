@@ -1,3 +1,13 @@
+2015-07-06  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Various tweaks to leak alert generation. Change default initial
+	thresholds and change increments after an alert to be based upon
+	the *peak* usage at the point when the alert was generated, rather
+	than on the previous threshodld.  This reduces the number of alerts
+	in a process whose memory usage grows rapidly on startup.
+
 2015-07-03  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

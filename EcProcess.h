@@ -103,12 +103,13 @@
 	    </desc>
 	    <term>EcMemoryIncrement</term>
 	    <desc>
-	      This integer value controls the (KBytes) increment in process
-              memory usage after which an alert is generated.<br />
+	      This integer value controls the (KBytes) increment (from
+              current peak value) in process memory usage after which
+              an alert is generated.<br />
               If this is not set (or is set to a value less than ten or
               greater than a million) then a value of five thousand is used
               unless EcMemory is set (in which case twenty is used).<br />
-              Setting a higher value make memory leak detection less
+              Setting a higher value makes memory leak detection less
               sensitive (but reduces unnecessary alerts).<br />
               If used in conjunction with EcMemoryPercentage, the greater
               of the two allowed memory values is used.<br />
@@ -127,12 +128,12 @@
 	    <term>EcMemoryPercentage</term>
 	    <desc>
 	      This integer value controls the increase in the alerting
-              threshold after  which a memory usage alert is generated.<br />
-              The increase is calcuilated as a percentage of the current
-              memory usage value when an alert is generated.<br />
+              threshold after which a memory usage alert is generated.<br />
+              The increase is calculated as a percentage of the current
+              peak memory usage value when an alert is generated.<br />
               If this is not set (or is set to a value less than one or
               greater than a thousand) then a value of ten is used unless
-              EcMemory is set (in which one is used).<br />
+              EcMemory is set (in which case a value of one is used).<br />
               Setting a higher value make memory leak detection less
               sensitive (but reduces unnecessary alerts).<br />
               If used in conjunction with EcMemoryIncrement, the greater
