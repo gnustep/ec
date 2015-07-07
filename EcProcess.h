@@ -270,7 +270,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *     This boolean value determines whether statistics on creation
  *     and destruction of objects are maintained.<br />
  *     This may be set on the command line or in Control.plist, but
- *     may be overridden by using the 'release' command in the
+ *     may be overridden by using the 'Memory' command in the
  *     Console program.
  *   </desc>
  *   <term>EcMemoryAllowed</term>
