@@ -100,7 +100,7 @@
               is specified) then memory is monitored for ten minutes and
               the threshold is set at the peak during that period plus a
               margin to allow further memory growth before warning.<br />
-              The margin is at least 20KB on a test system, 5000KB on
+              The margin is at least 50KB on a test system, 5000KB on
               a non-test system.
 	    </desc>
 	    <term>EcMemoryIncrement</term>

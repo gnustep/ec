@@ -519,13 +519,16 @@ ecHostName()
 
 static uint64_t memMaximum = 0;
 static uint64_t	memAllowed = 0;
-static uint64_t	memAvge = 0;
-static uint64_t	memLast = 0;
-static uint64_t	memPeak = 0;
-static uint64_t	memWarn = 0;
-static uint64_t	memSlot = 0;
-static uint64_t	memRoll[10];
+static uint64_t	memAvge = 0;    // current period average
+static uint64_t	memStrt = 0;    // usage at first check
+static uint64_t	memLast = 0;    // usage at last check
+static uint64_t	memPrev = 0;    // usage at previous warning
+static uint64_t	memPeak = 0;    // peak usage
+static uint64_t	memWarn = 0;    // next warning point
+static uint64_t	memSlot = 0;    // minute counter
+static uint64_t	memRoll[10];    // last N values
 #define	MEMCOUNT (sizeof(memRoll)/sizeof(*memRoll))
+static NSDate   *memTime = nil; // Time of last alert
 
 #ifndef __MINGW__
 static int              reservedPipe[2] = { 0, 0 };
@@ -2308,6 +2311,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         {
           memRoll[i] = memLast;
         }
+      memPrev = memStrt = memLast;
+      ASSIGN(memTime, [NSDate date]);
     }
   memRoll[memSlot % MEMCOUNT] = memLast;
   memSlot++;
@@ -2373,17 +2378,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
           if (YES == memDebug)
             {
               /* We want detailed memory information, so we set the next
-               * alerting threshold from 20 to 40 KB above the current
-               * peak usage.
+               * alerting threshold 50 KB above the current peak usage.
                */
-              inc = 20;
+              inc = 50;
               pct = 0;
             }
           else
             {
               /* We do not want detailed memory information,
                * so we set the next alerting threshold from
-               * 5 to 10 MB above the current peak usage,
+               * 5000 KB above the current peak usage,
                * ensuring that only serious increases
                * in usage will generate an alert.
                */
@@ -2410,8 +2414,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
        */
       if (memSlot >= MEMCOUNT)
         {
-          [self cmdError: @"Average memory usage grown to %"PRIu64"KB",
-            memAvge/1024];
+          uint64_t      prev;
+          NSDate        *when;
+
+          prev = memPrev;
+          when = AUTORELEASE(memTime);
+          memPrev = memAvge;
+          memTime = [NSDate new];
+          [self cmdError: @"Average memory usage grown from %"
+            PRIu64"KB to %"PRIu64"KB since %@",
+            prev/1024, memAvge/1024, when];
         }
     }
 
@@ -3406,8 +3418,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         @" %"PRIu64"KB (peak)\n",
         memLast/1024, memPeak/1024];
       [self cmdPrintf: @"              %"PRIu64"KB (average),"
-        @" %"PRIu64"KB (exempt)\n",
-        memAvge/1024, [self ecNotLeaked]/1024];
+        @" %"PRIu64"KB (start)\n",
+        memAvge/1024, memStrt/1024];
+      [self cmdPrintf: @"              %"PRIu64"KB (exempt)\n",
+        [self ecNotLeaked]/1024];
       [self cmdPrintf:
         @"Memory error reporting after average usage: %"PRIu64"KB\n",
         memWarn/1024];
