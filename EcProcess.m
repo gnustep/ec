@@ -2223,6 +2223,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) ecNewMinute: (NSCalendarDate*)when
 {
+  BOOL          memDebug = [cmdDefs boolForKey: @"Memory"];
   FILE          *fptr;
   int	        i;
 
@@ -2335,50 +2336,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       memPeak = memLast;
     }
 
-  /* Make sure we have a warning threshold set for leak detection.
-   */
-  if (memSlot < MEMCOUNT)
-    {
-      /* During the first ten minutes, we either use a configured
-       * limit for warning, or we build one abive the paek memory
-       * which will be used after the inital ten minutes.
-       */
-      if (memAllowed > 0)
-        {
-          memWarn = (memAllowed * 1024 * 1024);
-        }
-      else
-        {
-          NSUInteger    inc;
-
-          if (YES == [cmdDefs boolForKey: @"Memory"])
-            {
-              inc = 20;
-            }
-          else
-            {
-              inc = 5000;
-            }
-
-          /* Use the peak memory, plus half the difference between
-           * average and peak in order to provide some room for
-           * growth before warning.
-           */
-          memWarn = memPeak + (memPeak - memAvge) / 2;
-          if (memWarn < memPeak + (inc * 1024))
-            {
-              /* The room for growth was smaller than the margin
-               * we we expect; increase it.
-               */
-              memWarn = memPeak + (inc * 1024);
-            }
-        }
-      if (memWarn % 1024)
-        {
-          memWarn = (memWarn / 1024 + 1) * 1024;
-        }
-    }
-
   /* If we have a defined maximum memory usage for the process,
    * we should shut down with a non-zero status to get a restart.
    */
@@ -2393,9 +2350,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
 
   /* If the average memory usage is above the warning threshold,
-   * we should warn and reset the threshold.
+   * we should alert and reset the threshold.
+   * During the first ten minutes 
    */
-  if (memAvge > memWarn)
+  if (memAvge > memWarn || memSlot < MEMCOUNT)
     {
       NSInteger     inc;
       NSInteger     pct;
@@ -2412,7 +2370,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       if (inc < 10 || inc > 1000000) inc = 0;
       if (0 == inc && 0 == pct)
         {
-          if (YES == [cmdDefs boolForKey: @"Memory"])
+          if (YES == memDebug)
             {
               /* We want detailed memory information, so we set the next
                * alerting threshold from 20 to 40 KB above the current
@@ -2444,16 +2402,20 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       memWarn = (iMax > pMax) ? iMax : pMax;
       if (memWarn % 1024)
         {
-          memWarn = (memWarn / 1024 + 1) * 1024;
+          memWarn = (memWarn/1024 + 1) * 1024;
         }
 
-      /* Alert because the average has risen above the allowed size.
+      /* If not in the initial period, we need to generate an alert
+       * because the average has risen above the allowed size.
        */
-      [self cmdError: @"Average memory usage grown to %"PRIu64"KB",
-        memAvge / 1024];
+      if (memSlot >= MEMCOUNT)
+        {
+          [self cmdError: @"Average memory usage grown to %"PRIu64"KB",
+            memAvge/1024];
+        }
     }
 
-  if (YES == [cmdDefs boolForKey: @"Memory"])
+  if (YES == memDebug)
     {
       [self cmdDbg: cmdDetailDbg
 	       msg: @"Memory usage %"PRIu64"KB", memLast/1024];
@@ -2847,7 +2809,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       else
 	{
 	  NSArray	*a = [alarmDestination alarms];
-          
 
 	  if (0 == [a count])
 	    {
@@ -3515,7 +3476,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   [self cmdUnregister];
 
   [alarmDestination shutdown];
-  [alarmDestination release];
+  DESTROY(alarmDestination);
 
   [EcProcConnection invalidate];
 
