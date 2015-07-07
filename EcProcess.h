@@ -30,174 +30,6 @@
 #ifndef INCLUDED_ECPROCESS_H
 #define INCLUDED_ECPROCESS_H
 
-/**
-    <chapter>
-      <heading>The EcProcess class</heading>
-      <p>
-	The EcProcess class provides basic configuration, control, logging,
-	and inter-process connection systems for servers processors.
-      </p>
-      <section>
-	<heading>Configuration options</heading>
-	<p>
-	  This class understands two groups of configuration options ...
-	  those that take effect at process startup, and must therefore
-	  be supplied on the command-line or in the defaults system, and
-	  those which can take effect at any time, in which case the
-	  values supplied by the configuration system will take
-	  precedence over command line and defaults database settings.
-	</p>
-	<subsect>
-	  <heading>startup settings</heading>
-	  <deflist>
-	    <term>EcCoreSize</term>
-	    <desc>
-	      Specifies the maximum size (in MB) for any core-dump of the
-              process.<br />
-              If this is not set, the default size of 2GB is used.<br />
-              If this is negative, the size is unlimited.<br />
-	      If this is zero then no core dumping is performed.
-	    </desc>
-	    <term>EcDebug-</term>
-	    <desc>
-	      Any key of the form EcDebug-xxx turns on the xxx debug level
-	      on program startup.
-	    </desc>
-	    <term>EcDescriptorsMaximum</term>
-	    <desc>
-              To protect against file descriptor leaks, a process will
-              check for the ability to create a pipe once a minute.<br />
-              If it can't do so, it will shut down with an error message.<br />
-              To increase the chances of a successful shutdown, two
-              descriptors are reserved on the first check, and closed
-              when a shutdown is attempted.<br />
-              If EcDescriptorsMaximum is defined to a positive integer value,
-              it is used to trigger earlier shutdown once the specified
-              number of open file descriptors has been reached, rather
-              than waiting for the operating system imposed limit.
-	    </desc>
-	    <term>EcKeepStandardError</term>
-	    <desc>
-              This boolean value determines whether the standard error output
-              should be kept as it is on process startup, or should be merged
-              with the local debug log to file.<br />
-              The default (EcKeepStandardError set to NO) is to merge the
-              standard error logging with the debug logging.
-	    </desc>
-	    <term>EcMemory</term>
-	    <desc>
-	      This boolean value determines whether statistics on creation
-	      and destruction of objects are maintained.<br />
-	      This may be set on the command line or in Control.plist, but
-	      may be overridden by using the 'release' command in the
-	      Console program.
-	    </desc>
-	    <term>EcMemoryAllowed</term>
-	    <desc>
-              This may be used to specify the total process memory usage
-              (in megabytes) before memory usage alerting may begin.<br />
-              If this is not specified (or a negative or excessive value
-              is specified) then memory is monitored for ten minutes and
-              the threshold is set at the peak during that period plus a
-              margin to allow further memory growth before warning.<br />
-              The margin is at least 50KB on a test system, 5000KB on
-              a non-test system.
-	    </desc>
-	    <term>EcMemoryIncrement</term>
-	    <desc>
-	      This integer value controls the (KBytes) increment (from
-              current peak value) in process memory usage after which
-              an alert is generated.<br />
-              If this is not set (or is set to a value less than ten or
-              greater than a million) then a value of five thousand is used
-              unless EcMemory is set (in which case twenty is used).<br />
-              Setting a higher value makes memory leak detection less
-              sensitive (but reduces unnecessary alerts).<br />
-              If used in conjunction with EcMemoryPercentage, the greater
-              of the two allowed memory values is used.<br />
-	      This may be set on the command line or in Control.plist
-	    </desc>
-	    <term>EcMemoryMaximum</term>
-	    <desc>
-              This may be used to specify the total process memory allowed
-              (in megabytes) before the process is forced to quit due to
-              excessive memory usage.<br />
-              If the total memory usage of the process reaches this threshold,
-              the -cmdQuit: method will be called with an argument of -1.<br />
-              If this is not specified (or a negative value is specified)
-              the process will never shut down due to excessive memory usage.
-            </desc>
-	    <term>EcMemoryPercentage</term>
-	    <desc>
-	      This integer value controls the increase in the alerting
-              threshold after which a memory usage alert is generated.<br />
-              The increase is calculated as a percentage of the current
-              peak memory usage value when an alert is generated.<br />
-              If this is not set (or is set to a value less than one or
-              greater than a thousand) then a value of ten is used unless
-              EcMemory is set (in which case a value of one is used).<br />
-              Setting a higher value make memory leak detection less
-              sensitive (but reduces unnecessary alerts).<br />
-              If used in conjunction with EcMemoryIncrement, the greater
-              of the two allowed memory values is used.<br />
-	      This may be set on the command line or in Control.plist
-	    </desc>
-	    <term>EcRelease</term>
-	    <desc>
-	      This boolean value determines whether checks for memory problems
-	      caused by release an object too many times are done.  Turning
-	      this on has a big impact on program performance and is not
-	      recommended except for debugging crashes and other memory
-	      issues.<br />
-	      This may be set on the command line or in Control.plist, but
-	      may be overridden by using the 'release' command in the
-	      Console program.
-	    </desc>
-	    <term>EcTesting</term>
-	    <desc>
-	      This boolean value determines whether the server is running in
-	      test mode (which may enable extra logging or prevent the server
-	      from communicating with live systems etc ... the actual
-	      behavior is server dependent).<br />
-	      This may be set on the command line or in Control.plist, but
-	      may be overridden by using the 'testing' command in the
-	      Console program.
-	    </desc>
-	    <term>EcTransient</term>
-	    <desc>
-	      This boolean option is used to specify that the program
-	      should not be restarted automatically by the Command
-	      server if/when it disconnects from that server.
-	    </desc>
-	  </deflist>
-	</subsect>
-      </section>
-      <section>
-	<heading>Alarm mechanism</heading>
-	<p>
-          The EcProcess class conforms to the EcAlarmDestination protocol
-          to allow sending alarm information to a centralised alarm system
-          via the Command server (the Control server acts as a sink for
-          those alarms and provides SNMP integration).
-        </p>
-        <p>
-          In addition to the standard alarm destination behavior, the
-          process automates some thngs:<br />
-          On successful startup and registration with the Command server,
-          a -domanage: message is automatically sent for the default
-          managed object, clearing any outrstanding alarms.<br />
-          On successful shutdown (ie when -cmdQuit: is called with zero
-          as its argument), an -unmanage: message is automatically sent
-          to clear any outstanding alarms for the default managed object.<br />
-          If you want to raise alarms which will persist after a successful
-          shutdown you should therefore do so by creating a different managed
-          object for which to raise those alarms.
-        </p>
-      </section>
-    </chapter>
-
- */
-
 #import	<Foundation/Foundation.h>
 
 #import	"EcAlarmDestination.h"
@@ -362,6 +194,14 @@ extern NSString*	cmdVersion(NSString *ver);
  * can be read.
  * </p>
  * <deflist>
+ *   <term>EcCoreSize</term>
+ *   <desc>
+ *     Specifies the maximum size (in MB) for any core-dump of the
+ *     process.<br />
+ *     If this is not set, the default size of 2GB is used.<br />
+ *     If this is negative, the size is unlimited.<br />
+ *     If this is zero then no core dumping is performed.
+ *   </desc>
  *   <term>EcDaemon</term>
  *   <desc>To specify whether the program should run in the background
  *     (boolean, YES if the program is to run as a daemon, NO otherwise).<br />
@@ -379,6 +219,20 @@ extern NSString*	cmdVersion(NSString *ver);
  *     If this is specified, the program name has a hyphen and the
  *     id appended to it by the '-initWithDefaults:' method.
  *   </desc>
+ *   <term>EcKeepStandardError</term>
+ *   <desc>
+ *     This boolean value determines whether the standard error output
+ *     should be kept as it is on process startup, or should be merged
+ *     with the local debug log to file.<br />
+ *     The default (EcKeepStandardError set to NO) is to merge the
+ *     standard error logging with the debug logging.
+ *   </desc>
+ *   <term>EcTransient</term>
+ *   <desc>
+ *     This boolean option is used to specify that the program
+ *     should not be restarted automatically by the Command
+ *     server if/when it disconnects from that server.
+ *   </desc>
  * </deflist>
  * <p>The following settings will be revised after startup to include the
  * values from the network configuration system.
@@ -386,48 +240,143 @@ extern NSString*	cmdVersion(NSString *ver);
  * <deflist>
  *   <term>EcAuditFlush</term>
  *   <desc>A flush interval in seconds (optionally followed by a colon
- *   and a buffer size in KiloBytes) to control flushing of audit logs.<br />
- *   Setting an interval of zero or less disables flushing by timer.<br />
- *   Setting a size of zero or less, disables buffering (so logs are
- *   flushed immediately).
+ *     and a buffer size in KiloBytes) to control flushing of audit logs.<br />
+ *     Setting an interval of zero or less disables flushing by timer.<br />
+ *     Setting a size of zero or less, disables buffering (so logs are
+ *     flushed immediately).
  *   </desc>
- *   <term>EcDebug-XXX</term>
- *   <desc>A boolean used to ensure that the debug mode named 'XXX' is either
- *   turned on or turned off.  The value of 'XXX' must match
- *   the name of a debug mode used by the program!
+ *   <term>EcDebug-</term>
+ *   <desc>
+ *     Any key of the form EcDebug-xxx turns on the xxx debug level
+ *     on program startup.<br />
+ *     The value of 'XXX' must match the name of a debug mode used
+ *     by the program!
  *   </desc>
- *   <term>EcDebugFlush</term>
- *   <desc>A flush interval in seconds (optionally followed by a colon
- *   and a buffer size in KiloBytes) to control flushing of debug logs.<br />
- *   Setting an interval of zero or less disables flushing by timer.<br />
- *   Setting a size of zero or less, disables buffering (so logs are
- *   flushed immediately).
+ *   <term>EcDescriptorsMaximum</term>
+ *   <desc>
+ *     To protect against file descriptor leaks, a process will
+ *     check for the ability to create a pipe once a minute.<br />
+ *     If it can't do so, it will shut down with an error message.<br />
+ *     To increase the chances of a successful shutdown, two
+ *     descriptors are reserved on the first check, and closed
+ *     when a shutdown is attempted.<br />
+ *     If EcDescriptorsMaximum is defined to a positive integer value,
+ *     it is used to trigger earlier shutdown once the specified
+ *     number of open file descriptors has been reached, rather
+ *     than waiting for the operating system imposed limit.
  *   </desc>
  *   <term>EcMemory</term>
- *   <desc>A boolean used to ensure that monitoring of memory allocation is
- *   turned on or turned off.
+ *   <desc>
+ *     This boolean value determines whether statistics on creation
+ *     and destruction of objects are maintained.<br />
+ *     This may be set on the command line or in Control.plist, but
+ *     may be overridden by using the 'release' command in the
+ *     Console program.
+ *   </desc>
+ *   <term>EcMemoryAllowed</term>
+ *   <desc>
+ *     This may be used to specify the total process memory usage
+ *     (in megabytes) before memory usage alerting may begin.<br />
+ *     If this is not specified (or a negative or excessive value
+ *     is specified) then memory is monitored for ten minutes and
+ *     the threshold is set at the peak during that period plus a
+ *     margin to allow further memory growth before warning.<br />
+ *     The margin is at least 50KB on a test system, 5000KB on
+ *     a non-test system.
+ *   </desc>
+ *   <term>EcMemoryIncrement</term>
+ *   <desc>
+ *     This integer value controls the (KBytes) increment (from
+ *     current peak value) in process memory usage after which
+ *     an alert is generated.<br />
+ *     If this is not set (or is set to a value less than ten or
+ *     greater than a million) then a value of five thousand is used
+ *     unless EcMemory is set (in which case twenty is used).<br />
+ *     Setting a higher value makes memory leak detection less
+ *     sensitive (but reduces unnecessary alerts).<br />
+ *     If used in conjunction with EcMemoryPercentage, the greater
+ *     of the two allowed memory values is used.<br />
+ *     This may be set on the command line or in Control.plist
+ *   </desc>
+ *   <term>EcMemoryMaximum</term>
+ *   <desc>
+ *     This may be used to specify the total process memory allowed
+ *     (in megabytes) before the process is forced to quit due to
+ *     excessive memory usage.<br />
+ *     If the total memory usage of the process reaches this threshold,
+ *     the -cmdQuit: method will be called with an argument of -1.<br />
+ *     If this is not specified (or a negative value is specified)
+ *     the process will never shut down due to excessive memory usage.
+ *   </desc>
+ *   <term>EcMemoryPercentage</term>
+ *   <desc>
+ *     This integer value controls the increase in the alerting
+ *     threshold after which a memory usage alert is generated.<br />
+ *     The increase is calculated as a percentage of the current
+ *     peak memory usage value when an alert is generated.<br />
+ *     If this is not set (or is set to a value less than one or
+ *     greater than a thousand) then a value of ten is used unless
+ *     EcMemory is set (in which case a value of one is used).<br />
+ *     Setting a higher value make memory leak detection less
+ *     sensitive (but reduces unnecessary alerts).<br />
+ *     If used in conjunction with EcMemoryIncrement, the greater
+ *     of the two allowed memory values is used.<br />
+ *     This may be set on the command line or in Control.plist
  *   </desc>
  *   <term>EcRelease</term>
- *   <desc>A boolean used to specify whether the program should perform
- *   sanity checks for retain/release combinations.  Slows things down a lot!
+ *   <desc>
+ *     This boolean value determines whether checks for memory problems
+ *     caused by release an object too many times are done.  Turning
+ *     this on has a big impact on program performance and is not
+ *     recommended except for debugging crashes and other memory
+ *     issues.<br />
+ *     This may be set on the command line or in Control.plist, but
+ *     may be overridden by using the 'release' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcTesting</term>
- *   <desc>A boolean used to specify whether the program is running
- *   in test mode or not.
+ *   <desc>
+ *     This boolean value determines whether the server is running in
+ *     test mode (which may enable extra logging or prevent the server
+ *     from communicating with live systems etc ... the actual
+ *     behavior is server dependent).<br />
+ *     This may be set on the command line or in Control.plist, but
+ *     may be overridden by using the 'testing' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcWellKnownHostNames</term>
  *   <desc>A dictionary mapping host names/address values to well known
- *   names (the canonical values used by Command and Control).
+ *     names (the canonical values used by Command and Control).
  *   </desc>
  * </deflist>
- */
+ * Alarm mechanism
+ * <p>
+ *   The EcProcess class conforms to the EcAlarmDestination protocol
+ *   to allow sending alarm information to a centralised alarm system
+ *   via the Command server (the Control server acts as a sink for
+ *   those alarms and provides SNMP integration).
+ * </p>
+ * <p>
+ *   In addition to the standard alarm destination behavior, the
+ *   process automates some thngs:<br />
+ *   On successful startup and registration with the Command server,
+ *   a -domanage: message is automatically sent for the default
+ *   managed object, clearing any outrstanding alarms.<br />
+ *   On successful shutdown (ie when -cmdQuit: is called with zero
+ *   as its argument), an -unmanage: message is automatically sent
+ *   to clear any outstanding alarms for the default managed object.<br />
+ *   If you want to raise alarms which will persist after a successful
+ *   shutdown you should therefore do so by creating a different managed
+ *   object for which to raise those alarms.
+ * </p>
+*/
 @interface EcProcess : NSObject <CmdClient,EcAlarmDestination>
 
 /** Provides initial configuration.
- * This method is used by -init and its return value is passed to
- * -initWithDefaults: method.<br />
- * The default implementation simply sets the ProgramName and
- * HomeDirectory defaults (with the default prefix configured
+* This method is used by -init and its return value is passed to
+* -initWithDefaults: method.<br />
+* The default implementation simply sets the ProgramName and
+* HomeDirectory defaults (with the default prefix configured
  * when the library was built) to the current program name and
  * the current directory ('.').<br />
  * Subclasses may override this method to provide additional
