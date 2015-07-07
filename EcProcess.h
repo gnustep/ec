@@ -291,7 +291,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *     an alert is generated.<br />
  *     If this is not set (or is set to a value less than ten or
  *     greater than a million) then a value of five thousand is used
- *     unless EcMemory is set (in which case twenty is used).<br />
+ *     unless EcMemory is set (in which case fifty is used).<br />
  *     Setting a higher value makes memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryPercentage, the greater
