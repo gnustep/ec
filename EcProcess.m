@@ -2349,17 +2349,28 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
         }
       else
         {
+          NSUInteger    inc;
+
+          if (YES == [cmdDefs boolForKey: @"Memory"])
+            {
+              inc = 20;
+            }
+          else
+            {
+              inc = 5000;
+            }
+
           /* Use the peak memory, plus half the difference between
            * average and peak in order to provide some room for
            * growth before warning.
            */
           memWarn = memPeak + (memPeak - memAvge) / 2;
-          if (memWarn < memPeak + 16 * 1024)
+          if (memWarn < memPeak + (inc * 1024))
             {
-              /* If the room for growth was very small, increase
-               * to at least 16KB.
+              /* The room for growth was smaller than the margin
+               * we we expect; increase it.
                */
-              memWarn = memPeak + 16 * 1024;
+              memWarn = memPeak + (inc * 1024);
             }
         }
       if (memWarn % 1024)
