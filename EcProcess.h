@@ -269,34 +269,41 @@ extern NSString*	cmdVersion(NSString *ver);
  *   <desc>
  *     This boolean value determines whether statistics on creation
  *     and destruction of objects are maintained.<br />
- *     This may be set on the command line or in Control.plist, but
- *     may be overridden by using the 'Memory' command in the
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'memory' command in the
  *     Console program.
  *   </desc>
  *   <term>EcMemoryAllowed</term>
  *   <desc>
  *     This may be used to specify the total process memory usage
  *     (in megabytes) before memory usage alerting may begin.<br />
- *     If this is not specified (or a negative or excessive value
+ *     Memory usage 'error' reports are then generated every time
+ *     the average (over ten minutes) memory usage exceeds a warning
+ *     threshold (the threshold is then increased).<br />
+ *     If this setting is not specified (or a negative or excessive value
  *     is specified) then memory is monitored for ten minutes and
  *     the threshold is set at the peak during that period plus a
  *     margin to allow further memory growth before warning.<br />
- *     The margin is at least 50KB on a test system, 5000KB on
- *     a non-test system.
+ *     The minimum margin is determined by the EcMemoryIncrement and
+ *     EcMemoryPercentage settings.<br />
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'memory' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcMemoryIncrement</term>
  *   <desc>
  *     This integer value controls the (KBytes) increment (from
  *     current peak value) in process memory usage after which
  *     an alert is generated.<br />
- *     If this is not set (or is set to a value less than ten or
- *     greater than a million) then a value of five thousand is used
- *     unless EcMemory is set (in which case fifty is used).<br />
+ *     If this is not set (or is set to a value less than 10KB or
+ *     greater than 1000000KB) then a value of 5000KB is used.<br />
  *     Setting a higher value makes memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryPercentage, the greater
  *     of the two allowed memory values is used.<br />
- *     This may be set on the command line or in Control.plist
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'memory' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcMemoryMaximum</term>
  *   <desc>
@@ -306,7 +313,10 @@ extern NSString*	cmdVersion(NSString *ver);
  *     If the total memory usage of the process reaches this threshold,
  *     the -cmdQuit: method will be called with an argument of -1.<br />
  *     If this is not specified (or a negative value is specified)
- *     the process will never shut down due to excessive memory usage.
+ *     the process will never shut down due to excessive memory usage.<br />
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'memory' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcMemoryPercentage</term>
  *   <desc>
@@ -314,14 +324,15 @@ extern NSString*	cmdVersion(NSString *ver);
  *     threshold after which a memory usage alert is generated.<br />
  *     The increase is calculated as a percentage of the current
  *     peak memory usage value when an alert is generated.<br />
- *     If this is not set (or is set to a value less than one or
- *     greater than a thousand) then a value of ten is used unless
- *     EcMemory is set (in which case a value of one is used).<br />
+ *     If this is not set (or is set to a value less than 1 or
+ *     greater than 1000) then a value of 10 is used.<br />
  *     Setting a higher value make memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryIncrement, the greater
  *     of the two allowed memory values is used.<br />
- *     This may be set on the command line or in Control.plist
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'memory' command in the
+ *     Console program.
  *   </desc>
  *   <term>EcRelease</term>
  *   <desc>
@@ -330,8 +341,8 @@ extern NSString*	cmdVersion(NSString *ver);
  *     this on has a big impact on program performance and is not
  *     recommended except for debugging crashes and other memory
  *     issues.<br />
- *     This may be set on the command line or in Control.plist, but
- *     may be overridden by using the 'release' command in the
+ *     This may be set in the NSUserDefaults system or in Control.plist,
+ *     but may be overridden by using the 'release' command in the
  *     Console program.
  *   </desc>
  *   <term>EcTesting</term>

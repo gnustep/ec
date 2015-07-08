@@ -1,3 +1,11 @@
+2015-07-08  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Allow the memory monitoring configuration to be set from the Console
+	via the 'memory' command.  Improve the help text.  Improve the info
+	provided in the debug/error reports.
+
 2015-07-06  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

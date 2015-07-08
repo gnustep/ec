@@ -1004,6 +1004,7 @@ findMode(NSDictionary* d, NSString* s)
 @interface	EcProcess (Private)
 - (void) cmdMesgrelease: (NSArray*)msg;
 - (void) cmdMesgtesting: (NSArray*)msg;
+- (void) _memCheck;
 - (NSString*) _moveLog: (NSString*)name to: (NSString*)sub;
 - (void) _timedOut: (NSTimer*)timer;
 - (void) _update: (NSMutableDictionary*)info;
@@ -1261,16 +1262,20 @@ static NSString	*noFiles = @"No log files to archive";
 #endif
 
   memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
+#if     SIZEOF_VOIDP == 4
   if (memAllowed > 200000)
     {
       memAllowed = 0;
     }
+#endif
 
   memMaximum = (uint64_t)[cmdDefs integerForKey: @"MemoryMaximum"];
+#if     SIZEOF_VOIDP == 4
   if (memMaximum > 200000)
     {
       memMaximum = 0;	                // Disabled
     }
+#endif
 
   str = [cmdDefs stringForKey: @"CoreSize"];
   if (nil == str)
@@ -2226,10 +2231,6 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) ecNewMinute: (NSCalendarDate*)when
 {
-  BOOL          memDebug = [cmdDefs boolForKey: @"Memory"];
-  FILE          *fptr;
-  int	        i;
-
 #ifndef __MINGW__
   if (NO == cmdIsQuitting)
     {
@@ -2284,156 +2285,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
    */
   [NSHost flushHostCache];
 
-  /* /proc/pid/statm reports the process memory size in 4KB pages
-   */
-  fptr = fopen([[NSString stringWithFormat: @"/proc/%d/statm",
-    [[NSProcessInfo processInfo] processIdentifier]] UTF8String], "r");
-  memLast = 1;
-  if (NULL != fptr)
-    {
-      if (fscanf(fptr, "%"PRIu64, &memLast) != 1)
-        {
-          memLast = 1;
-        }
-      else
-        {
-          memLast *= (4 * 1024);
-          if (memLast <= 0) memLast = 1;
-        }
-      fclose(fptr);
-    }
-
-  /* Do initial population so we can work immediately.
-   */
-  if (0 == memSlot)
-    {
-      for (i = 1; i < MEMCOUNT; i++)
-        {
-          memRoll[i] = memLast;
-        }
-      memPrev = memStrt = memLast;
-      ASSIGN(memTime, [NSDate date]);
-    }
-  memRoll[memSlot % MEMCOUNT] = memLast;
-  memSlot++;
-
-  /* Find the average usage over the last set of samples.
-   * Round up to a block size.
-   */
-  memAvge = 0;
-  for (i = 0; i < MEMCOUNT; i++)
-    {
-      memAvge += memRoll[i];
-    }
-  memAvge /= MEMCOUNT;
-
-  /* Convert to 1KB blocks.
-   */
-  if (memAvge % 1024)
-    {
-      memAvge = ((memAvge / 1024) + 1) * 1024;
-    }
-
-  /* Update peak memory usage if necessary.
-   */
-  if (memLast > memPeak)
-    {
-      memPeak = memLast;
-    }
-
-  /* If we have a defined maximum memory usage for the process,
-   * we should shut down with a non-zero status to get a restart.
-   */
-  if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
-    {
-      if (NO == cmdIsQuitting)
-        {
-          cmdIsQuitting = YES;
-          [self cmdQuit: -1];
-        }
-      return;
-    }
-
-  /* If the average memory usage is above the warning threshold,
-   * we should alert and reset the threshold.
-   * During the first ten minutes 
-   */
-  if (memAvge > memWarn || memSlot < MEMCOUNT)
-    {
-      NSInteger     inc;
-      NSInteger     pct;
-      NSInteger     iMax = 0;
-      NSInteger     pMax = 0;
-
-      /* We increase the threshold for the next alert by a percentage
-       * of the existing usage or by a fixed increment, whichever is
-       * the larger.
-       */
-      pct = [cmdDefs integerForKey: @"MemoryPercentage"];
-      if (pct < 1 || pct > 1000) pct = 0;
-      inc = [cmdDefs integerForKey: @"MemoryIncrement"];
-      if (inc < 10 || inc > 1000000) inc = 0;
-      if (0 == inc && 0 == pct)
-        {
-          if (YES == memDebug)
-            {
-              /* We want detailed memory information, so we set the next
-               * alerting threshold 50 KB above the current peak usage.
-               */
-              inc = 50;
-              pct = 0;
-            }
-          else
-            {
-              /* We do not want detailed memory information,
-               * so we set the next alerting threshold from
-               * 5000 KB above the current peak usage,
-               * ensuring that only serious increases
-               * in usage will generate an alert.
-               */
-              inc = 5000;
-              pct = 10;     // Use ten percent if more than fixed increment
-            }
-        }
-      if (inc > 0)
-        {
-          iMax = memPeak + (inc * 1024);
-        }
-      if (pct > 0)
-        {
-          pMax = (memPeak * (100 + pct)) / 100;
-        }
-      memWarn = (iMax > pMax) ? iMax : pMax;
-      if (memWarn % 1024)
-        {
-          memWarn = (memWarn/1024 + 1) * 1024;
-        }
-
-      /* If not in the initial period, we need to generate an alert
-       * because the average has risen above the allowed size.
-       */
-      if (memSlot >= MEMCOUNT)
-        {
-          uint64_t      prev;
-          NSDate        *when;
-
-          prev = memPrev;
-          when = AUTORELEASE(memTime);
-          memPrev = memAvge;
-          memTime = [NSDate new];
-          [self cmdError: @"Average memory usage grown from %"
-            PRIu64"KB to %"PRIu64"KB since %@",
-            prev/1024, memAvge/1024, when];
-        }
-    }
-
-  if (YES == memDebug)
-    {
-      [self cmdDbg: cmdDetailDbg
-	       msg: @"Memory usage %"PRIu64"KB", memLast/1024];
-    }
-
-  return;
+  [self _memCheck];
 }
 
 - (void) ecHadIP: (NSDate*)when
@@ -3237,39 +3089,47 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) cmdMesgmemory: (NSArray*)msg
 {
-  if ([msg count] == 0
-    || [[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
-    == NSOrderedSame)
+  if ([msg count] == 0)
     {
       [self cmdPrintf: @"controls recording of memory management statistics"];
     }
   else
     {
       if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
-        == NSOrderedSame)
+        == NSOrderedSame || ([msg count] > 1
+          && [[msg objectAtIndex: 1] caseInsensitiveCompare: @"help"]
+            == NSOrderedSame))
 	{
-	  [self cmdPrintf: @"\n"];
-	  [self cmdPrintf: @"Without parameters, the memory command is "];
-	  [self cmdPrintf: @"used to list the changes in the numbers of "];
-	  [self cmdPrintf: @"objects allocated since the command was "];
-	  [self cmdPrintf: @"last issued.\n"];
-	  [self cmdPrintf: @"With the single parameter 'all', the memory "];
-	  [self cmdPrintf: @"command is used to list the cumulative totals "];
-	  [self cmdPrintf: @"of objects allocated since the first time a "];
-	  [self cmdPrintf: @"memory command was issued.\n"];
-	  [self cmdPrintf: @"With the single parameter 'yes', the memory "];
-	  [self cmdPrintf: @"command is used to turn on gathering of "];
-	  [self cmdPrintf: @"memory usage statistics.\n"];
-	  [self cmdPrintf: @"With the single parameter 'no', the memory "];
-	  [self cmdPrintf: @"command is used to turn off gathering of "];
-	  [self cmdPrintf: @"memory usage statistics.\n"];
-	  [self cmdPrintf: @"With the single parameter 'default', the "];
-	  [self cmdPrintf: @"gathering of memory usage statistics reverts "];
-	  [self cmdPrintf: @"to the default setting.\n"];
-	  [self cmdPrintf: @"With two parameters ('class' and a class name), "];
-	  [self cmdPrintf: @"new instances of the class are recorded.\n"];
-	  [self cmdPrintf: @"With two parameters ('list' and a class), "];
-	  [self cmdPrintf: @"recorded instances of the class are reported.\n"];
+	  [self cmdPrintf: @"\n\
+Without parameters,\n\
+  the memory command is used to list the changes in the numbers of objects\n\
+  allocated since the command was last issued.\n\
+With the single parameter 'all',\n\
+  the memory command is used to list the cumulative totals of objects\n\
+  allocated since the first time a memory command was issued.\n\
+With the single parameter 'yes',\n\
+  the memory command is used to turn on gathering of memory usage statistics.\n\
+With the single parameter 'no',\n\
+  the memory command is used to turn off gathering of memory usage statistics.\n\
+With the single parameter 'default',\n\
+  the gathering of memory usage statistics reverts to the default setting.\n\
+With two parameters ('class' and a class name),\n\
+  new instances of the class are recorded.\n\
+With two parameters ('list' and a class),\n\
+  recorded instances of the class are reported.\n\
+With two parameters ('allowed' and a number),\n\
+  the threshold for warnings about process size is set (in MB).\n\
+  Set to 'default' to revert to the default.\n\
+With two parameters ('increment' and a number),\n\
+  the size increment between warnings about process size is set (in KB\n\
+  from 10 to 1000000).  Set to 'default' to revert to the default.\n\
+With two parameters ('percentage' and a number),\n\
+  the percentage increment between warnings about process memory size is\n\
+  set (from 1 to 1000).  Set to 'default' to revert to the default.\n\
+With two parameters ('maximum' and a number),\n\
+  the maximum process size (in MB) is set.  On reaching the limit, the\n\
+  process restarts unless the limit is zero (meaning no maximum).\n\
+  Set to 'default' to revert to the default."];
 	  [self cmdPrintf: @"\n"];
 	}
       else if ([msg count] == 2)
@@ -3327,40 +3187,118 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       else if ([msg count] == 3)
         {
-          NSString      *name = [msg objectAtIndex: 2];
-          Class         c = NSClassFromString(name);
-
-          if (Nil == c)
+	  NSString	*op = [msg objectAtIndex: 1];
+          NSString      *arg = [msg objectAtIndex: 2];
+          NSInteger     val = [arg integerValue];
+       
+          if ([op caseInsensitiveCompare: @"allowed"] == NSOrderedSame)
             {
-	      [self cmdPrintf: @"Unable to find class '%@'.\n", name];
-            }
-          else
-            {
-              NSString  *op = [msg objectAtIndex: 1];
-
-              if ([op caseInsensitiveCompare: @"class"] == NSOrderedSame)
+              if (val <= 0)
                 {
-                  GSDebugAllocationActiveRecordingObjects(c);
-                  [self cmdPrintf: @"Recording instances of '%@'.\n", name];
-                }
-              else if ([op caseInsensitiveCompare: @"list"] == NSOrderedSame)
-                {
-                  NSArray       *array;
-                  NSUInteger    count;
-                  NSUInteger    index;
-
-                  array = GSDebugAllocationListRecordedObjects(c);
-                  [self cmdPrintf: @"Current instances of '%@':\n", name];
-                  count = [array count];
-                  for (index = 0; index < count; index++)
+                  [cmdDefs setCommand: nil forKey: @"MemoryAllowed"];
+                  if (0 == memAllowed)
                     {
-                      [self cmdPrintf: @"%6lu %@\n",
-                        (unsigned long)index, [array objectAtIndex: index]];
+                      /* The threshold was set back to zero ... to be
+                       * calculated from a ten minute baseline.
+                       */
+                      memSlot = 0;
+                    }
+		  [self cmdPrintf: @"MemoryAllowed using default value.\n"];
+                }
+              else
+                {
+                  arg = [NSString stringWithFormat: @"%"PRIu64, (uint64_t)val];
+                  [cmdDefs setCommand: arg forKey: @"MemoryAllowed"];
+		  [self cmdPrintf: @"MemoryAllowed set to %@MB.\n", arg];
+                }
+              memWarn = memAllowed * 1024 * 1024;
+              DESTROY(memTime);
+              [self _memCheck];
+            }
+          else if ([op caseInsensitiveCompare: @"increment"] == NSOrderedSame)
+            {
+              if (val <= 10 || val > 1000000)
+                {
+                  [cmdDefs setCommand: nil forKey: @"MemoryIncrement"];
+                  [self cmdPrintf: @"MemoryIncrement using default value.\n"];
+                }
+              else
+                {
+                  arg = [NSString stringWithFormat: @"%"PRIu64, (uint64_t)val];
+                  [cmdDefs setCommand: arg forKey: @"MemoryIncrement"];
+		  [self cmdPrintf: @"MemoryIncrement set to %@KB.\n", arg];
+                }
+            }
+          else if ([op caseInsensitiveCompare: @"percentage"] == NSOrderedSame)
+            {
+              if (val <= 0 || val > 1000)
+                {
+                  [cmdDefs setCommand: nil forKey: @"MemoryPercentage"];
+                  [self cmdPrintf: @"MemoryPercentage using default value.\n"];
+                }
+              else
+                {
+                  arg = [NSString stringWithFormat: @"%"PRIu64, (uint64_t)val];
+                  [cmdDefs setCommand: arg forKey: @"MemoryPercentage"];
+		  [self cmdPrintf: @"MemoryPercentage set to %@.\n", arg];
+                }
+            }
+          else if ([op caseInsensitiveCompare: @"maximum"] == NSOrderedSame)
+            {
+              if (val <= 0)
+                {
+                  if ([arg caseInsensitiveCompare: @"default"] == NSOrderedSame)
+                    {
+                      [cmdDefs setCommand: nil forKey: @"MemoryMaximum"];
+                      [self cmdPrintf: @"MemoryMaximum using default value.\n"];
+                    }
+                  else
+                    {
+                      [cmdDefs setCommand: @"0" forKey: @"MemoryMaximum"];
+                      [self cmdPrintf: @"MemoryMaximum restart turned off.\n"];
                     }
                 }
               else
                 {
-                  [self cmdPrintf: @"Unknown memory command '%@'.\n", op];
+                  arg = [NSString stringWithFormat: @"%"PRIu64, (uint64_t)val];
+                  [cmdDefs setCommand: arg forKey: @"MemoryMaximum"];
+		  [self cmdPrintf: @"MemoryMaximum set to %@MB.\n", arg];
+                }
+            }
+          else
+            {
+              Class         c = NSClassFromString(arg);
+
+              if (Nil == c)
+                {
+                  [self cmdPrintf: @"Unable to find class '%@'.\n", arg];
+                }
+              else
+                {
+                  if ([op caseInsensitiveCompare: @"class"] == NSOrderedSame)
+                    {
+                      GSDebugAllocationActiveRecordingObjects(c);
+                      [self cmdPrintf: @"Recording instances of '%@'.\n", arg];
+                    }
+                  else if ([op caseInsensitiveCompare: @"list"] == NSOrderedSame)
+                    {
+                      NSArray       *array;
+                      NSUInteger    count;
+                      NSUInteger    index;
+
+                      array = GSDebugAllocationListRecordedObjects(c);
+                      [self cmdPrintf: @"Current instances of '%@':\n", arg];
+                      count = [array count];
+                      for (index = 0; index < count; index++)
+                        {
+                          [self cmdPrintf: @"%6lu %@\n",
+                            (unsigned long)index, [array objectAtIndex: index]];
+                        }
+                    }
+                  else
+                    {
+                      [self cmdPrintf: @"Unknown memory command '%@'.\n", op];
+                    }
                 }
             }
         }
@@ -3420,7 +3358,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       [self cmdPrintf: @"              %"PRIu64"KB (average),"
         @" %"PRIu64"KB (start)\n",
         memAvge/1024, memStrt/1024];
-      [self cmdPrintf: @"              %"PRIu64"KB (exempt)\n",
+      [self cmdPrintf: @"              %"PRIu64"KB (reserved)\n",
         [self ecNotLeaked]/1024];
       [self cmdPrintf:
         @"Memory error reporting after average usage: %"PRIu64"KB\n",
@@ -4303,6 +4241,178 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	}
       [self cmdPrintf: @"Server running in testing mode: %s\n",
 	cmdFlagTesting ? "YES" : "NO"];
+    }
+}
+
+- (void) _memCheck
+{
+  BOOL          memDebug = [cmdDefs boolForKey: @"Memory"];
+  FILE          *fptr;
+  int	        i;
+
+  /* /proc/pid/statm reports the process memory size in 4KB pages
+   */
+  fptr = fopen([[NSString stringWithFormat: @"/proc/%d/statm",
+    [[NSProcessInfo processInfo] processIdentifier]] UTF8String], "r");
+  memLast = 1;
+  if (NULL != fptr)
+    {
+      if (fscanf(fptr, "%"PRIu64, &memLast) != 1)
+        {
+          memLast = 1;
+        }
+      else
+        {
+          memLast *= (4 * 1024);
+          if (memLast <= 0) memLast = 1;
+        }
+      fclose(fptr);
+    }
+
+  /* Do initial population so we can work immediately.
+   */
+  if (0 == memSlot)
+    {
+      for (i = 1; i < MEMCOUNT; i++)
+        {
+          memRoll[i] = memLast;
+        }
+      memPrev = memStrt = memLast;
+    }
+  memRoll[memSlot % MEMCOUNT] = memLast;
+  memSlot++;
+
+  /* Find the average usage over the last set of samples.
+   * Round up to a block size.
+   */
+  memAvge = 0;
+  for (i = 0; i < MEMCOUNT; i++)
+    {
+      memAvge += memRoll[i];
+    }
+  memAvge /= MEMCOUNT;
+
+  /* Convert to 1KB blocks.
+   */
+  if (memAvge % 1024)
+    {
+      memAvge = ((memAvge / 1024) + 1) * 1024;
+    }
+
+  /* Update peak memory usage if necessary.
+   */
+  if (memLast > memPeak)
+    {
+      memPeak = memLast;
+    }
+
+  /* If we have a defined maximum memory usage for the process,
+   * we should shut down with a non-zero status to get a restart.
+   */
+  if (memMaximum > 0 && memPeak > (memMaximum * 1024 * 1024))
+    {
+      if (NO == cmdIsQuitting)
+        {
+          cmdIsQuitting = YES;
+          [self cmdQuit: -1];
+        }
+      return;
+    }
+
+  /* If the average memory usage is above the threshold, we alert and reset
+   * the threshold.
+   * During the first ten minutes though, we always adjust the threshold and
+   * we suppress any warnings. This gives us a more stable starting point.
+   */
+  if (memAvge > memWarn || memSlot < MEMCOUNT)
+    {
+      NSInteger     inc;
+      NSInteger     pct;
+      NSInteger     iMax = 0;
+      NSInteger     pMax = 0;
+
+      /* We increase the threshold for the next alert by a percentage
+       * of the existing usage or by a fixed increment, whichever is
+       * the larger.
+       */
+      pct = [cmdDefs integerForKey: @"MemoryPercentage"];
+      if (pct < 1 || pct > 1000) pct = 0;
+      inc = [cmdDefs integerForKey: @"MemoryIncrement"];
+      if (inc < 10 || inc > 1000000) inc = 0;
+      if (0 == inc && 0 == pct)
+        {
+          if (YES == memDebug)
+            {
+              /* We want detailed memory information, so we set the next
+               * alerting threshold 50 KB above the current peak usage.
+               */
+              inc = 50;
+              pct = 0;
+            }
+          else
+            {
+              /* We do not want detailed memory information,
+               * so we set the next alerting threshold from
+               * 5000 KB above the current peak usage,
+               * ensuring that only serious increases
+               * in usage will generate an alert.
+               */
+              inc = 5000;
+              pct = 10;     // Use ten percent if more than fixed increment
+            }
+        }
+      if (inc > 0)
+        {
+          iMax = memPeak + (inc * 1024);
+        }
+      if (pct > 0)
+        {
+          pMax = (memPeak * (100 + pct)) / 100;
+        }
+      memWarn = (iMax > pMax) ? iMax : pMax;
+      if (memWarn % 1024)
+        {
+          memWarn = (memWarn/1024 + 1) * 1024;
+        }
+      if (memWarn < memAllowed * 1024 * 1024)
+        {
+          /* Never warn at less than the allowed memory.
+           */
+          memWarn = memAllowed * 1024 * 1024;
+        }
+
+      /* If not in the initial period, we need to generate an alert
+       * because the average has risen above the allowed size.
+       */
+      if (memSlot >= MEMCOUNT)
+        {
+          uint64_t      prev;
+          NSDate        *when;
+
+          prev = memPrev;
+          when = AUTORELEASE(memTime);
+          memPrev = memAvge;
+          memTime = [NSDate new];
+          if (nil == when)
+            {
+              [self cmdError: @"Average memory usage grown from %"
+                PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB)",
+                prev/1024, memAvge/1024, [self ecNotLeaked]/1024];
+            }
+          else
+            {
+              [self cmdError: @"Average memory usage grown from %"
+                PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB) since %@",
+                prev/1024, memAvge/1024, [self ecNotLeaked]/1024, when];
+            }
+        }
+    }
+
+  if (YES == memDebug)
+    {
+      [self cmdDbg: cmdDetailDbg
+	       msg: @"Memory usage %"PRIu64"KB (reserved: %"PRIu64"KB)",
+        memLast/1024, [self ecNotLeaked]/1024];
     }
 }
 
