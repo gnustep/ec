@@ -132,6 +132,7 @@ static NSString		*cmdDebugName = nil;
 static NSMutableDictionary	*cmdLogMap = nil;
 
 static NSDate	*started = nil;	        /* Time object was created. */
+static NSDate	*memStats = nil;        /* Time stats were started. */
 static NSTimeInterval	lastIP = 0.0;	/* Time of last input to object. */
 static NSTimeInterval	lastOP = 0.0;	/* Time of last output by object. */
 
@@ -3095,6 +3096,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
     }
   else
     {
+      [self cmdPrintf: @"\n%@ on %@ running since %@\n\n",
+        cmdLogName(), ecHostName(), [self ecStarted]];
+
       if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
         == NSOrderedSame || ([msg count] > 1
           && [[msg objectAtIndex: 1] caseInsensitiveCompare: @"help"]
@@ -3106,7 +3110,11 @@ Without parameters,\n\
   allocated since the command was last issued.\n\
 With the single parameter 'all',\n\
   the memory command is used to list the cumulative totals of objects\n\
-  allocated since the first time a memory command was issued.\n\
+  allocated since the gathering of memory usage statistics was turned on.\n\
+With the single parameter 'current',\n\
+  the memory command is used to list the current totals of objects\n\
+  allocated (and not deallocated) since the gathering of memory usage\n\
+  statistics was turned on.\n\
 With the single parameter 'yes',\n\
   the memory command is used to turn on gathering of memory usage statistics.\n\
 With the single parameter 'no',\n\
@@ -3136,7 +3144,25 @@ With two parameters ('maximum' and a number),\n\
 	{
 	  NSString	*word = [msg objectAtIndex: 1];
 
-	  if ([word caseInsensitiveCompare: @"default"] == NSOrderedSame)
+	  if ([word caseInsensitiveCompare: @"current"] == NSOrderedSame)
+            {
+	      if (NO == [cmdDefs boolForKey: @"Memory"])
+		{
+		  [self cmdPrintf:
+		    @"Memory statistics were not being gathered.\n"];
+		  [self cmdPrintf: @"Memory statistics Will start from NOW.\n"];
+		}
+	      else
+		{
+		  const char*	list;
+
+		  list = (const char*)GSDebugAllocationList(NO);
+                  [self cmdPrintf: @"Memory current stats at %@:\n%s",
+                    [NSDate date], list];
+		}
+	      [cmdDefs setCommand: @"YES" forKey: @"Memory"];
+            }
+	  else if ([word caseInsensitiveCompare: @"default"] == NSOrderedSame)
 	    {
 	      [cmdDefs setCommand: nil forKey: @"Memory"];
 	      [self cmdPrintf: @"Memory checking: %s\n",
@@ -3155,7 +3181,8 @@ With two parameters ('maximum' and a number),\n\
 		  const char*	list;
 
 		  list = (const char*)GSDebugAllocationList(NO);
-		  [self cmdPrintf: @"%s", list];
+                  [self cmdPrintf: @"Memory total allocation stats at %@:\n%s",
+                    [NSDate date], list];
 		}
 	      [cmdDefs setCommand: @"YES" forKey: @"Memory"];
 	    }
@@ -3304,9 +3331,6 @@ With two parameters ('maximum' and a number),\n\
         }
       else
 	{
-	  [self cmdPrintf: @"\n%@ on %@ running since %@\n\n",
-	    cmdLogName(), ecHostName(), [self ecStarted]];
-
 	  if (NO == [cmdDefs boolForKey: @"Memory"])
 	    {
 	      [self cmdPrintf: @"Memory stats are not being gathered.\n"];
@@ -3316,7 +3340,16 @@ With two parameters ('maximum' and a number),\n\
 	      const char*	list;
 
 	      list = (const char*)GSDebugAllocationList(YES);
-	      [self cmdPrintf: @"%s", list];
+              if (nil == memStats)
+                {
+                  [self cmdPrintf: @"Memory change stats at %@:\n%s",
+                    [NSDate date], list];
+                }
+              else
+                {
+                  [self cmdPrintf: @"Memory change stats at %@ (since %@):\n%s",
+                    [NSDate date], memStats, list];
+                }
 	    }
 	}
     }
@@ -3360,9 +3393,17 @@ With two parameters ('maximum' and a number),\n\
         memAvge/1024, memStrt/1024];
       [self cmdPrintf: @"              %"PRIu64"KB (reserved)\n",
         [self ecNotLeaked]/1024];
-      [self cmdPrintf:
-        @"Memory error reporting after average usage: %"PRIu64"KB\n",
-        memWarn/1024];
+      if (memSlot < MEMCOUNT)
+        {
+          [self cmdPrintf:
+            @"Memory error reporting disabled (baseline stats collection).\n"];
+        }
+      else
+        {
+          [self cmdPrintf:
+            @"Memory error reporting after average usage: %"PRIu64"KB\n",
+            memWarn/1024];
+        }
       if (memMaximum > 0)
         {
           [self cmdPrintf:
@@ -4786,7 +4827,17 @@ With two parameters ('maximum' and a number),\n\
 @implementation EcProcess (Defaults)
 - (void) _defMemory: (id)val
 {
-  GSDebugAllocationActive([val boolValue]);
+  BOOL  stats = [val boolValue];
+
+  GSDebugAllocationActive(stats);
+  if (YES == stats && nil == memStats)
+    {
+      ASSIGN(memStats, [NSDate date]);
+    }
+  if (NO == stats && nil != memStats)
+    {
+      DESTROY(memStats);
+    }
 }
 - (void) _defRelease: (id)val
 {

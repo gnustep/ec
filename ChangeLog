@@ -2,6 +2,14 @@
 
 	* EcProcess.h:
 	* EcProcess.m:
+	Allow 'memory current' to list current object allocation values.
+	Report time at which memory stats are generated.
+	For allocation changes, also show time of previous report.
+
+2015-07-08  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
 	Allow the memory monitoring configuration to be set from the Console
 	via the 'memory' command.  Improve the help text.  Improve the info
 	provided in the debug/error reports.
