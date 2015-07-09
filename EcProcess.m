@@ -3395,8 +3395,8 @@ With two parameters ('maximum' and a number),\n\
         [self ecNotLeaked]/1024];
       if (memSlot < MEMCOUNT)
         {
-          [self cmdPrintf:
-            @"Memory error reporting disabled (baseline stats collection).\n"];
+          [self cmdPrintf: @"Memory error reporting disabled (for %d min"
+            @" of baseline stats collection).\n", (int)(MEMCOUNT - memSlot)];
         }
       else
         {
