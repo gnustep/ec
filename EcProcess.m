@@ -3349,8 +3349,8 @@ With two parameters ('maximum' and a number),\n\
                 }
               else
                 {
-                  [self cmdPrintf: @"Memory change stats at %@ (since %@):\n%s",
-                    now, memStats, list];
+                  [self cmdPrintf: @"Memory change stats at %@\n"
+                    @"  (since %@):\n%s", now, memStats, list];
                 }
               ASSIGN(memStats, now);
 	    }
