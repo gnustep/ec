@@ -3130,7 +3130,7 @@ With two parameters ('allowed' and a number),\n\
   Set to 'default' to revert to the default.\n\
 With two parameters ('increment' and a number),\n\
   the size increment between warnings about process size is set (in KB\n\
-  from 10 to 1000000).  Set to 'default' to revert to the default.\n\
+  from 10 to 1048576).  Set to 'default' to revert to the default.\n\
 With two parameters ('percentage' and a number),\n\
   the percentage increment between warnings about process memory size is\n\
   set (from 1 to 1000).  Set to 'default' to revert to the default.\n\
@@ -3244,7 +3244,7 @@ With two parameters ('maximum' and a number),\n\
             }
           else if ([op caseInsensitiveCompare: @"increment"] == NSOrderedSame)
             {
-              if (val <= 10 || val > 1000000)
+              if (val <= 10 || val > 1048576)
                 {
                   [cmdDefs setCommand: nil forKey: @"MemoryIncrement"];
                   [self cmdPrintf: @"MemoryIncrement using default value.\n"];
@@ -3395,7 +3395,7 @@ With two parameters ('maximum' and a number),\n\
         @" %"PRIu64"KB (start)\n",
         memAvge/1024, memStrt/1024];
       [self cmdPrintf: @"              %"PRIu64"KB (reserved)\n",
-        [self ecNotLeaked]/1024];
+        ((uint64_t)[self ecNotLeaked])/1024];
       if (memSlot < MEMCOUNT)
         {
           [self cmdPrintf: @"Memory error reporting disabled (for %d min"
@@ -4380,39 +4380,29 @@ With two parameters ('maximum' and a number),\n\
        * the larger.
        */
       pct = [cmdDefs integerForKey: @"MemoryPercentage"];
-      if (pct < 1 || pct > 1000) pct = 0;
+      if (pct < 1 || pct > 100)
+        {
+          /* Set the next alerting threshold 5%
+           * the current peak usage,
+           * ensuring that only serious increases
+           * in usage will generate an alert.
+           */
+          pct = 5;
+        }
+      pMax = (memPeak * (100 + pct)) / 100;
+
       inc = [cmdDefs integerForKey: @"MemoryIncrement"];
-      if (inc < 10 || inc > 1000000) inc = 0;
-      if (0 == inc && 0 == pct)
+      if (inc < 10 || inc > 1048576)
         {
-          if (YES == memDebug)
-            {
-              /* We want detailed memory information, so we set the next
-               * alerting threshold 50 KB above the current peak usage.
-               */
-              inc = 50;
-              pct = 0;
-            }
-          else
-            {
-              /* We do not want detailed memory information,
-               * so we set the next alerting threshold from
-               * 5000 KB above the current peak usage,
-               * ensuring that only serious increases
-               * in usage will generate an alert.
-               */
-              inc = 5000;
-              pct = 10;     // Use ten percent if more than fixed increment
-            }
+          /* Set the next alerting threshold from
+           * 5MB above the current peak usage,
+           * ensuring that only serious increases
+           * in usage will generate an alert.
+           */
+          inc = 5 * 1024;
         }
-      if (inc > 0)
-        {
-          iMax = memPeak + (inc * 1024);
-        }
-      if (pct > 0)
-        {
-          pMax = (memPeak * (100 + pct)) / 100;
-        }
+      iMax = memPeak + (inc * 1024);
+
       memWarn = (iMax > pMax) ? iMax : pMax;
       if (memWarn % 1024)
         {
@@ -4441,13 +4431,14 @@ With two parameters ('maximum' and a number),\n\
             {
               [self cmdError: @"Average memory usage grown from %"
                 PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB)",
-                prev/1024, memAvge/1024, [self ecNotLeaked]/1024];
+                prev/1024, memAvge/1024, ((uint64_t)[self ecNotLeaked])/1024];
             }
           else
             {
               [self cmdError: @"Average memory usage grown from %"
                 PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB) since %@",
-                prev/1024, memAvge/1024, [self ecNotLeaked]/1024, when];
+                prev/1024, memAvge/1024, ((uint64_t)[self ecNotLeaked])/1024,
+                when];
             }
         }
     }
@@ -4456,7 +4447,7 @@ With two parameters ('maximum' and a number),\n\
     {
       [self cmdDbg: cmdDetailDbg
 	       msg: @"Memory usage %"PRIu64"KB (reserved: %"PRIu64"KB)",
-        memLast/1024, [self ecNotLeaked]/1024];
+        memLast/1024, ((uint64_t)[self ecNotLeaked])/1024];
     }
 }
 

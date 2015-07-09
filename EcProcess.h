@@ -296,7 +296,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *     current peak value) in process memory usage after which
  *     an alert is generated.<br />
  *     If this is not set (or is set to a value less than 10KB or
- *     greater than 1000000KB) then a value of 5000KB is used.<br />
+ *     greater than 1GB) then a value of 5MB is used.<br />
  *     Setting a higher value makes memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryPercentage, the greater
@@ -325,7 +325,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *     The increase is calculated as a percentage of the current
  *     peak memory usage value when an alert is generated.<br />
  *     If this is not set (or is set to a value less than 1 or
- *     greater than 1000) then a value of 10 is used.<br />
+ *     greater than 100) then a value of 5 is used.<br />
  *     Setting a higher value make memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryIncrement, the greater
