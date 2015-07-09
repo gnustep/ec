@@ -3337,19 +3337,22 @@ With two parameters ('maximum' and a number),\n\
 	    }
 	  else
 	    {
-	      const char*	list;
+	      const char        *list;
+              NSDate            *now;
 
+              now = [NSDate date];
 	      list = (const char*)GSDebugAllocationList(YES);
               if (nil == memStats)
                 {
                   [self cmdPrintf: @"Memory change stats at %@:\n%s",
-                    [NSDate date], list];
+                    now, list];
                 }
               else
                 {
                   [self cmdPrintf: @"Memory change stats at %@ (since %@):\n%s",
-                    [NSDate date], memStats, list];
+                    now, memStats, list];
                 }
+              ASSIGN(memStats, now);
 	    }
 	}
     }
