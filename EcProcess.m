@@ -520,13 +520,19 @@ ecHostName()
 
 static uint64_t memMaximum = 0;
 static uint64_t	memAllowed = 0;
+static uint64_t	excAvge = 0;    // current period average
 static uint64_t	memAvge = 0;    // current period average
-static uint64_t	memStrt = 0;    // usage at first check
-static uint64_t	memLast = 0;    // usage at last check
-static uint64_t	memPrev = 0;    // usage at previous warning
-static uint64_t	memPeak = 0;    // peak usage
-static uint64_t	memWarn = 0;    // next warning point
+static uint64_t	excStrt = 0;    // excluded usage at first check
+static uint64_t	memStrt = 0;    // total usage at first check
+static uint64_t	excLast = 0;    // excluded usage at last check
+static uint64_t	memLast = 0;    // total usage at last check
+static uint64_t	excPrev = 0;    // excluded usage at previous warning
+static uint64_t	memPrev = 0;    // total usage at previous warning
+static uint64_t	excPeak = 0;    // excluded peak usage
+static uint64_t	memPeak = 0;    // total peak usage
+static uint64_t	memWarn = 0;    // next warning interval
 static uint64_t	memSlot = 0;    // minute counter
+static uint64_t	excRoll[10];    // last N values
 static uint64_t	memRoll[10];    // last N values
 #define	MEMCOUNT (sizeof(memRoll)/sizeof(*memRoll))
 static NSDate   *memTime = nil; // Time of last alert
@@ -3395,7 +3401,7 @@ With two parameters ('maximum' and a number),\n\
         @" %"PRIu64"KB (start)\n",
         memAvge/1024, memStrt/1024];
       [self cmdPrintf: @"              %"PRIu64"KB (reserved)\n",
-        ((uint64_t)[self ecNotLeaked])/1024];
+        excLast/1024];
       if (memSlot < MEMCOUNT)
         {
           [self cmdPrintf: @"Memory error reporting disabled (for %d min"
@@ -4312,6 +4318,7 @@ With two parameters ('maximum' and a number),\n\
         }
       fclose(fptr);
     }
+  excLast = (uint64_t)[self ecNotLeaked];
 
   /* Do initial population so we can work immediately.
    */
@@ -4319,21 +4326,27 @@ With two parameters ('maximum' and a number),\n\
     {
       for (i = 1; i < MEMCOUNT; i++)
         {
+          excRoll[i] = excLast;
           memRoll[i] = memLast;
         }
       memPrev = memStrt = memLast;
+      excPrev = excStrt = excLast;
     }
+  excRoll[memSlot % MEMCOUNT] = excLast;
   memRoll[memSlot % MEMCOUNT] = memLast;
   memSlot++;
 
   /* Find the average usage over the last set of samples.
    * Round up to a block size.
    */
+  excAvge = 0;
   memAvge = 0;
   for (i = 0; i < MEMCOUNT; i++)
     {
+      excAvge += excRoll[i];
       memAvge += memRoll[i];
     }
+  excAvge /= MEMCOUNT;
   memAvge /= MEMCOUNT;
 
   /* Convert to 1KB blocks.
@@ -4342,12 +4355,20 @@ With two parameters ('maximum' and a number),\n\
     {
       memAvge = ((memAvge / 1024) + 1) * 1024;
     }
+  if (excAvge % 1024)
+    {
+      excAvge = ((excAvge / 1024) + 1) * 1024;
+    }
 
   /* Update peak memory usage if necessary.
    */
   if (memLast > memPeak)
     {
       memPeak = memLast;
+    }
+  if (excLast > excPeak)
+    {
+      excPeak = excLast;
     }
 
   /* If we have a defined maximum memory usage for the process,
@@ -4363,12 +4384,12 @@ With two parameters ('maximum' and a number),\n\
       return;
     }
 
-  /* If the average memory usage is above the threshold, we alert and reset
-   * the threshold.
+  /* If the average memory usage is above the threshold (adjusted by any
+   * change in known unleaked memory), we alert and reset the threshold.
    * During the first ten minutes though, we always adjust the threshold and
    * we suppress any warnings. This gives us a more stable starting point.
    */
-  if (memAvge > memWarn || memSlot < MEMCOUNT)
+  if (memAvge + excPrev - excAvge > memWarn || memSlot < MEMCOUNT)
     {
       NSInteger     inc;
       NSInteger     pct;
@@ -4420,24 +4441,29 @@ With two parameters ('maximum' and a number),\n\
        */
       if (memSlot >= MEMCOUNT)
         {
-          uint64_t      prev;
+          uint64_t      ePrev;
+          uint64_t      mPrev;
           NSDate        *when;
 
-          prev = memPrev;
+          ePrev = excPrev;
+          mPrev = memPrev;
           when = AUTORELEASE(memTime);
+          excPrev = excAvge;
           memPrev = memAvge;
           memTime = [NSDate new];
           if (nil == when)
             {
-              [self cmdError: @"Average memory usage grown from %"
-                PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB)",
-                prev/1024, memAvge/1024, ((uint64_t)[self ecNotLeaked])/1024];
+              [self cmdError: @"Average memory usage grown by %ldKB"
+                @" with %ldKB accounted for; possible leak of %ldKB",
+                (long)(memAvge - mPrev)/1024, (long)(excAvge - ePrev)/1024,
+                (long)(memAvge - mPrev + ePrev - excAvge)/1024];
             }
           else
             {
-              [self cmdError: @"Average memory usage grown from %"
-                PRIu64"KB to %"PRIu64"KB (reserved: %"PRIu64"KB) since %@",
-                prev/1024, memAvge/1024, ((uint64_t)[self ecNotLeaked])/1024,
+              [self cmdError: @"Average memory usage grown by %ldKB"
+                @" with %ldKB accounted for; possible leak of %ldKB since %@",
+                (long)(memAvge - mPrev)/1024, (long)(excAvge - ePrev)/1024,
+                (long)(memAvge - mPrev + ePrev - excAvge)/1024,
                 when];
             }
         }
@@ -4447,7 +4473,7 @@ With two parameters ('maximum' and a number),\n\
     {
       [self cmdDbg: cmdDetailDbg
 	       msg: @"Memory usage %"PRIu64"KB (reserved: %"PRIu64"KB)",
-        memLast/1024, ((uint64_t)[self ecNotLeaked])/1024];
+        memLast/1024, excLast/1024];
     }
 }
 

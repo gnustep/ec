@@ -1,3 +1,10 @@
+2015-07-13  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Restore lost effect of -ecNotLeaked to moderate changes in our idea
+	of when we should generate a warening about potential leaks
+
 2015-07-08  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

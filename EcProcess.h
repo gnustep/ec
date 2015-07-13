@@ -278,7 +278,8 @@ extern NSString*	cmdVersion(NSString *ver);
  *     This may be used to specify the total process memory usage
  *     (in megabytes) before memory usage alerting may begin.<br />
  *     Memory usage 'error' reports are then generated every time
- *     the average (over ten minutes) memory usage exceeds a warning
+ *     the average (over ten minutes) memory usage (adjusted by the
+ *     average memory known not leaked) exceeds a warning
  *     threshold (the threshold is then increased).<br />
  *     If this setting is not specified (or a negative or excessive value
  *     is specified) then memory is monitored for ten minutes and
@@ -293,7 +294,8 @@ extern NSString*	cmdVersion(NSString *ver);
  *   <term>EcMemoryIncrement</term>
  *   <desc>
  *     This integer value controls the (KBytes) increment (from
- *     current peak value) in process memory usage after which
+ *     current peak value) in process memory usage (adjusted by the
+ *     average memory known not leaked) after which
  *     an alert is generated.<br />
  *     If this is not set (or is set to a value less than 10KB or
  *     greater than 1GB) then a value of 5MB is used.<br />
@@ -321,7 +323,8 @@ extern NSString*	cmdVersion(NSString *ver);
  *   <term>EcMemoryPercentage</term>
  *   <desc>
  *     This integer value controls the increase in the alerting
- *     threshold after which a memory usage alert is generated.<br />
+ *     threshold (adjusted by the average memory known not leaked)
+ *     after which a memory usage alert is generated.<br />
  *     The increase is calculated as a percentage of the current
  *     peak memory usage value when an alert is generated.<br />
  *     If this is not set (or is set to a value less than 1 or
@@ -970,8 +973,10 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) ecNewMinute: (NSCalendarDate*)when;
 
 /** Return heap memory known not to be leaked ... for use in internal
- * monitoring of memory usage.  You should override this ti add in any
- * heap store you have used and know is not leaked.
+ * monitoring of memory usage.  You should override this to add in any
+ * heap store you have used and know is not leaked.<br />
+ * When generating error messages alerting about possible memory leaks,
+ * this value is taken into consideration.
  */
 - (NSUInteger) ecNotLeaked;
 
