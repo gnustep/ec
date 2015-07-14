@@ -63,7 +63,7 @@
   NSString		*serverName;
   BOOL			inFlush;
   BOOL                  externalFlush;
-  BOOL			registered;
+  BOOL			shouldForward;
   BOOL			pendingFlush;
 }
 

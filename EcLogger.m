@@ -87,6 +87,10 @@ static NSArray          *modes;
       logger->interval = 10.0;
       logger->size = 8 * 1024;
       logger->message = [[NSMutableString alloc] initWithCapacity: 2048];
+      if (LT_ERROR == t || LT_AUDIT == t || LT_ALERT == t)
+        {
+          logger->shouldForward = YES;
+        }
 
       [[NSNotificationCenter defaultCenter]
 	addObserver: logger
@@ -181,7 +185,11 @@ static NSArray          *modes;
   NSMutableString	*s = [NSMutableString stringWithCapacity: 256];
 
   [lock lock];
-  if (size == 0)
+  if (NO == shouldForward)
+    {
+      [s appendFormat: @"%@ output via NSLog only.\n", key];
+    }
+  else if (size == 0)
     {
       [s appendFormat: @"%@ output is immediate.\n", key];
     }
@@ -227,24 +235,7 @@ static NSArray          *modes;
   if (nil != str)
     {
       BOOL	ok = YES;
-      NSData	*buf;
 
-      buf = [str dataUsingEncoding: [NSString defaultCStringEncoding]];
-      if (buf == nil)
-        {
-          buf = [str dataUsingEncoding: NSUTF8StringEncoding];
-        }
-#if     defined(GNUSTEP_BASE_LIBRARY)
-      {
-        NSRecursiveLock *l = GSLogLock();
-
-        [l lock];
-        fwrite([buf bytes], 1, [buf length], stderr);
-        [l unlock];
-      }
-#else
-      fwrite([buf bytes], 1, [buf length], stderr);
-#endif
       if (LT_DEBUG != type)
         {
           if (nil == serverName)
@@ -482,38 +473,46 @@ static NSArray          *modes;
 
 - (void) log: (NSString*)fmt arguments: (va_list)args
 {
-  CREATE_AUTORELEASE_POOL(arp);
   NSString	*format;
-  NSString	*text;
-  BOOL          shouldFlush = NO;
 
-  format = cmdLogFormat(type, fmt);
-  text = [NSString stringWithFormat: format arguments: args];
+  format = [[NSString alloc] initWithFormat: @"%@ - %@", cmdLogKey(type), fmt];
+  NSLogv(format, args);
+  RELEASE(format);
 
-  [lock lock];
-  if (message == nil)
+  if (YES == shouldForward)
     {
-      message = [[NSMutableString alloc] initWithCapacity: 1024];
-    }
-  [message appendString: text];
-  if ([message length] >= size || (interval > 0.0 && timer == nil))
-    {
-      if (NO == pendingFlush)
+      CREATE_AUTORELEASE_POOL(arp);
+      NSString  *text;
+      BOOL      shouldFlush = NO;
+
+      format = cmdLogFormat(type, fmt);
+      text = [NSString stringWithFormat: format arguments: args];
+
+      [lock lock];
+      if (message == nil)
         {
-          shouldFlush = YES;
-          pendingFlush = YES;
+          message = [[NSMutableString alloc] initWithCapacity: 1024];
         }
-    }
-  [lock unlock];
+      [message appendString: text];
+      if ([message length] >= size || (interval > 0.0 && timer == nil))
+        {
+          if (NO == pendingFlush)
+            {
+              shouldFlush = YES;
+              pendingFlush = YES;
+            }
+        }
+      [lock unlock];
 
-  if (YES == shouldFlush)
-    {
-      [self performSelectorOnMainThread: @selector(_scheduleFlush:)
-                             withObject: nil
-                          waitUntilDone: NO
-                                  modes: modes];
+      if (YES == shouldFlush)
+        {
+          [self performSelectorOnMainThread: @selector(_scheduleFlush:)
+                                 withObject: nil
+                              waitUntilDone: NO
+                                      modes: modes];
+        }
+      RELEASE(arp);
     }
-  RELEASE(arp);
 }
 
 /* Should only be called on main thread.
