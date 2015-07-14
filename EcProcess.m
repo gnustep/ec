@@ -3250,7 +3250,7 @@ With two parameters ('maximum' and a number),\n\
             }
           else if ([op caseInsensitiveCompare: @"increment"] == NSOrderedSame)
             {
-              if (val <= 10 || val > 1048576)
+              if (val <= 100 || val > 1048576)
                 {
                   [cmdDefs setCommand: nil forKey: @"MemoryIncrement"];
                   [self cmdPrintf: @"MemoryIncrement using default value.\n"];
@@ -4413,14 +4413,14 @@ With two parameters ('maximum' and a number),\n\
       pMax = (memPeak * (100 + pct)) / 100;
 
       inc = [cmdDefs integerForKey: @"MemoryIncrement"];
-      if (inc < 10 || inc > 1048576)
+      if (inc < 100 || inc > 1048576)
         {
           /* Set the next alerting threshold from
-           * 5MB above the current peak usage,
+           * 50MB above the current peak usage,
            * ensuring that only serious increases
            * in usage will generate an alert.
            */
-          inc = 5 * 1024;
+          inc = 50 * 1024;
         }
       iMax = memPeak + (inc * 1024);
 

@@ -297,8 +297,8 @@ extern NSString*	cmdVersion(NSString *ver);
  *     current peak value) in process memory usage (adjusted by the
  *     average memory known not leaked) after which
  *     an alert is generated.<br />
- *     If this is not set (or is set to a value less than 10KB or
- *     greater than 1GB) then a value of 5MB is used.<br />
+ *     If this is not set (or is set to a value less than 100KB or
+ *     greater than 1GB) then a value of 50MB is used.<br />
  *     Setting a higher value makes memory leak detection less
  *     sensitive (but reduces unnecessary alerts).<br />
  *     If used in conjunction with EcMemoryPercentage, the greater
