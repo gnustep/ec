@@ -59,6 +59,7 @@
 #import "EcHost.h"
 #import "EcUserDefaults.h"
 #import "EcBroadcastProxy.h"
+#import "EcMemoryLogger.h"
 
 #include "config.h"
 
@@ -130,6 +131,7 @@ static NSString		*cmdUser = nil;
 static NSUserDefaults	*cmdDefs = nil;
 static NSString		*cmdDebugName = nil;
 static NSMutableDictionary	*cmdLogMap = nil;
+static id<EcMemoryLogger>       cmdMemoryLogger = nil;
 
 static NSDate	*started = nil;	        /* Time object was created. */
 static NSDate	*memStats = nil;        /* Time stats were started. */
@@ -1055,8 +1057,51 @@ findMode(NSDictionary* d, NSString* s)
       DESTROY(started);
       DESTROY(userDir);
       DESTROY(warningLogger);
+      DESTROY(cmdMemoryLogger);
     }
 }
+
+
+- (Class)_memoryLoggerClassFromBundle: (NSString*)bundleName
+{
+  NSString *path = nil;
+  Class c = Nil;
+  NSBundle *bundle = nil;
+  NSArray *paths =
+   NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
+                                       NSAllDomainsMask,
+                                       YES);
+  NSEnumerator *e = [paths objectEnumerator];
+  while (nil != (path = [e nextObject]))
+    {
+      path = [path stringByAppendingPathComponent: @"Bundles"];
+      path = [path stringByAppendingPathComponent: bundleName];
+      path = [path stringByAppendingPathExtension: @"bundle"];
+      bundle = [NSBundle bundleWithPath: path];
+      if (bundle != nil)
+        {
+          break;
+        }
+    }
+  if (nil == bundle)
+    {
+      [self cmdWarn: @"Could not load bundle '%@'", bundleName];
+    }
+  else if (Nil == (c = [bundle principalClass]))
+    {
+      [self cmdWarn: @"Could not load principal class from %@ at %@.",
+        bundleName, path];
+    }
+  else if (NO == [c conformsToProtocol: @protocol(EcMemoryLogger)])
+    {
+      [self cmdWarn:
+       @"%@ does not implement the EcMemoryLogger protocol", 
+        NSStringFromClass(c)];
+      c = Nil;
+    }
+  return c;
+}
+
 
 + (NSMutableDictionary*) ecInitialDefaults
 {
@@ -4294,6 +4339,48 @@ With two parameters ('maximum' and a number),\n\
     }
 }
 
+- (void)_ensureMemLogger
+{
+  NSString *bundle = [cmdDefs stringForKey: @"MemoryLoggerBundle"];
+  Class cls = Nil;
+  if (nil == bundle)
+    {
+      DESTROY(cmdMemoryLogger);
+      return;
+    }
+  // This is a reasonable fast path if we have already loaded the bundle
+  cls = NSClassFromString(bundle);
+  if ((Nil == cls)
+      || (NO == [cls conformsToProtocol: @protocol(EcMemoryLogger)]))
+    {
+      cls = [self _memoryLoggerClassFromBundle: bundle];
+    }
+  if (Nil == cls)
+    {
+      // No usable logger class, destroy any we might have
+      DESTROY(cmdMemoryLogger);
+      return;
+    }
+  if (NO == [cmdMemoryLogger isKindOfClass: cls])
+    {
+      // If it's no longer the right class, destroy it
+      DESTROY(cmdMemoryLogger);
+    }
+  if (nil == cmdMemoryLogger)
+    {
+      NS_DURING
+        {
+          cmdMemoryLogger = [cls new];
+        }
+      NS_HANDLER
+        {
+          [self cmdWarn: @"Exception creating memory logger: %@",
+             localException];
+        }
+      NS_ENDHANDLER
+    }
+}
+
 - (void) _memCheck
 {
   BOOL          memDebug = [cmdDefs boolForKey: @"Memory"];
@@ -4319,6 +4406,24 @@ With two parameters ('maximum' and a number),\n\
       fclose(fptr);
     }
   excLast = (uint64_t)[self ecNotLeaked];
+
+  [self _ensureMemLogger];
+  if (nil != cmdMemoryLogger)
+    {
+      NS_DURING
+        {
+          [cmdMemoryLogger process: self
+                      didUseMemory: memLast
+                         notLeaked: excLast];
+        }
+      NS_HANDLER
+        {
+          [self cmdWarn:
+            @"Exception logging memory usage to bundle: %@",
+           localException];
+        }
+      NS_ENDHANDLER
+    }
 
   /* Do initial population so we can work immediately.
    */

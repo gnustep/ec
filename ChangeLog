@@ -1,3 +1,9 @@
+2015-07-15  Niels Grewe <niels.grewe@halbordnung.de>
+	* EcMemoryLogger.h
+	* EcProcess.m:
+	Add the ability to load a bundle to export memory logs to. Configured
+	using the 'MemoryLoggerBundle' default key.
+
 2015-07-13  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:

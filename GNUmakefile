@@ -60,7 +60,7 @@ ECCL_HEADER_FILES = \
 	EcProcess.h \
 	EcTest.h \
 	EcUserDefaults.h \
-
+	EcMemoryLogger.h
 
 TOOL_NAME = \
 	Command \
