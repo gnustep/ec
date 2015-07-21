@@ -3031,10 +3031,13 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       else
 	{
           NSDictionary  *d = [cmdDefs volatileDomainForName: @"EcCommand"];
-          NSEnumerator  *e = [d keyEnumerator];
+          NSArray       *a;
+          NSEnumerator  *e;
           NSString      *k;
 
 	  [self cmdPrintf: @"Console default settings:\n"];
+          a = [[d allKeys] sortedArrayUsingSelector: @selector(compare:)];
+          e = [a objectEnumerator];
           k = [e nextObject];
           if (nil == k)
             {
