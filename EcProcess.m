@@ -3017,8 +3017,16 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               [cmdDefs setCommand: val forKey: key];
 	    }
           val = [cmdDefs objectForKey: key];
-          [self cmdPrintf: @"The default setting for '%@' is now:\n%@\n",
-            key, val];
+          if (nil == val)
+            {
+              [self cmdPrintf: @"The default setting for '%@' is removed.\n",
+                key];
+            }
+          else
+            {
+              [self cmdPrintf: @"The default setting for '%@' is now:\n%@\n",
+                key, val];
+            }
 	}
       else
 	{
