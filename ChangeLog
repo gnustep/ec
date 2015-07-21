@@ -1,4 +1,12 @@
+2015-07-21  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h:
+	* EcProcess.m:
+	Be more rigorous about checking instance id values.  Ignore anything
+	other than a non-negative integer instance ID.
+
 2015-07-15  Niels Grewe <niels.grewe@halbordnung.de>
+
 	* EcMemoryLogger.h
 	* EcProcess.m:
 	Add the ability to load a bundle to export memory logs to. Configured

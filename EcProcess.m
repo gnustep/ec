@@ -125,6 +125,7 @@ static BOOL		cmdIsQuitting = NO;
 static BOOL		cmdIsRunning = NO;
 static BOOL		cmdKeepStderr = NO;
 static NSInteger        cmdQuitStatus = 0;
+static NSString		*cmdBase = nil;
 static NSString		*cmdInst = nil;
 static NSString		*cmdName = nil;
 static NSString		*cmdUser = nil;
@@ -1169,6 +1170,11 @@ findMode(NSDictionary* d, NSString* s)
 }
 
 static NSString	*noFiles = @"No log files to archive";
+
+- (NSString*) cmdBase
+{
+  return cmdBase;
+}
 
 - (id) cmdConfig: (NSString*)key
 {
@@ -3880,6 +3886,13 @@ With two parameters ('maximum' and a number),\n\
 	  ASSIGN(cmdName, [pinfo processName]);
 	}
 
+      /* This is the base name of the process (without instance)
+       */
+      if (nil == cmdBase)
+	{
+	  ASSIGN(cmdBase, cmdName);
+	}
+
       /*
        * Make sure our users home directory exists.
        */
@@ -3977,7 +3990,19 @@ With two parameters ('maximum' and a number),\n\
 	    }
 	}
 
-      ASSIGN(cmdInst, [cmdDefs stringForKey: @"Instance"]);
+      str = [[cmdDefs stringForKey: @"Instance"] stringByTrimmingSpaces];
+      if (nil != str)
+        {
+          if ([str length] > 0 && isdigit([str characterAtIndex: 0]))
+            {
+              str = [NSString stringWithFormat: @"%d", [str intValue]];
+            }
+          else
+            {
+              str = nil;
+            }
+        }
+      ASSIGN(cmdInst, str);
       if (nil != cmdInst)
 	{
 	  str = [[NSString alloc] initWithFormat: @"%@-%@", cmdName, cmdInst];

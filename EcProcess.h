@@ -215,7 +215,7 @@ extern NSString*	cmdVersion(NSString *ver);
  *     rather than changing.
  *   </desc>
  *   <term>EcInstance</term>
- *   <desc>To set the program instance ID (an arbitrary string).<br />
+ *   <desc>To set the program instance ID (a non-negative integer value).<br />
  *     If this is specified, the program name has a hyphen and the
  *     id appended to it by the '-initWithDefaults:' method.
  *   </desc>
@@ -801,6 +801,12 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) triggerCmdTimeout;
 
+/** Returns the base name for this process (before any instance ID was
+ * added). If the process has no instance ID, this returns the same as
+ * the -cmdName method.
+ */
+- (NSString*) cmdBase;
+
 /** Deprecated ... use -cmdDefaults instead.
  */
 - (id) cmdConfig: (NSString*)key;
@@ -818,6 +824,10 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (NSUserDefaults*) cmdDefaults;
 
+/** Returns the instance ID used for this process, or nil if there is none.
+ */
+- (NSString*) cmdInstance;
+
 /** Utility method to perform partial (case insensitive) matching of
  * an abbreviated command word (val) to a keyword (key)
  */
@@ -827,7 +837,7 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (NSString*) cmdMesg: (NSArray*)msg;
 
-/** Retrurns the name by which this process is known to the Command server.
+/** Returns the name by which this process is known to the Command server.
  */
 - (NSString*) cmdName;
 
