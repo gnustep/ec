@@ -2272,7 +2272,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) ecNewDay: (NSCalendarDate*)when
 {
-  NSString		*sub;
+  static NSDictionary   *defs = nil;
+  NSString	        *sub;
+  NSDictionary          *d;
+  NSEnumerator          *e;
+  NSString              *k;
 
   /* New day ... archive debug/log files into a subdirectory based on
    * the current date.  This is yesterday's debug, so we use yesterday.
@@ -2280,6 +2284,21 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   sub = [[when dateByAddingYears: 0 months: 0 days: -1 hours: 0 minutes: 0
     seconds: 0] descriptionWithCalendarFormat: @"%Y-%m-%d"];
   NSLog(@"%@", [self cmdArchive: sub]);
+
+  /* Check information left in the EcCommand domain.
+   */
+  d = [cmdDefs volatileDomainForName: @"EcCommand"];
+  e = [[d allKeys] objectEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      if ([[d objectForKey: k] isEqual: [defs objectForKey: k]])
+        {
+	  [self cmdError: @"Console defaults '%@' left for over a day."
+            @" Please reset ('tell %@ defaults delete %@') after updating"
+            @" Control.plist as required.", k, [self cmdName], k];
+        }
+    }
+  ASSIGNCOPY(defs, d);
 }
 
 - (void) ecNewHour: (NSCalendarDate*)when
@@ -2955,6 +2974,72 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  else
 	    {
 	      [self cmdPrintf: @"%@\n", cmdDebugModes];
+	    }
+	}
+    }
+}
+
+- (void) cmdMesgdefaults: (NSArray*)msg
+{
+  if ([msg count] == 0)
+    {
+      [self cmdPrintf:
+        @"temporarily overrides defaults/Control.plist settings"];
+    }
+  else
+    {
+      if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
+        == NSOrderedSame)
+	{
+	  [self cmdPrintf: @"\nWithout parameters, the defaults command is "];
+	  [self cmdPrintf: @"used to list the current defaults overrides.\n"];
+	  [self cmdPrintf: @"With the 'delete' parameter followed by a name,"];
+	  [self cmdPrintf: @"the command is used to revert a default.\n"];
+	  [self cmdPrintf: @"With the 'write' parameter followed by a name"];
+	  [self cmdPrintf: @"and value, the command sets a default.\n"];
+	  [self cmdPrintf: @"With the 'read' parameter followed by a name,"];
+	  [self cmdPrintf: @"the command is used to show a default.\n"];
+	}
+      else if ([msg count] > 2)
+	{
+	  NSString	*mode = (NSString*)[msg objectAtIndex: 1];
+	  NSString	*key = (NSString*)[msg objectAtIndex: 2];
+          id            val;
+
+          if ([mode caseInsensitiveCompare: @"delete"] == NSOrderedSame)
+            {
+              [cmdDefs setCommand: nil forKey: key];
+            }
+          else if ([msg count] > 2
+            && [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
+	    {
+	      val = [msg objectAtIndex: 3];
+              [cmdDefs setCommand: val forKey: key];
+	    }
+          val = [cmdDefs objectForKey: key];
+          [self cmdPrintf: @"The default setting for '%@' is now\n%@\n", val];
+	}
+      else
+	{
+          NSDictionary  *d = [cmdDefs volatileDomainForName: @"EcCommand"];
+          NSEnumerator  *e = [d keyEnumerator];
+          NSString      *k;
+
+	  [self cmdPrintf: @"Console default settings:\n"];
+          k = [e nextObject];
+          if (nil == k)
+            {
+	      [self cmdPrintf: @"  None.\n"];
+            }
+          else
+            {
+              while (nil != k)
+                {
+                  id    v = [d objectForKey: k];
+
+	          [self cmdPrintf: @"  %@ = %@\n", k, v];
+                  k = [e nextObject];
+                }
 	    }
 	}
     }

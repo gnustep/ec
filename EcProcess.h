@@ -415,10 +415,13 @@ extern NSString*	cmdVersion(NSString *ver);
  * If the same default name is registered more than once, the values
  * from the last registration are used, except for the case where the
  * cmd argument is NULL, in that case the previous selector is kept
- * in the new rfegistration.<br />
+ * in the new registration.<br />
  * This method should be called in your +initialize method, so that all
  * supported defaults are already registered by the time your process
- * tries to respond to being started with a --help command line argument.
+ * tries to respond to being started with a --help command line argument.<br />
+ * NB. defaults keys do not have to be registered (and can still be updated
+ * using the 'defaults' command), but registration provides a more user
+ * friendly interface.
  */
 + (void) ecRegisterDefault: (NSString*)name
               withTypeText: (NSString*)type
