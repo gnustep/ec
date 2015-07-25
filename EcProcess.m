@@ -4620,8 +4620,8 @@ With two parameters ('maximum' and a number),\n\
     {
       NSInteger     inc;
       NSInteger     pct;
-      NSInteger     iMax = 0;
-      NSInteger     pMax = 0;
+      uint64_t      iMax = 0;
+      uint64_t      pMax = 0;
 
       /* We increase the threshold for the next alert by a percentage
        * of the existing usage or by a fixed increment, whichever is
