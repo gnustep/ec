@@ -1321,16 +1321,20 @@ static NSString	*noFiles = @"No log files to archive";
 
   memAllowed = (uint64_t)[cmdDefs integerForKey: @"MemoryAllowed"];
 #if     SIZEOF_VOIDP == 4
-  if (memAllowed > 200000)
+  if (memAllowed >= 4*1024)
     {
+      [self cmdError: @"MemoryAllowed (%"PRIu64" too large for 32bit machine..."
+        @" using 0", memAllowed];
       memAllowed = 0;
     }
 #endif
 
   memMaximum = (uint64_t)[cmdDefs integerForKey: @"MemoryMaximum"];
 #if     SIZEOF_VOIDP == 4
-  if (memMaximum > 200000)
+  if (memMaximum >= 4*1024)
     {
+      [self cmdError: @"MemoryMaximum (%"PRIu64" too large for 32bit machine..."
+        @" using 0", memAllowed];
       memMaximum = 0;	                // Disabled
     }
 #endif
