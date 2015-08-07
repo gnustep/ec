@@ -18,7 +18,7 @@ locations for something like RedHat Linux.
    the MIB in your local directory(~/.snmp/mibs) which is correct for
    net-snmp on most systems.
 
-2. For diagnosing problems in snmpd,
+2. For diagnosing problems in snmpd (revert when not debugging),
    edit '/etc/sysconfig/snmpd' to contain:
    OPTIONS="-Dgnustep -Lf /var/log/snmpd"
    so that any debug for the gnustep MIB would be logged
@@ -26,7 +26,7 @@ locations for something like RedHat Linux.
    or use '-Dgnustep -LS0-6d' for logging via syslog.
 
 
-3. For diagnosign problems in snmptrapd,
+3. For diagnosing problems in snmptrapd (revert when not debugging),
    edit '/etc/sysconfig/snmptrapd' to contain:
    OPTIONS="-Dgnustep -Lf /var/log/snmptrapd"
    so that any debug for the gnustep MIB would be logged
