@@ -4684,16 +4684,20 @@ With two parameters ('maximum' and a number),\n\
           memTime = [NSDate new];
           if (nil == when)
             {
-              [self cmdError: @"Average memory usage grown by %ldKB"
+              [self cmdError: @"Average memory usage %luKB grown by %ldKB"
                 @" with %ldKB accounted for; possible leak of %ldKB",
-                (long)(memAvge - mPrev)/1024, (long)(excAvge - ePrev)/1024,
+                (unsigned long)memAvge/1024,
+                (long)(memAvge - mPrev)/1024,
+                (long)(excAvge - ePrev)/1024,
                 (long)(memAvge - mPrev + ePrev - excAvge)/1024];
             }
           else
             {
-              [self cmdError: @"Average memory usage grown by %ldKB"
+              [self cmdError: @"Average memory usage %luKB grown by %ldKB"
                 @" with %ldKB accounted for; possible leak of %ldKB since %@",
-                (long)(memAvge - mPrev)/1024, (long)(excAvge - ePrev)/1024,
+                (unsigned long)memAvge/1024,
+                (long)(memAvge - mPrev)/1024,
+                (long)(excAvge - ePrev)/1024,
                 (long)(memAvge - mPrev + ePrev - excAvge)/1024,
                 when];
             }
