@@ -41,11 +41,13 @@
 
 #import "EcProcess.h"
 #import "EcUserDefaults.h"
+#import "EcHost.h"
 
 int
 main()
 {
   NSUserDefaults        *defs;
+  NSDictionary          *dict;
   NSArray               *args;
   NSString              *pref;
   NSString		*host;
@@ -68,6 +70,11 @@ main()
     }
   defs = [NSUserDefaults userDefaultsWithPrefix: pref
                                          strict: EC_DEFAULTS_STRICT];
+  dict = [defs dictionaryForKey: @"WellKnownHostNames"];
+  if (nil != dict)
+    {
+      [NSHost setWellKnownNames: dict];
+    }
 
   args = [[NSProcessInfo processInfo] arguments];
   if ([args containsObject: @"--help"] == YES)

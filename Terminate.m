@@ -41,6 +41,7 @@
 
 #import "EcProcess.h"
 #import "EcUserDefaults.h"
+#import "EcHost.h"
 
 
 int
@@ -48,6 +49,7 @@ main()
 {
   CREATE_AUTORELEASE_POOL(arp);
   NSUserDefaults	*defs;
+  NSDictionary          *dict;
   NSString              *pref;
   NSString		*host;
   NSString		*name;
@@ -63,6 +65,11 @@ main()
     }
   defs = [NSUserDefaults userDefaultsWithPrefix: pref
                                          strict: EC_DEFAULTS_STRICT];
+  dict = [defs dictionaryForKey: @"WellKnownHostNames"];
+  if (nil != dict)
+    {
+      [NSHost setWellKnownNames: dict];
+    }
 
   /*
    * Shut down the local command server.

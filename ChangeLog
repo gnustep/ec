@@ -1,3 +1,10 @@
+2015-08-25  Richard Frith-Macdonald <rfm@gnu.org>
+
+	AlarmTool.m:
+	LogTool.m:
+	Termintate.m:
+	Set up well known hosts at start.
+
 2015-07-21  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h:
