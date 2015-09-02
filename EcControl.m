@@ -1859,6 +1859,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         }
       else
         {
+          [old setObj: nil];
           m = [NSString stringWithFormat:
               @"Re-registered host with name '%@' at %@\n",
                   n, [NSDate date]];
