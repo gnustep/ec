@@ -2295,11 +2295,13 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   e = [[d allKeys] objectEnumerator];
   while (nil != (k = [e nextObject]))
     {
-      if ([[d objectForKey: k] isEqual: [defs objectForKey: k]])
+      id        v = [d objectForKey: k];
+
+      if ([v isEqual: [defs objectForKey: k]])
         {
-	  [self cmdError: @"Console defaults '%@' left for over a day."
+	  [self cmdError: @"Console defaults '%@' left at '%@' for over a day."
             @" Please reset ('tell %@ defaults delete %@') after updating"
-            @" Control.plist as required.", k, [self cmdName], k];
+            @" Control.plist as required.", k, v, [self cmdName], k];
         }
     }
   ASSIGNCOPY(defs, d);
