@@ -23,6 +23,18 @@ AC_CHECK_FUNCS(getpid setpgid)
 
 AC_CHECK_LIB([malloc],[mallinfo])
 
+AC_CACHE_CHECK([for gettid()], ac_cv_gettid,
+[AC_TRY_RUN(#define _GNU_SOURCE
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+int main(int argc, char **argv) {
+pid_t t = syscall(SYS_gettid); return t == -1 ? 1 : 0; },
+[ac_cv_gettid=yes], [ac_cv_gettid=no], [ac_cv_gettid=no])])
+if test "$ac_cv_gettid" = "yes"; then
+  AC_DEFINE(HAVE_GETTID, 1, [Define if you have gettid()])
+fi
+
 AC_ARG_WITH([readline],
   [AS_HELP_STRING([--with-readline],
     [support fancy command line editing @<:@default=check@:>@])],

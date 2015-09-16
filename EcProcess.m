@@ -84,6 +84,13 @@
 #ifdef	HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+
+#if defined(HAVE_GETTID)
+#  include <unistd.h>
+#  include <sys/syscall.h>
+#  include <sys/types.h>
+#endif
+
 #include <stdio.h>
 
 
@@ -98,6 +105,17 @@
 #define	EC_EFFECTIVE_USER nil
 #endif
 
+NSUInteger
+ecNativeThreadID()
+{
+#if defined(__MINGW__)
+  return (NSUInteger)GetCurrentThreadId();
+#elif defined(HAVE_GETTID)
+  return (NSUInteger)syscall(SYS_gettid);
+#else
+  return NSNotFound;
+#endif
+}
 
 @interface      EcDefaultRegistration : NSObject
 {
