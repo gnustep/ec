@@ -1325,6 +1325,7 @@ replaceFields(NSDictionary *fields, NSString *template)
   s = replaceFields(m, [m objectForKey: @"Replacement"]);
   while ((d = [e nextObject]) != nil)
     {
+      d = [d lastPathComponent];
       [[EcProc cmdLogFile: d] printf: @"%@\n", s];
     }
 }
