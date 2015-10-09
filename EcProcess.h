@@ -98,33 +98,50 @@ typedef enum    {
 - (oneway void) information: (NSString*)txt;
 @end
 
-/**
- *	Messages that clients may send to the server.
- *	NB. The 'registerClient...' message must be sent first.
+/** Messages that clients may send to the server.
+ * NB. The -registerClient:name:transient: method must be sent before
+ * the -command:to:from: or -reply:to:from: methods.
  */
 @protocol	Command <CmdLogger,CmdConfig,EcAlarmDestination>
+
+/** Pass an alarm to the Command server for forwarding to the Control
+ * server for central handling to send alerts or SNMP integration.
+ */
 - (oneway void) alarm: (in bycopy EcAlarm*)alarm;
+
+/** Send a text command to a process owned by the Command server.
+ */
 - (oneway void) command: (in bycopy NSData*)dat
 		     to: (NSString*)t
 		   from: (NSString*)f;
+
+/** Request immediate launch of the named process.<br />
+ * Returns NO if the process cannot be launched.<br />
+ * Returns YES if the process is already running or launching has started.
+ */
+- (BOOL) launch: (NSString*)name;
+
+/** Registers as a client process of the Command server.
+ */
 - (bycopy NSData*) registerClient: (id<CmdClient>)c
 			     name: (NSString*)n
 			transient: (BOOL)t;
+
+/** Replies to a text command sent by another process.
+ */
 - (oneway void) reply: (NSString*)msg
 		   to: (NSString*)n
 		 from: (NSString*)c;
+
 /** Shut down the Command server and all its clients.<br />
  * Clients which fail to shut down gracefully within 30 seconds
  * make be killed.
  */
 - (oneway void) terminate;
 
-/** This is an exceptional method which may be used without registering
- * your process with a Command server first (ie, it can be used by anyone,
- * not only clients of the Command server).<br />
- * It's meant to be used remotely by Java servlets, and all sort of
- * software running on the machine and which is *not* a full Command
- * client (ie, a subclass of EcProcess) but which still wants to retrieve
+/** This is meant to be used remotely by all sorts of software running
+ * on the machine and which is *not* a full Command client (ie, not a
+ * subclass of EcProcess) but which still wants to retrieve
  * configuration from a central location (the Control/Command servers).<br />
  * The returned value is a a serialized property list ... you need to
  * deserialize using the standard GNUstep property list APIs.<br />

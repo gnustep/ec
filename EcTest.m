@@ -28,15 +28,58 @@
    */
 
 #import <Foundation/Foundation.h>
+
+#if     !defined(EC_DEFAULTS_PREFIX)
+#define EC_DEFAULTS_PREFIX nil
+#endif
+#if     !defined(EC_DEFAULTS_STRICT)
+#define EC_DEFAULTS_STRICT NO
+#endif
+#if     !defined(EC_EFFECTIVE_USER)
+#define EC_EFFECTIVE_USER nil
+#endif
+
 #import "EcProcess.h"
+#import "EcUserDefaults.h"
+#import "EcHost.h"
 #import "EcTest.h"
+
+static NSUserDefaults*
+defaults()
+{
+  static NSUserDefaults   *defs = nil;
+
+  if (nil == defs)
+    {
+      NSString              *pref;
+      NSDictionary          *dict;
+
+      [EcProcess class];    // Force linker to provide library
+
+      pref = EC_DEFAULTS_PREFIX;
+      if (nil == pref)
+        {
+          pref = @"";
+        }
+      ASSIGN(defs, [NSUserDefaults userDefaultsWithPrefix: pref
+        strict: EC_DEFAULTS_STRICT]);
+      dict = [defs dictionaryForKey: @"WellKnownHostNames"];
+      if (nil != dict)
+        {
+          [NSHost setWellKnownNames: dict];
+        }
+    }
+  return defs;
+}
 
 id<EcTest>
 EcTestConnect(NSString *name, NSString *host, NSTimeInterval timeout)
 {
   CREATE_AUTORELEASE_POOL(pool);
-  id<EcTest>    proxy = nil;
-  NSDate        *when;
+  BOOL                  triedLaunching = NO;
+  NSUserDefaults        *defs = defaults();
+  id<EcTest>            proxy = nil;
+  NSDate                *when;
 
   if (nil == host) host = @"";
   if (timeout > 0)
@@ -54,7 +97,7 @@ EcTestConnect(NSString *name, NSString *host, NSTimeInterval timeout)
         {
           proxy = (id<EcTest>)[NSConnection
             rootProxyForConnectionWithRegisteredName: name
-            host: @""
+            host: host
             usingNameServer: [NSSocketPortNameServer sharedInstance]];
         }
       NS_HANDLER
@@ -64,6 +107,35 @@ EcTestConnect(NSString *name, NSString *host, NSTimeInterval timeout)
       NS_ENDHANDLER
       if (nil == proxy)
         {
+          /* Where the initial contact attempt failed,
+           * try launching the process.
+           */
+          if (NO == triedLaunching)
+            {
+              NS_DURING
+                {
+                  id<Command>           cmd;
+                  NSString              *cmdName;
+
+                  cmdName = [defs stringForKey: @"CommandName"];
+                  if (nil == cmdName)
+                    {
+                      cmdName = @"Command";
+                    }
+                  cmd = (id<Command>)[NSConnection
+                    rootProxyForConnectionWithRegisteredName: cmdName
+                    host: host
+                    usingNameServer: [NSSocketPortNameServer sharedInstance]];
+                  [cmd launch: name];
+                }
+              NS_HANDLER
+                {
+                  NSLog(@"Failed to get 'Command' on '%@' to launch '%@': %@",
+                    host, name, localException);
+                }
+              NS_ENDHANDLER
+              triedLaunching = YES;
+            }
           [NSThread sleepForTimeInterval: 0.1];
         }
     }

@@ -908,7 +908,8 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
                               r = [self findIn: clients byName: key];
                               if (r == nil)
                                 {
-                                  [launches setObject: [NSDate distantPast]							   forKey: key];
+                                  [launches setObject: [NSDate distantPast]
+                                               forKey: key];
                                   m = @"Ok - I will launch that program "
                                       @"when I get a chance.\n";
                                 }
@@ -1820,6 +1821,176 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 #endif
 }
 
+- (BOOL) launch: (NSString*)name
+{
+  EcClientI	*r = [self findIn: clients byName: name];
+
+  if (nil == r)
+    {
+      NSDictionary	*taskInfo = [launchInfo objectForKey: name];
+      NSString          *m;
+
+      if (nil == taskInfo)
+        {
+          m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+            @"unrecognized name to launch %@"), name];
+          [self information: m from: nil to: nil type: LT_AUDIT];
+          return NO;
+        }
+      else
+        {
+          NSDictionary	*env = environment;
+          NSArray	*args = [taskInfo objectForKey: @"Args"];
+          NSString	*home = [taskInfo objectForKey: @"Home"];
+          NSString	*prog = [taskInfo objectForKey: @"Prog"];
+          NSDictionary	*addE = [taskInfo objectForKey: @"AddE"];
+          NSDictionary	*setE = [taskInfo objectForKey: @"SetE"];
+          NSString      *failed = nil;
+          NSTask        *task = nil;
+          NSString	*m;
+
+          /* As a convenience, the 'Home' option sets the -HomeDirectory
+           * for the process.
+           */
+          if ([home length] > 0)
+            {
+              NSMutableArray    *a = [[args mutableCopy] autorelease];
+
+              if (nil == a)
+                {
+                  a = [NSMutableArray arrayWithCapacity: 2];
+                }
+              [a addObject: @"-HomeDirectory"];
+              [a addObject: home];
+              args = a;
+            }
+
+          /* Record time of launch start and the fact that this is launching.
+           */
+          [launches setObject: [NSDate date] forKey: name];
+          if (nil != [launching objectForKey: name])
+            {
+              NSString  *managedObject;
+              EcAlarm	*a;
+
+              /* We are re-attempting a launch of a program which never
+               * contacted us and registered with us ... raise an alarm.
+               */
+              managedObject = EcMakeManagedObject(host, name, nil);
+              a = [EcAlarm alarmForManagedObject: managedObject
+                at: nil
+                withEventType: EcAlarmEventTypeProcessingError
+                probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
+                specificProblem: @"Process availability"
+                perceivedSeverity: EcAlarmSeverityCritical
+                proposedRepairAction: @"Check system status"
+                additionalText: @"failed to register after launch"];
+              [self alarm: a];
+            }
+          task = [NSTask new];
+          [launching setObject: task forKey: name];
+          RELEASE(task);
+
+          if (prog != nil && [prog length] > 0)
+            {
+              NSFileHandle	*hdl;
+
+              if (setE != nil)
+                {
+                  env = setE;
+                }
+              else if (env == nil)
+                {
+                  env = [[NSProcessInfo processInfo] environment];
+                }
+              if (addE != nil)
+                {
+                  NSMutableDictionary	*e = [env mutableCopy];
+
+                  [e addEntriesFromDictionary: addE];
+                  env = AUTORELEASE(e);
+                }
+              [task setEnvironment: env];
+              hdl = [NSFileHandle fileHandleWithNullDevice];
+              NS_DURING
+                {
+                  [task setLaunchPath: prog];
+
+                  if ([task validatedLaunchPath] == nil)
+                    {
+                      failed = @"failed to launch (not executable)";
+                      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+                        @"failed to launch (not executable) %@"), name];
+                      [self information: m from: nil to: nil type: LT_AUDIT];
+                      prog = nil;
+                    }
+                  if (prog != nil)
+                    {
+                      NSString  *s;
+
+                      s = [taskInfo objectForKey: @"KeepStandardInput"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardInput: hdl];
+                        }
+                      s = [taskInfo objectForKey: @"KeepStandardOutput"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardOutput: hdl];
+                        }
+                      s = [taskInfo objectForKey: @"KeepStandardError"];
+                      if (NO == [s respondsToSelector: @selector(boolValue)]
+                        || NO == [s boolValue])
+                        {
+                          [task setStandardError: hdl];
+                        }
+                      if (home != nil && [home length] > 0)
+                        {
+                          [task setCurrentDirectoryPath: home];
+                        }
+                      if (args != nil)
+                        {
+                          [task setArguments: args];
+                        }
+                      [task launch];
+                      [[self cmdLogFile: logname]
+                        printf: @"%@ launched %@\n", [NSDate date], prog];
+                    }
+                }
+              NS_HANDLER
+                {
+                  failed = @"failed to launch";
+                  m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+                    @"failed to launch (%@) %@"), localException, name];
+                  [self information: m from: nil to: nil type: LT_AUDIT];
+                }
+              NS_ENDHANDLER
+            }
+          else
+            {
+              failed = @"bad program name to launch";
+              m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
+                @"bad program name to launch %@"), name];
+              [self information: m from: nil to: nil type: LT_AUDIT];
+            }
+          if (nil != failed)
+            {
+              NSString      *managedObject;
+
+              managedObject = EcMakeManagedObject(host, name, nil);
+              [self alarmConfigurationFor: managedObject
+                specificProblem: @"Process launch"
+                additionalText: failed
+                critical: NO];
+              return NO;
+            }
+        }
+    }
+  return YES;
+}
+
 - (void) launch
 {
   if (launchInfo != nil)
@@ -1881,153 +2052,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
       if (date != nil && [now timeIntervalSinceDate: date] > DLY)
 	{
-	  NSDictionary	*taskInfo = [launchInfo objectForKey: key];
-	  NSDictionary	*env = environment;
-	  NSArray	*args = [taskInfo objectForKey: @"Args"];
-	  NSString	*home = [taskInfo objectForKey: @"Home"];
-	  NSString	*prog = [taskInfo objectForKey: @"Prog"];
-	  NSDictionary	*addE = [taskInfo objectForKey: @"AddE"];
-	  NSDictionary	*setE = [taskInfo objectForKey: @"SetE"];
-          NSString      *failed = nil;
-          NSTask        *task = nil;
-          NSString	*m;
-
-          /* As a convenience, the 'Home' option sets the -HomeDirectory
-           * for the process.
-           */
-          if ([home length] > 0)
-            {
-              NSMutableArray    *a = [[args mutableCopy] autorelease];
-
-              if (nil == a)
-                {
-                  a = [NSMutableArray arrayWithCapacity: 2];
-                }
-              [a addObject: @"-HomeDirectory"];
-              [a addObject: home];
-              args = a;
-            }
-
-	  /* Record time of launch start and the fact that this is launching.
-	   */
-	  [launches setObject: now forKey: key];
-	  if (nil != [launching objectForKey: key])
-	    {
-              NSString  *managedObject;
-	      EcAlarm	*a;
-
-	      /* We are re-attempting a launch of a program which never
-	       * contacted us and registered with us ... raise an alarm.
-	       */
-              managedObject = EcMakeManagedObject(host, key, nil);
-	      a = [EcAlarm alarmForManagedObject: managedObject
-		at: nil
-		withEventType: EcAlarmEventTypeProcessingError
-		probableCause: EcAlarmSoftwareProgramAbnormallyTerminated
-		specificProblem: @"Process availability"
-		perceivedSeverity: EcAlarmSeverityCritical
-		proposedRepairAction: @"Check system status"
-		additionalText: @"failed to register after launch"];
-	      [self alarm: a];
-	    }
-          task = [NSTask new];
-          [launching setObject: task forKey: key];
-          RELEASE(task);
-
-	  if (prog != nil && [prog length] > 0)
-	    {
-	      NSFileHandle	*hdl;
-
-	      if (setE != nil)
-		{
-		  env = setE;
-		}
-	      else if (env == nil)
-		{
-		  env = [[NSProcessInfo processInfo] environment];
-		}
-	      if (addE != nil)
-		{
-		  NSMutableDictionary	*e = [env mutableCopy];
-
-		  [e addEntriesFromDictionary: addE];
-		  env = AUTORELEASE(e);
-		}
-	      [task setEnvironment: env];
-	      hdl = [NSFileHandle fileHandleWithNullDevice];
-	      NS_DURING
-		{
-		  [task setLaunchPath: prog];
-
-		  if ([task validatedLaunchPath] == nil)
-		    {
-                      failed = @"failed to launch (not executable)";
-                      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
-                        @"failed to launch (not executable) %@"), key];
-                      [self information: m from: nil to: nil type: LT_AUDIT];
-		      prog = nil;
-		    }
-		  if (prog != nil)
-		    {
-                      NSString  *s;
-
-                      s = [taskInfo objectForKey: @"KeepStandardInput"];
-                      if (NO == [s respondsToSelector: @selector(boolValue)]
-                        || NO == [s boolValue])
-                        {
-                          [task setStandardInput: hdl];
-                        }
-                      s = [taskInfo objectForKey: @"KeepStandardOutput"];
-                      if (NO == [s respondsToSelector: @selector(boolValue)]
-                        || NO == [s boolValue])
-                        {
-                          [task setStandardOutput: hdl];
-                        }
-                      s = [taskInfo objectForKey: @"KeepStandardError"];
-                      if (NO == [s respondsToSelector: @selector(boolValue)]
-                        || NO == [s boolValue])
-                        {
-                          [task setStandardError: hdl];
-                        }
-		      if (home != nil && [home length] > 0)
-			{
-			  [task setCurrentDirectoryPath: home];
-			}
-		      if (args != nil)
-			{
-			  [task setArguments: args];
-			}
-		      [task launch];
-		      [[self cmdLogFile: logname]
-			printf: @"%@ launched %@\n", [NSDate date], prog];
-		    }
-		}
-	      NS_HANDLER
-		{
-                  failed = @"failed to launch";
-                  m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
-                    @"failed to launch (%@) %@"), localException, key];
-                  [self information: m from: nil to: nil type: LT_AUDIT];
-		}
-	      NS_ENDHANDLER
-	    }
-	  else
-	    {
-              failed = @"bad program name to launch";
-	      m = [NSString stringWithFormat: cmdLogFormat(LT_AUDIT,
-		@"bad program name to launch %@"), key];
-	      [self information: m from: nil to: nil type: LT_AUDIT];
-	    }
-          if (nil != failed)
-            {
-              NSString      *managedObject;
-
-              managedObject = EcMakeManagedObject(host, key, nil);
-              [self alarmConfigurationFor: managedObject
-                specificProblem: @"Process launch"
-                additionalText: failed
-                critical: NO];
-            }
+          [self launch: key];
 	}
     }
 }

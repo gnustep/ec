@@ -1,8 +1,14 @@
+2015-10-09  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.h: declare new -launch: method
+	* EcCommand.m: implement -launch: method
+	* EcTest.m: use -launch: when asked to get a connection to a process.
+
 2015-08-25  Richard Frith-Macdonald <rfm@gnu.org>
 
-	AlarmTool.m:
-	LogTool.m:
-	Termintate.m:
+	* AlarmTool.m:
+	* LogTool.m:
+	* Terminate.m:
 	Set up well known hosts at start.
 
 2015-07-21  Richard Frith-Macdonald <rfm@gnu.org>

@@ -65,8 +65,11 @@
  * A nil or empty string for the host is taken to mean the local host,
  * while an asterisk denotes any host on the local network.<br />
  * The timeout is a time limit on how long it may take to get the
- * connection (a value less than or equal to zero wiull cause the
- * function to keep on trying indefinitely).
+ * connection (a value less than or equal to zero will cause the
+ * function to keep on trying indefinitely).<br />
+ * If an immediate connection is not possible, the function will attempt
+ * to contact the Command server on the specified host and ask it to
+ * launch the process before trying to connect again.
  */
 extern id<EcTest>
 EcTestConnect(NSString *name, NSString *host, NSTimeInterval timeout);
