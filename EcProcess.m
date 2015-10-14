@@ -626,6 +626,7 @@ ecCommandName()
 
 
 NSString	*cmdBasicDbg = @"basicMode";
+NSString	*cmdDefaultDbg = @"basicMode";  // Allow older code to link
 NSString	*cmdConnectDbg = @"connectMode";
 NSString	*cmdDetailDbg = @"detailMode";
 
