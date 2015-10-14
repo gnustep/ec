@@ -208,6 +208,11 @@ static NSLock 		*lock = nil;
   return [defs removeObjectForKey: [self _getKey: aKey]];
 }
 
+- (void) revertSettings
+{
+  [defs revertSettings];
+}
+
 - (void) setBool: (BOOL)value forKey: (NSString*)aKey
 {
   [defs setBool: value forKey: [self key: aKey]];
@@ -299,6 +304,18 @@ static NSLock 		*lock = nil;
       aKey = [prefix stringByAppendingString: aKey];
     }
   return aKey;
+}
+
+- (void) revertSettings
+{
+  NSDictionary		*old = [self volatileDomainForName: @"EcCommand"];
+
+  if (nil != old)
+    {
+      [self removeVolatileDomainForName: @"EcCommand"];
+      [[NSNotificationCenter defaultCenter] postNotificationName:
+	NSUserDefaultsDidChangeNotification object: self];
+    }
 }
 
 - (BOOL) setCommand: (id)val forKey: (NSString*)key

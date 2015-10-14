@@ -625,7 +625,7 @@ ecCommandName()
 }
 
 
-NSString	*cmdDefaultDbg = @"defaultMode";
+NSString	*cmdBasicDbg = @"basicMode";
 NSString	*cmdConnectDbg = @"connectMode";
 NSString	*cmdDetailDbg = @"detailMode";
 
@@ -1797,11 +1797,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       [cmdDebugKnown setObject: @"Mode for distributed object connections"
 			forKey: cmdConnectDbg];
       [cmdDebugKnown setObject: @"Standard mode for basic debug information"
-			forKey: cmdDefaultDbg];
+			forKey: cmdBasicDbg];
       [cmdDebugKnown setObject: @"Detailed but general purpose debugging"
 			forKey: cmdDetailDbg];
 
-      [cmdDebugModes addObject: cmdDefaultDbg];
+      [cmdDebugModes addObject: cmdBasicDbg];
 
       [self ecRegisterDefault: @"Memory"
                  withTypeText: @"YES/NO"
@@ -2003,7 +2003,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 - (void) cmdDebug: (NSString*)fmt arguments: (va_list)args
 {
-  if (nil != [cmdDebugModes member: cmdDefaultDbg])
+  if (nil != [cmdDebugModes member: cmdBasicDbg])
     {
       if (nil == debugLogger)
 	{
@@ -3023,7 +3023,14 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdPrintf: @"and value, the command sets a default.\n"];
 	  [self cmdPrintf: @"With the 'read' parameter followed by a name,"];
 	  [self cmdPrintf: @"the command is used to show a default.\n"];
+	  [self cmdPrintf: @"With the 'revert' parameter,"];
+	  [self cmdPrintf: @"the command is used to revert all defaults.\n"];
 	}
+      else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"revert"])
+	{
+          [cmdDefs revertSettings];
+          [self cmdPrintf: @"All settings are reverted to default.\n"];
+        }
       else if ([msg count] > 2)
 	{
 	  NSString	*mode = (NSString*)[msg objectAtIndex: 1];

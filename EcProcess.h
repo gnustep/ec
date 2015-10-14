@@ -601,12 +601,12 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) cmdDbg: (NSString*)type
             msg: (NSString*)fmt, ... NS_FORMAT_FUNCTION(2,3);
 
-/** Send a debug message with debug mode 'defaultMode'.<br />
+/** Send a debug message with debug mode 'basicMode'.<br />
  * Calls the -cmdDbg:msg:arguments: method.
  */
 - (void) cmdDebug: (NSString*)fmt arguments: (va_list)args;
 
-/** Send a debug message with debug mode 'defaultMode'.<br />
+/** Send a debug message with debug mode 'basicMode'.<br />
  * Operates by calling the -cmdDebug:arguments: method.
  */
 - (void) cmdDebug: (NSString*)fmt, ... NS_FORMAT_FUNCTION(1,2);
@@ -1045,9 +1045,9 @@ extern NSString*	cmdVersion(NSString *ver);
 
 extern EcProcess	*EcProc;	/* Single instance or nil */
 
-extern	NSString*	cmdConnectDbg;	/* Debug connection attempts.	*/
-extern	NSString*	cmdDefaultDbg;	/* Debug normal stuff.		*/
-extern	NSString*	cmdDetailDbg;	/* Debug stuff in more detail.	*/
+extern NSString         *cmdBasicDbg;	/* Debug normal stuff.		*/
+extern NSString         *cmdConnectDbg;	/* Debug connection attempts.	*/
+extern NSString         *cmdDetailDbg;	/* Debug stuff in more detail.	*/
 
 
 #endif /* INCLUDED_ECPROCESS_H */

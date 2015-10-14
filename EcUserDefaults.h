@@ -67,6 +67,11 @@
  */
 - (NSString*) key: (NSString*)aKey;
 
+/** Removes all settings previously set up using the -setCommand:forKey:
+ * method.
+ */
+- (void) revertSettings;
+
 /** Sets a value to take precedence over others (in the volatile domain
  * reserved for commands issued to the current process by an operator).<br />
  * Setting a nil value removes any previously set value so that behavior

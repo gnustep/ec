@@ -1,3 +1,14 @@
+2015-10-14  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcUserDefaults.h:
+	* EcUserDefaults.m:
+	New -revertSettings method to revert all local config settings.
+	* EcProcess.h:
+	* EcProcess.m:
+	Change cmdDefaultDbg to cmdBasicDbg to avoid confusion of the debug
+	mode with default settings.
+	Add 'defaults revert' command for Console to use.
+
 2015-10-09  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.h: declare new -launch: method
