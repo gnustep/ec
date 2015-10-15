@@ -205,9 +205,13 @@ EcTestShutdown(id<EcTest> process, NSTimeInterval timeout)
     {
       NS_DURING
         [(id<CmdClient>)process processIdentifier];
+        [NSThread sleepForTimeInterval: 0.1];
       NS_HANDLER
+        if ([conn isValid])
+          {
+            [localException raise];
+          }
       NS_ENDHANDLER
-      [NSThread sleepForTimeInterval: 0.1];
     }
   if ([conn isValid])
     {
