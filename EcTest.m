@@ -177,3 +177,41 @@ EcTestSetConfig(id<EcTest> process, NSString *key, id value)
 
 }
 
+BOOL
+EcTestShutdown(id<EcTest> process, NSTimeInterval timeout)
+{
+  int           pid;
+  NSConnection  *conn;
+  NSDate        *when;
+
+  conn = [(NSDistantObject*)process connectionForProxy];
+  pid = [(id<CmdClient>)process processIdentifier];
+  [(id<CmdClient>)process cmdQuit: 0];
+  if (timeout > 0)
+    {
+      when = [NSDate dateWithTimeIntervalSinceNow: timeout];
+    }
+  else
+    {
+      when = [NSDate distantFuture];
+    }
+
+  while ([conn isValid] && [when timeIntervalSinceNow] > 0.0)
+    {
+      NS_DURING
+        [(id<CmdClient>)process processIdentifier];
+      NS_HANDLER
+      NS_ENDHANDLER
+      [NSThread sleepForTimeInterval: 0.1];
+    }
+  if ([conn isValid])
+    {
+      kill(pid, 9);
+      [[conn sendPort] invalidate];
+      [conn invalidate];
+      return NO;
+    }
+  return YES;
+}
+
+

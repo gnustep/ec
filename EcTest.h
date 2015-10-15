@@ -58,6 +58,7 @@
  */
 - (void) ecTestSetConfig: (in bycopy NSData*)data
                   forKey: (in bycopy NSString*)key;
+
 @end
 
 /** This function obtains a Distributed Objects proxy to the EcProcess
@@ -88,4 +89,11 @@ EcTestGetConfig(id<EcTest> process, NSString *key);
  */
 extern void
 EcTestSetConfig(id<EcTest> process, NSString *key, id value);
+
+/** This function shuts down the remote process, gracefully if possible,
+ * but then with a kill if graceful shutdown fails.<br />
+ * Returns YES on graceful shutdown, NO on timeout.
+ */
+extern BOOL
+EcTestShutdown(id<EcTest> process, NSTimeInterval timeout);
 

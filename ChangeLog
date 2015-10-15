@@ -1,3 +1,9 @@
+2015-10-15  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcTest.h:
+	* EcTest.m:
+	Add new function to shut down a process via DO connection.
+
 2015-10-14  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcUserDefaults.h:
