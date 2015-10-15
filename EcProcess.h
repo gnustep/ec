@@ -713,7 +713,7 @@ extern NSString*	cmdVersion(NSString *ver);
  * Subclasses should override this method to perform any pre-shutdown cleanup
  * before they call the superclass implementation.
  */
-- (void) cmdQuit: (NSInteger)status;
+- (oneway void) cmdQuit: (NSInteger)status;
 
 /** Returns non-zero (a signal) if the process has received a unix signal.
  */
@@ -879,7 +879,7 @@ extern NSString*	cmdVersion(NSString *ver);
 /** Should be over-ridden to perform extra tidy up on shutdown of the
  * process - should call [super cmdQuit:...] at the end of the method.
  */
-- (void) cmdQuit: (NSInteger)status;
+- (oneway void) cmdQuit: (NSInteger)status;
 
 /** Used to tell your application about configuration changes (the
  * default implementation merges the configuration change into the

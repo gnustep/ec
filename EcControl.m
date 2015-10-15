@@ -342,7 +342,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 - (void) cmdPing: (id <CmdPing>)from
 	sequence: (unsigned)num
 	   extra: (NSData*)data;
-- (void) cmdQuit: (NSInteger)status;
+- (oneway void) cmdQuit: (NSInteger)status;
 - (void) command: (NSData*)dat
 	    from: (NSString*)f;
 - (BOOL) connection: (NSConnection*)ancestor
@@ -494,7 +494,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [from cmdGnip: self sequence: num extra: nil];
 }
 
-- (void) cmdQuit: (NSInteger)status
+- (oneway void) cmdQuit: (NSInteger)status
 {
   [sink shutdown];
   exit (status);

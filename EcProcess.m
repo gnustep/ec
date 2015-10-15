@@ -3630,7 +3630,7 @@ With two parameters ('maximum' and a number),\n\
   va_end(ap);
 }
 
-- (void) cmdQuit: (NSInteger)status
+- (oneway void) cmdQuit: (NSInteger)status
 {
   if (reservedPipe[1] > 0)
     {

@@ -98,7 +98,7 @@ static BOOL commandIsRepeat (NSString *string)
   return NO;	// Not a client of the Command server
 }
 
-- (void) cmdQuit: (NSInteger)sig
+- (oneway void) cmdQuit: (NSInteger)sig
 {
   [timer invalidate];
   timer = nil;

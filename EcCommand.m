@@ -150,7 +150,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 - (void) cmdPing: (id <CmdPing>)from
 	sequence: (unsigned)num
 	   extra: (NSData*)data;
-- (void) cmdQuit: (NSInteger)sig;
+- (oneway void) cmdQuit: (NSInteger)sig;
 - (void) command: (NSData*)dat
 	      to: (NSString*)t
 	    from: (NSString*)f;
@@ -707,7 +707,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
   [from cmdGnip: self sequence: num extra: nil];
 }
 
-- (void) cmdQuit: (NSInteger)sig
+- (oneway void) cmdQuit: (NSInteger)sig
 {
   if (sig == tStatus && control != nil)
     {
