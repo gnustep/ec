@@ -1049,5 +1049,8 @@ extern NSString         *cmdBasicDbg;	/* Debug normal stuff.		*/
 extern NSString         *cmdConnectDbg;	/* Debug connection attempts.	*/
 extern NSString         *cmdDetailDbg;	/* Debug stuff in more detail.	*/
 
+/* Deprecated synonym for cmdBasicDbg.	*/
+extern NSString         *cmdDefaultDbg;
+
 
 #endif /* INCLUDED_ECPROCESS_H */
