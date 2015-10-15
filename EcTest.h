@@ -92,7 +92,8 @@ EcTestSetConfig(id<EcTest> process, NSString *key, id value);
 
 /** This function shuts down the remote process, gracefully if possible,
  * but then with a kill if graceful shutdown fails.<br />
- * Returns YES on graceful shutdown, NO on timeout.
+ * Returns YES on graceful shutdown, NO on timeout (or if the connection
+ * had already been invalidated).
  */
 extern BOOL
 EcTestShutdown(id<EcTest> process, NSTimeInterval timeout);

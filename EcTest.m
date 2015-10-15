@@ -185,6 +185,11 @@ EcTestShutdown(id<EcTest> process, NSTimeInterval timeout)
   NSDate        *when;
 
   conn = [(NSDistantObject*)process connectionForProxy];
+  if (NO == [conn isValid])
+    {
+      [[conn sendPort] invalidate];
+      return NO;
+    }
   pid = [(id<CmdClient>)process processIdentifier];
   [(id<CmdClient>)process cmdQuit: 0];
   if (timeout > 0)
