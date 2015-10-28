@@ -1076,19 +1076,14 @@ consoleCompleter(const char *text, int start, int end)
       /* read password (glibc documentation says not to use getpass?) */
       
       line = getpass("Password: ");
-      if (0 == line)
-	{
-	  NSLog(@"Could not read password: %s", strerror(errno));
-	  exit(1);
-	}
 #else
       line = readpassphrase("Password: ", &buf[0], 128, RPP_ECHO_OFF);
+#endif
       if (NULL == line)
         {
-          NSLog(@"Could not read password");
+          NSLog(@"Could not read password: %s", strerror(errno));
           exit(1);
         }
-#endif
       p = [[NSString stringWithCString: line] stringByTrimmingSpaces];
       if ([p caseInsensitiveCompare: @"quit"] == NSOrderedSame)
 	{
