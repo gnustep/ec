@@ -42,6 +42,11 @@
 #  include <readline/history.h>
 #endif
 
+#if defined(HAVE_READPASSPHRASE_H)
+#  include <readpassphrase.h>
+#elif defined(HAVE_BSD_READPASSPHRASE_H)
+#  include <bsd/readpassphrase.h>
+#endif
 static BOOL commandIsRepeat (NSString *string)
 {
   switch ([string length])
@@ -1067,7 +1072,7 @@ consoleCompleter(const char *text, int start, int end)
 	{
 	  [self cmdQuit: 0];
 	}
-      
+#ifndef HAVE_READPASSPHRASE
       /* read password (glibc documentation says not to use getpass?) */
       
       line = getpass("Password: ");
@@ -1076,6 +1081,14 @@ consoleCompleter(const char *text, int start, int end)
 	  NSLog(@"Could not read password: %s", strerror(errno));
 	  exit(1);
 	}
+#else
+      line = readpassphrase("Password: ", &buf[0], 128, RPP_ECHO_OFF);
+      if (NULL == line)
+        {
+          NSLog(@"Could not read password");
+          exit(1);
+        }
+#endif
       p = [[NSString stringWithCString: line] stringByTrimmingSpaces];
       if ([p caseInsensitiveCompare: @"quit"] == NSOrderedSame)
 	{

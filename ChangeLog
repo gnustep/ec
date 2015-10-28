@@ -1,3 +1,13 @@
+2015-10-28 	Niels Grewe <niels.grewe@halbordnung.de>
+
+	* EcConsole.m: Use readpassphrase() instead of getpass() if available.
+	* configure.ac
+	* config.make.in:
+	Test for readpassphrase in the C library and libbsd, link if needed.
+	* configure:
+	* config.h.in:
+	Regenerate
+
 2015-10-15  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcTest.h:

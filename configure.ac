@@ -79,6 +79,18 @@ if test $enable_net_snmp = "yes"; then
 fi
 AC_SUBST(WITH_NET_SNMP)
 
+AC_CHECK_HEADERS(readpassphrase.h bsd/readpassphrase.h)
+oldlibs=$LIBS
+AC_SEARCH_LIBS(readpassphrase, bsd)
+AC_CHECK_FUNCS(readpassphrase)
+if test "x$ac_cv_search_readpassphrase" != "xno";
+then 
+  if test "x$ac_cv_search_readpassphrase" != "xnone needed" ;
+  then
+    AC_SUBST([READPASSPHRASE_LIBS], ["$ac_cv_search_readpassphrase"])
+  fi
+fi
+LIBS=$oldlibs
 AC_OUTPUT(config.make)
 
 

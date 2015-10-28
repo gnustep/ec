@@ -10,6 +10,9 @@
 /* Define to 1 if you have the <arpa/telnet.h> header file. */
 #undef HAVE_ARPA_TELNET_H
 
+/* Define to 1 if you have the <bsd/readpassphrase.h> header file. */
+#undef HAVE_BSD_READPASSPHRASE_H
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
@@ -42,6 +45,12 @@
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
+
+/* Define to 1 if you have the `readpassphrase' function. */
+#undef HAVE_READPASSPHRASE
+
+/* Define to 1 if you have the <readpassphrase.h> header file. */
+#undef HAVE_READPASSPHRASE_H
 
 /* Define to 1 if you have the `setpgid' function. */
 #undef HAVE_SETPGID
