@@ -1750,7 +1750,7 @@ static NSString	*noFiles = @"No log files to archive";
 
 - (void) setCmdInterval: (NSTimeInterval)interval
 {
-  if (interval > 60.0)
+  if (interval > 300.0)
     {
 NSLog(@"Ignored attempt to set timer interval to %g ... using 60.0", interval);
       interval = 60.0;
