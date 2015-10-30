@@ -4917,10 +4917,14 @@ With two parameters ('maximum' and a number),\n\
 	{
 	  NSTimeInterval	when = cmdTimInterval;
 
-	  if (delay == YES && when < 1.0)
+	  if (when < 0.001 || (when < 10.0 && YES == delay))
 	    {
 	      when = 10.0;
 	    }
+          if (when > 300.0)
+            {
+              when = 60.0;
+            }
 	  cmdPTimer =
 	    [NSTimer scheduledTimerWithTimeInterval: when
 					     target: self

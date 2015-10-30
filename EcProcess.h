@@ -811,7 +811,10 @@ extern NSString*	cmdVersion(NSString *ver);
  */
 - (void) setCmdDebug: (NSString*)mode withDescription: (NSString*)desc;
 
-/* Sets the interval between timeouts.
+/* Sets the interval between timeouts.<br />
+ * Any value below 0.001 is ignored and 10 is used.<br />
+ * Any value above 300 is ignored and 60 is used.<br />
+ * The default value is 60 seconds.
  */
 - (void) setCmdInterval: (NSTimeInterval)interval;
 
