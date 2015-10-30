@@ -996,17 +996,23 @@ extern NSString*	cmdVersion(NSString *ver);
 - (void) ecHadOP: (NSDate*)when;
 
 /** Called on the first timeout of a new day.<br />
- * The argument 'when' is the timestamp of the timeout.
+ * The argument 'when' is the timestamp of the timeout.<br />
+ * If you override this, don't forget to call the superclass
+ * implementation in order to perform regular housekeeping.
  */
 - (void) ecNewDay: (NSCalendarDate*)when;
 
 /** Called on the first timeout of a new hour.<br />
- * The argument 'when' is the timestamp of the timeout.
+ * The argument 'when' is the timestamp of the timeout.<br />
+ * If you override this, don't forget to call the superclass
+ * implementation in order to perform regular housekeeping.
  */
 - (void) ecNewHour: (NSCalendarDate*)when;
 
 /** Called on the first timeout of a new minute.<br />
- * The argument 'when' is the timestamp of the timeout.
+ * The argument 'when' is the timestamp of the timeout.<br />
+ * If you override this, don't forget to call the superclass
+ * implementation in order to perform regular housekeeping.
  */
 - (void) ecNewMinute: (NSCalendarDate*)when;
 
