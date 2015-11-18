@@ -1,3 +1,7 @@
+2015-11-18 	Niels Grewe <niels.grewe@halbordnung.de>
+
+	* EcProcess.m: Fix argument validation when reading/writing defaults.
+
 2015-10-28 	Niels Grewe <niels.grewe@halbordnung.de>
 
 	* EcConsole.m: Use readpassphrase() instead of getpass() if available.
