@@ -3,6 +3,7 @@
    * details on what you can configure here.
    */
   Debug = NO;                   /* Defaults ... do not log email alerts sent */
+  Quiet = NO;                   /* Defaults ... suppress logging of alarms */
 
   /* If we wish to extend/oeverride the function of the EcAlerter class in
    * handling alerts, we may do so by specifying the name of a subclass of

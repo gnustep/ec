@@ -296,6 +296,9 @@
  *   <term>Debug</term>
  *   <desc>A boolean saying whether extra debug data should be logged.
  *     If YES, all outgoing Email messages are logged.</desc>
+ *   <term>Quiet</term>
+ *   <desc>A boolean saying whether standard debug logs should be suppressed.
+ *     If YES, the handling of alarm messages is not logged.</desc>
  *   <term>EmailFrom</term>
  *   <desc>The sender address to use for outgoing alert Email messages.
  *     By default 'alerter@host' where 'host' is the value defined in
@@ -361,6 +364,7 @@
   BOOL                  debug;  /** Debug enabled in config */
   BOOL                  supersede;  /** If a clear should replace original */
   BOOL                  eThreaded;  /** alarm reminder emails threaded */
+  BOOL                  quiet;  /** Quiet enabled in config */
 }
 
 /** Called when user defaults are updated, this fetches the dictionary
@@ -441,10 +445,6 @@
      isClear: (BOOL)isClear
           to: (NSArray*)destinations;
 
-/** Calls -log:identifier:isClear:to: with a nil identifier.
- */
-- (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations;
-
 /** Called by
  * -handleEvent:withHost:andServer:timestamp:identifier:alarm:reminder:
  * to pass a message to an array of destinations.
@@ -454,11 +454,6 @@
 - (void) mail: (NSMutableDictionary*)m
    identifier: (NSString*)identifier
       isClear: (BOOL)isClear
-           to: (NSArray*)destinations;
-
-/** Calls -mail:identifier:isClear:to: with a nil identifier.
- */
-- (void) mail: (NSMutableDictionary*)m
            to: (NSArray*)destinations;
 
 /** Cache a copy of the Rules with modifications to store information
@@ -477,10 +472,6 @@
   identifier: (NSString*)identifier
      isClear: (BOOL)isClear
           to: (NSArray*)destinations;
-
-/** Calls -sms:identifier:isClear:to: with a nil identifier.
- */
-- (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations;
 
 /** Responsible for the periodic calling of -flushEmail and -flushSms
  */

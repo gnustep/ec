@@ -3045,28 +3045,19 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               [cmdDefs setCommand: nil forKey: key];
               val = [cmdDefs objectForKey: key];
             }
-          else if ([msg count] > 2
-            && (([mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
-               ||  [mode caseInsensitiveCompare: @"write"] == NSOrderedSame)
-                )
+          else if ([msg count] > 3
+            && [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
 	    {
-              if ([msg count] < 4)
-                {
-                  [self cmdPrintf: @"Missing argument (please provide a value to write).\n"];
-                  return;
-                }
 	      val = [msg objectAtIndex: 3];
               [cmdDefs setCommand: val forKey: key];
               val = [cmdDefs objectForKey: key];
 	    }
-          else if ([mode caseInsensitiveCompare: @"read"] == NSOrderedSame)
-            {
-              val = [cmdDefs objectForKey: key];
-            }
           else
             {
-              [self cmdPrintf: @"Invalid subcommand: '%@'\n", mode];
-              return;
+              /* To be tolerant of typing errors, anything else is
+               * treated as a 'read'
+               */
+              val = [cmdDefs objectForKey: key];
             }
           if (val == old || [val isEqual: old])
             {

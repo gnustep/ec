@@ -1,3 +1,11 @@
+2015-11-18  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m: Improve output when changing/reading defaults, and
+	restore tolerant behavior of doing a read by default.
+	* ECAlerter.h: 
+	* ECAlerter.m: Remove obsolete methods, and a 'Quiet' configuration
+	option, and log alarms (and their disposition) by default.
+
 2015-11-18 	Niels Grewe <niels.grewe@halbordnung.de>
 
 	* EcProcess.m: Fix argument validation when reading/writing defaults.

@@ -111,10 +111,24 @@
   int                   duration;
   int                   reminder;
   int                   severity;
+  BOOL                  isAlarm;
   BOOL                  isClear;
 }
+- (NSString*) alarmText;
 @end
 @implementation EcAlerterEvent
+- (NSString*) alarmText
+{
+  if (NO == isAlarm)
+    {
+      return nil;
+    }
+  if (YES == isClear)
+    {
+      return [identifier stringByAppendingString: @"(clear)"];
+    }
+  return [identifier stringByAppendingString: @"(alarm)"];
+}
 - (void) dealloc
 {
   RELEASE(hostName);
@@ -246,6 +260,7 @@ replaceFields(NSDictionary *fields, NSString *template)
 - (BOOL) configureWithDefaults: (NSDictionary*)c
 {
   debug = [[c objectForKey: @"Debug"] boolValue];
+  quiet = [[c objectForKey: @"Quiet"] boolValue];
   supersede = [[c objectForKey: @"Supersede"] boolValue];
   [self _setEFrom: [c objectForKey: @"EmailFrom"]];
   ASSIGNCOPY(eHost, [c objectForKey: @"EmailHost"]);
@@ -956,6 +971,10 @@ replaceFields(NSDictionary *fields, NSString *template)
                     }
                 }
               [event->m setObject: s forKey: @"Replacement"];
+              if (YES == event->isAlarm && NO == quiet)
+                {
+                  NSLog(@"Send Email for %@ to %@", [event alarmText], o);
+                }
               [self mail: event->m
               identifier: event->identifier
                  isClear: event->isClear
@@ -1012,6 +1031,10 @@ replaceFields(NSDictionary *fields, NSString *template)
                     }
                 }
               [event->m setObject: s forKey: @"Replacement"];
+              if (YES == event->isAlarm && NO == quiet)
+                {
+                  NSLog(@"Send Email for %@ to %@", [event alarmText], o);
+                }
               [self mail: event->m
               identifier: event->identifier
                  isClear: event->isClear
@@ -1056,6 +1079,10 @@ replaceFields(NSDictionary *fields, NSString *template)
                     }
                 }
               [event->m setObject: s forKey: @"Replacement"];
+              if (YES == event->isAlarm && NO == quiet)
+                {
+                  NSLog(@"Send SMS for %@ to %@", [event alarmText], o);
+                }
               [self sms: event->m
              identifier: event->identifier
                 isClear: event->isClear
@@ -1090,12 +1117,20 @@ replaceFields(NSDictionary *fields, NSString *template)
 
       if ([[d objectForKey: @"Stop"] boolValue] == YES)
         {
+          if (YES == event->isAlarm && NO == quiet)
+            {
+              NSLog(@"Stop %@ with %@", [event alarmText], d);
+            }
           break;	// Don't want to perform any more matches.
         }
     }
   if (NO == found)
     {
-      if (YES == debug)
+      if (YES == event->isAlarm && NO == quiet)
+        {
+          NSLog(@"No match of %@ with %@", [event alarmText], rulesArray);
+        }
+      else if (YES == debug)
         {
           NSLog(@"No match of %@ with %@", event->m, rulesArray);
         }
@@ -1129,6 +1164,7 @@ replaceFields(NSDictionary *fields, NSString *template)
         {
           event->severity = EcAlarmSeverityIndeterminate;
           event->severityText = @"";
+          event->isAlarm = NO;
           event->isClear = NO;
           if (nil != identifier)
             {
@@ -1144,6 +1180,7 @@ replaceFields(NSDictionary *fields, NSString *template)
           event->severity = [alarm perceivedSeverity];
           ASSIGN(event->severityText,
             [EcAlarm stringFromSeverity: event->severity]);
+          event->isAlarm = YES;
           if ([@"Clear" isEqual: [alarm extra]])
             {
               event->isClear = YES;
@@ -1192,6 +1229,10 @@ replaceFields(NSDictionary *fields, NSString *template)
       [m setObject: event->text forKey: @"Message"];
       [m setObject: event->text forKey: @"Original"];
 
+      if (YES == event->isAlarm && NO == quiet)
+        {
+          NSLog(@"Handling %@ ... %@", [event alarmText], alarm);
+        }
       [self applyRules: rules toEvent: event];
     }
   NS_HANDLER
@@ -1328,11 +1369,6 @@ replaceFields(NSDictionary *fields, NSString *template)
       d = [d lastPathComponent];
       [[EcProc cmdLogFile: d] printf: @"%@\n", s];
     }
-}
-
-- (void) log: (NSMutableDictionary*)m to: (NSArray*)destinations
-{
-  [self log: m identifier: nil isClear: NO to: destinations];
 }
 
 - (void) mail: (NSMutableDictionary*)m
@@ -1551,12 +1587,6 @@ replaceFields(NSDictionary *fields, NSString *template)
     }
 }
 
-- (void) mail: (NSMutableDictionary*)m to: (NSArray*)destinations
-{
-  [self mail: m identifier: nil isClear: NO to: destinations];
-}
-
-
 - (void) sms: (NSMutableDictionary*)m
   identifier: (NSString*)identifier
      isClear: (BOOL)isClear
@@ -1609,11 +1639,6 @@ replaceFields(NSDictionary *fields, NSString *template)
 	}
       [sms setObject: msg forKey: d];
     }
-}
-
-- (void) sms: (NSMutableDictionary*)m to: (NSArray*)destinations
-{
-  [self sms: m identifier: nil isClear: NO to: destinations];
 }
 
 - (void) timeout: (NSTimer*)t
