@@ -126,6 +126,7 @@ ecNativeThreadID()
   id            obj;            // The latest value of the default
 }
 + (void) defaultsChanged: (NSUserDefaults*)defs;
++ (NSMutableString*) listHelp;
 + (void) registerDefault: (NSString*)name
             withTypeText: (NSString*)type
              andHelpText: (NSString*)help
@@ -3018,15 +3019,21 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
 	  [self cmdPrintf: @"\nWithout parameters, the defaults command is "];
 	  [self cmdPrintf: @"used to list the current defaults overrides.\n"];
-	  [self cmdPrintf: @"With the 'delete' parameter followed by a name,"];
+	  [self cmdPrintf: @"With the 'delete' parameter followed by a name, "];
 	  [self cmdPrintf: @"the command is used to revert a default.\n"];
-	  [self cmdPrintf: @"With the 'write' parameter followed by a name"];
+	  [self cmdPrintf: @"With the 'write' parameter followed by a name "];
 	  [self cmdPrintf: @"and value, the command sets a default.\n"];
-	  [self cmdPrintf: @"With the 'read' parameter followed by a name,"];
+	  [self cmdPrintf: @"With the 'read' parameter followed by a name, "];
 	  [self cmdPrintf: @"the command is used to show a default.\n"];
-	  [self cmdPrintf: @"With the 'revert' parameter,"];
+	  [self cmdPrintf: @"With the 'revert' parameter, "];
 	  [self cmdPrintf: @"the command is used to revert all defaults.\n"];
+	  [self cmdPrintf: @"With the 'list' parameter, theis is used "];
+	  [self cmdPrintf: @"to list registered (not all) defaults.\n"];
 	}
+      else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"list"])
+	{
+          [self cmdPrintf: @"%@", [EcDefaultRegistration listHelp]];
+        }
       else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"revert"])
 	{
           [cmdDefs revertSettings];
@@ -5218,6 +5225,71 @@ static NSMutableDictionary      *regDefs = nil;
   regDefs = [NSMutableDictionary new];
 }
 
++ (NSMutableString*) listHelp
+{
+  NSMutableString       *out = [NSMutableString stringWithCapacity: 1000];
+  NSArray       *keys;
+  NSString      *prf;
+  NSEnumerator  *e;
+  NSString      *k;
+  NSUInteger    max = 0;
+
+  prf = EC_DEFAULTS_PREFIX;
+  if (nil == prf)
+    {
+      prf = @"";
+    }
+
+  keys = [regDefs allKeys];
+  e = [keys objectEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+
+      if (nil != d->type && nil != d->help)
+        {
+          NSUInteger    length = [prf length] + 5;
+
+          length += [k length] + [d->type length];
+          if (length > max)
+            {
+              max = length;
+            }
+        }
+    }
+
+  keys = [keys sortedArrayUsingSelector: @selector(compare:)];
+  e = [keys objectEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+
+      if (nil != d->type && nil != d->help)
+        {
+          /* If the help text is short enough, put it all on one line.
+           */
+          if ([d->help length] + max < 80)
+            {
+              NSMutableString   *m;
+
+              m = [NSMutableString stringWithFormat: @"-%@%@ [%@] ",
+                prf, k, d->type];
+              while ([m length] < max)
+                {
+                  [m appendString: @" "];
+                }
+              [out appendFormat: @"%@%@\n", m, d->help];
+            }
+          else
+            {
+              [out appendFormat: @"-%@%@ [%@]\n  %@\n",
+                prf, k, d->type, d->help];
+            }
+        }
+    }
+  return out;
+}
+
 + (void) registerDefault: (NSString*)name
             withTypeText: (NSString*)type
              andHelpText: (NSString*)help
@@ -5288,64 +5360,7 @@ static NSMutableDictionary      *regDefs = nil;
 
 + (void) showHelp
 {
-  NSArray       *keys;
-  NSString      *prf;
-  NSEnumerator  *e;
-  NSString      *k;
-  NSUInteger    max = 0;
-
-  prf = EC_DEFAULTS_PREFIX;
-  if (nil == prf)
-    {
-      prf = @"";
-    }
-
-  keys = [regDefs allKeys];
-  e = [keys objectEnumerator];
-  while (nil != (k = [e nextObject]))
-    {
-      EcDefaultRegistration     *d = [regDefs objectForKey: k];
-
-      if (nil != d->type && nil != d->help)
-        {
-          NSUInteger    length = [prf length] + 5;
-
-          length += [k length] + [d->type length];
-          if (length > max)
-            {
-              max = length;
-            }
-        }
-    }
-
-  keys = [keys sortedArrayUsingSelector: @selector(compare:)];
-  e = [keys objectEnumerator];
-  while (nil != (k = [e nextObject]))
-    {
-      EcDefaultRegistration     *d = [regDefs objectForKey: k];
-
-      if (nil != d->type && nil != d->help)
-        {
-          /* If the help text is short enough, put it all on one line.
-           */
-          if ([d->help length] + max < 80)
-            {
-              NSMutableString   *m;
-
-              m = [NSMutableString stringWithFormat: @"-%@%@ [%@] ",
-                prf, k, d->type];
-              while ([m length] < max)
-                {
-                  [m appendString: @" "];
-                }
-              GSPrintf(stderr, @"%@%@\n", m, d->help);
-            }
-          else
-            {
-              GSPrintf(stderr, @"-%@%@ [%@]\n  %@\n", prf, k, d->type, d->help);
-            }
-        }
-    }
+  GSPrintf(stderr, @"%@", [self listHelp]);
 }
 
 - (void) dealloc
