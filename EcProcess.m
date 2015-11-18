@@ -3036,28 +3036,48 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	{
 	  NSString	*mode = (NSString*)[msg objectAtIndex: 1];
 	  NSString	*key = (NSString*)[msg objectAtIndex: 2];
+          id            old;
           id            val;
 
+          old = [cmdDefs objectForKey: key];
           if ([mode caseInsensitiveCompare: @"delete"] == NSOrderedSame)
             {
               [cmdDefs setCommand: nil forKey: key];
+              val = [cmdDefs objectForKey: key];
             }
           else if ([msg count] > 2
             && [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
 	    {
 	      val = [msg objectAtIndex: 3];
               [cmdDefs setCommand: val forKey: key];
+              val = [cmdDefs objectForKey: key];
 	    }
-          val = [cmdDefs objectForKey: key];
-          if (nil == val)
+          else
             {
-              [self cmdPrintf: @"The default setting for '%@' is removed.\n",
-                key];
+              val = [cmdDefs objectForKey: key];
+            }
+          if (val == old || [val isEqual: old])
+            {
+              if (nil == val)
+                {
+                  [self cmdPrintf: @"The default setting for '%@' is"
+                    @" unchanged (and not set).\n", key];
+                }
+              else
+                {
+                  [self cmdPrintf: @"The default setting for '%@' is"
+                    @" unchanged (%@).\n", key, val];
+                }
+            }
+          else if (nil == val)
+            {
+              [self cmdPrintf: @"The default setting for '%@' is"
+                @" deleted (was %@).\n", key, val];
             }
           else
             {
-              [self cmdPrintf: @"The default setting for '%@' is now:\n%@\n",
-                key, val];
+              [self cmdPrintf: @"The default setting for '%@' is"
+                @" set to: %@ (was %@).\n", key, val, old];
             }
 	}
       else
