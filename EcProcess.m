@@ -3046,7 +3046,8 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               val = [cmdDefs objectForKey: key];
             }
           else if ([msg count] > 3
-            && [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
+            && ([mode caseInsensitiveCompare: @"write"] == NSOrderedSame
+              || [mode caseInsensitiveCompare: @"set"] == NSOrderedSame))
 	    {
 	      val = [msg objectAtIndex: 3];
               [cmdDefs setCommand: val forKey: key];
