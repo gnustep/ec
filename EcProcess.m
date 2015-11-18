@@ -1825,15 +1825,18 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       [self ecRegisterDefault: @"Memory"
                  withTypeText: @"YES/NO"
                   andHelpText: @"Enable memory allocation checks"
-                       action: @selector(_defMemory:)];
+                       action: @selector(_defMemory:)
+                        value: @"YES"];
       [self ecRegisterDefault: @"Release"
                  withTypeText: @"YES/NO"
                   andHelpText: @"Turn on double release checks (debug)"
-                       action: @selector(_defRelease:)];
+                       action: @selector(_defRelease:)
+                        value: @"NO"];
       [self ecRegisterDefault: @"Testing"
                  withTypeText: @"YES/NO"
                   andHelpText: @"Run in test mode (if supported)"
-                       action: @selector(_defTesting:)];
+                       action: @selector(_defTesting:)
+                        value: @"NO"];
       /*
        * Set the timeouts for the default connection so that
        * they will be inherited by other connections.
