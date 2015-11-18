@@ -124,13 +124,16 @@ ecNativeThreadID()
   NSString      *help;          // The help text for the default
   SEL           cmd;            // method to update when default values change
   id            obj;            // The latest value of the default
+  id            val;            // The fallback value of the default
 }
 + (void) defaultsChanged: (NSUserDefaults*)defs;
 + (NSMutableString*) listHelp;
++ (NSDictionary*) merge: (NSDictionary*)d;
 + (void) registerDefault: (NSString*)name
             withTypeText: (NSString*)type
              andHelpText: (NSString*)help
-                  action: (SEL)cmd;
+                  action: (SEL)cmd
+                   value: (id)value;
 + (void) showHelp;
 @end
 
@@ -1155,7 +1158,21 @@ findMode(NSDictionary* d, NSString* s)
   [EcDefaultRegistration registerDefault: name
                             withTypeText: type
                              andHelpText: help
-                                  action: cmd];
+                                  action: cmd
+                                   value: nil];
+}
+
++ (void) ecRegisterDefault: (NSString*)name
+              withTypeText: (NSString*)type
+               andHelpText: (NSString*)help
+                    action: (SEL)cmd
+                     value: (id)value
+{
+  [EcDefaultRegistration registerDefault: name
+                            withTypeText: type
+                             andHelpText: help
+                                  action: cmd
+                                   value: value];
 }
 
 + (void) ecSetup
@@ -3819,6 +3836,7 @@ With two parameters ('maximum' and a number),\n\
       ASSIGN(cmdDefs, [NSUserDefaults
 	userDefaultsWithPrefix: prf
 	strict: EC_DEFAULTS_STRICT]);
+      defs = [EcDefaultRegistration merge: defs];
       if (defs != nil)
 	{
 	  [cmdDefs registerDefaults: defs];
@@ -5240,12 +5258,16 @@ static NSMutableDictionary      *regDefs = nil;
       prf = @"";
     }
 
+  [ecLock lock];
   keys = [regDefs allKeys];
+  [ecLock unlock];
   e = [keys objectEnumerator];
   while (nil != (k = [e nextObject]))
     {
-      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+      EcDefaultRegistration     *d;
 
+      [ecLock lock];
+      d = [regDefs objectForKey: k];
       if (nil != d->type && nil != d->help)
         {
           NSUInteger    length = [prf length] + 5;
@@ -5256,14 +5278,17 @@ static NSMutableDictionary      *regDefs = nil;
               max = length;
             }
         }
+      [ecLock unlock];
     }
 
   keys = [keys sortedArrayUsingSelector: @selector(compare:)];
   e = [keys objectEnumerator];
   while (nil != (k = [e nextObject]))
     {
-      EcDefaultRegistration     *d = [regDefs objectForKey: k];
+      EcDefaultRegistration     *d;
 
+      [ecLock lock];
+      d = [regDefs objectForKey: k];
       if (nil != d->type && nil != d->help)
         {
           /* If the help text is short enough, put it all on one line.
@@ -5286,14 +5311,41 @@ static NSMutableDictionary      *regDefs = nil;
                 prf, k, d->type, d->help];
             }
         }
+      [ecLock unlock];
     }
   return out;
+}
+
++ (NSDictionary*) merge: (NSDictionary*)d
+{
+  NSMutableDictionary   *m = AUTORELEASE([d mutableCopy]);
+  NSEnumerator          *e;
+  NSString              *k;
+
+  if (nil == m)
+    {
+      m = [NSMutableDictionary dictionaryWithCapacity: [regDefs count]];
+    }
+  [ecLock lock];
+  e = [regDefs keyEnumerator];
+  while (nil != (k = [e nextObject]))
+    {
+      EcDefaultRegistration     *r = [regDefs objectForKey: k];
+
+      if (nil != r->val && nil == [d objectForKey: k])
+        {
+          [m setObject: r->val forKey: k];
+        }
+    }
+  [ecLock unlock];
+  return m;
 }
 
 + (void) registerDefault: (NSString*)name
             withTypeText: (NSString*)type
              andHelpText: (NSString*)help
                   action: (SEL)cmd
+                   value: (id)value
 {
   static NSCharacterSet *w = nil;
   EcDefaultRegistration *d;
@@ -5355,6 +5407,7 @@ static NSMutableDictionary      *regDefs = nil;
     {
       d->cmd = cmd;
     }
+  ASSIGNCOPY(d->val, value);
   [ecLock unlock];
 }
 

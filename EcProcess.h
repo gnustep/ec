@@ -434,6 +434,9 @@ extern NSString*	cmdVersion(NSString *ver);
  * The action may either be NULL or a selector for a message to be sent
  * to the EcProc instance with a single argument (the new default value)
  * when the value of the user default changes.<br />
+ * The value may either be NULL, or be an object to be set in the registration
+ * domain of the defaults system (as long as this method is called before
+ * the EcProcess instance is initialized).<br />
  * If the same default name is registered more than once, the values
  * from the last registration are used, except for the case where the
  * cmd argument is NULL, in that case the previous selector is kept
@@ -448,7 +451,8 @@ extern NSString*	cmdVersion(NSString *ver);
 + (void) ecRegisterDefault: (NSString*)name
               withTypeText: (NSString*)type
                andHelpText: (NSString*)help
-                    action: (SEL)cmd;
+                    action: (SEL)cmd
+                     value: (id)value;
 
 /** Convenience method to create the singleton EcProcess instance
  * using the initial configuration provided by the +ecInitialDefaults
