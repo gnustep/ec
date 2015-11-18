@@ -3052,11 +3052,17 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               [cmdDefs setCommand: val forKey: key];
               val = [cmdDefs objectForKey: key];
 	    }
+          else if ([mode caseInsensitiveCompare: @"read"] == NSOrderedSame)
+            {
+              val = [cmdDefs objectForKey: key];
+            }
           else
             {
-              /* To be tolerant of typing errors, anything else is
-               * treated as a 'read'
+              /* To be tolerant of typing errors and maintain backward
+               * compatibility, anything else is treated as a 'read'
                */
+              [self cmdPrintf: @"Unrecognised command '%@' (assume 'read').\n",
+                key];
               val = [cmdDefs objectForKey: key];
             }
           if (val == old || [val isEqual: old])
