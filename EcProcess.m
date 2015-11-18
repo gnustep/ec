@@ -3084,6 +3084,11 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               [self cmdPrintf: @"The default setting for '%@' is"
                 @" deleted (was %@).\n", key, val];
             }
+          else if (nil == old)
+            {
+              [self cmdPrintf: @"The default setting for '%@' is"
+                @" set to: %@ (was not set).\n", key, val];
+            }
           else
             {
               [self cmdPrintf: @"The default setting for '%@' is"
