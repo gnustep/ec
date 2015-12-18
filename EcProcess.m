@@ -3072,15 +3072,30 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               [cmdDefs setCommand: nil forKey: key];
               val = [cmdDefs objectForKey: key];
             }
-          else if ([msg count] > 3
-            && ([mode caseInsensitiveCompare: @"write"] == NSOrderedSame
-              || [mode caseInsensitiveCompare: @"set"] == NSOrderedSame))
+          else if ([mode caseInsensitiveCompare: @"write"] == NSOrderedSame
+              || [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
 	    {
-	      val = [msg objectAtIndex: 3];
-              [cmdDefs setCommand: val forKey: key];
-              val = [cmdDefs objectForKey: key];
+              if ([msg count] == 4)
+                {
+                  val = [msg objectAtIndex: 3];
+                  [cmdDefs setCommand: val forKey: key];
+                  val = [cmdDefs objectForKey: key];
+                }
+              else if ([msg count] == 3)
+                {
+                  [self cmdPrintf: @"Missing value for '%@ %@' (no effect).\n",
+                    mode, key];
+                  val = old;
+                }
+              else
+                {
+                  [self cmdPrintf: @"Too many values for '%@ %@' (ignored).\n",
+                    mode, key];
+                  val = old;
+                }
 	    }
-          else if ([mode caseInsensitiveCompare: @"read"] == NSOrderedSame)
+          else if ([mode caseInsensitiveCompare: @"read"] == NSOrderedSame
+            || [mode caseInsensitiveCompare: @"get"] == NSOrderedSame)
             {
               val = [cmdDefs objectForKey: key];
             }
