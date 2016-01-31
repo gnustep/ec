@@ -1,3 +1,14 @@
+2016-01-21  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcAlarm.h:
+	* EcAlarm.m:
+        * EcAlarmDestination.m: When coalescing alarms, allow a clear and
+	alarm to cancel each other out, but only if the alarm is not yet
+	active (only queued). Allow alarms to be set to persist in the queue
+	for up to 255 seconds to allow more coalescing.
+	This lets us raise an alarm which, if cleared within the delay
+	period, will never be forwarded anywhere.
+
 2015-11-18  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: Improve output when changing/reading defaults, and

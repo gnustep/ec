@@ -456,6 +456,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
       c->_firstEventDate = [_firstEventDate copyWithZone: aZone];
       c->_notificationID = _notificationID;
       c->_trendIndicator = _trendIndicator;
+      c->_delay = _delay;
       ASSIGNCOPY(c->_userInfo, _userInfo);
     }
   return c;
@@ -471,6 +472,23 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
   DESTROY(_proposedRepairAction);
   DESTROY(_additionalText);
   [super dealloc];
+}
+
+- (uint8_t) delay
+{
+  return _delay;
+}
+
+- (BOOL) delayed: (NSTimeInterval)at
+{
+  if (_delay > 0)
+    {
+      if (at < [_eventDate timeIntervalSinceReferenceDate] + _delay)
+        {
+          return YES;
+        }
+    }
+  return NO;
 }
 
 - (NSString*) description
@@ -847,6 +865,17 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 - (id) replacementObjectForPortCoder: (NSPortCoder*)aCoder
 {
   return self;
+}
+
+- (void) setDelay: (uint8_t)delay
+{
+  if (YES == _frozen)
+    {
+      [NSException raise: NSInternalInconsistencyException
+		  format: @"[%@-%@] called for frozen instance",
+	NSStringFromClass([self class]), NSStringFromSelector(_cmd)];
+    }
+  _delay = delay;
 }
 
 - (void) setExtra: (void*)extra

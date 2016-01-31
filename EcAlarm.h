@@ -350,6 +350,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
   NSDictionary          *_userInfo;
   void			*_extra;
   BOOL			_frozen;
+  uint8_t               _delay;
 }
 
 /** Creates and returns an autoreleased instance by calling the
@@ -427,6 +428,15 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
 /** Deallocates the receiver.
  */
 - (void) dealloc;
+
+/** Returns the queue delay set for this alarm (or zero if none was set).
+ */
+- (uint8_t) delay;
+
+/** Returns YES if the receiver should be delayed in the queue past the
+ * supplied timestamp, NO otherwise.
+ */
+- (BOOL) delayed: (NSTimeInterval)at;
 
 /** EcAlarm objects may be passed over the distributed objects system or
  * archived.  This method is provided to implement the NSCoding protocol.<br />
@@ -541,6 +551,13 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component);
 /** Returns the probableCause set when the receiver was initialised.
  */
 - (EcAlarmProbableCause) probableCause;
+
+/** Sets the number of seconds for which this alarm should be delayed in the
+ * queue to allow coalescing with other matching alarms.  This defaults to
+ * zero so that there is no special delay in processing beyond that imposed
+ * by periodic queue flushing.
+ */
+- (void) setDelay: (uint8_t)delay;
 
 /** Sets extra data for the current instance.<br />
  * Extra data is not copied, archived, or transferred over DO, it is available

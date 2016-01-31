@@ -75,25 +75,40 @@
         {
           NSUInteger    index;
 
-          /* Event clears may only be coalesced with other clears,
-           * otherwise we might have a case where a clear is sent
-           * to the alarm sink without a corresponding alarm having
-           * been raised.
-           */
           index = [_alarmQueue indexOfObject: event];
-	  [_alarmQueue addObject: event];
-          if (NSNotFound != index)
+          if (NSNotFound == index)
+            {
+              [_alarmQueue addObject: event];
+            }
+          else
             {
 	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
 
 	      if ([old perceivedSeverity] == EcAlarmSeverityCleared)
 		{
+                  /* Repeated clears may be coalesced with later clears
+                   * being ignored.
+                   */
                   if (YES == _debug)
                     {
-                      NSLog(@"Coalesce %@ by removing %@", event, old);
+                      NSLog(@"Coalesce %@ by dropping it (%@ exists)",
+                        event, old);
                     }
+                  [_alarmQueue addObject: event];
 		  [_alarmQueue removeObjectAtIndex: index];
 		}
+              else if (nil == [_alarmsActive member: old])
+                {
+                  /* An alarm which is not yet active may be cancelled-out
+                   * by a following clear.
+                   */
+                  if (YES == _debug)
+                    {
+                      NSLog(@"Coalesce %@ by removing %@ (old)",
+                        event, old);
+                    }
+		  [_alarmQueue removeObjectAtIndex: index];
+                }
             }
         }
       else
@@ -101,16 +116,32 @@
           NSUInteger    index;
 
           index = [_alarmQueue indexOfObject: event];
-	  [_alarmQueue addObject: event];
-          if (NSNotFound != index)
+          if (NSNotFound == index)
+            {
+              [_alarmQueue addObject: event];
+            }
+          else
             {
 	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
 
-              if (YES == _debug)
+	      if ([old perceivedSeverity] == EcAlarmSeverityCleared)
                 {
-                  NSLog(@"Coalesce %@ by removing %@", event, old);
+                  [_alarmQueue addObject: event];
+                  if (YES == _debug)
+                    {
+                      NSLog(@"Coalesce %@ by removing %@ (old)",
+                        event, old);
+                    }
+		  [_alarmQueue removeObjectAtIndex: index];
                 }
-              [_alarmQueue removeObjectAtIndex: index];
+              else
+                {
+                  if (YES == _debug)
+                    {
+                      NSLog(@"Coalesce %@ by dropping it (%@ exists)",
+                        event, old);
+                    }
+                }
             }
 	}
       [_alarmLock unlock];
@@ -499,21 +530,81 @@
 	{
 	  if ([_alarmQueue count] > 0)
 	    {
+              NSTimeInterval    now = [NSDate timeIntervalSinceReferenceDate];
+              NSUInteger        index = 0;
+
 	      // Do stuff here
 
-	      while ([_alarmQueue count] > 0)
+              while (index < [_alarmQueue count])
 		{
-		  id	o;
+		  id	o = [_alarmQueue objectAtIndex: index];
 
-		  o = [[[_alarmQueue objectAtIndex: 0] retain] autorelease];
-		  [_alarmQueue removeObjectAtIndex: 0];
-
-		  if (YES == [o isKindOfClass: [EcAlarm class]])
+		  if (NO == [o isKindOfClass: [EcAlarm class]])
 		    {
-		      EcAlarm	*next = (EcAlarm*)o;
+		      NSString	*s = RETAIN([o description]);
+
+                      [_alarmQueue removeObjectAtIndex: index];
+
+		      if (YES == [s hasPrefix: @"domanage "])
+			{
+			  NSString	*m = [s substringFromIndex: 9];
+
+			  if (nil == [_managedObjects member: m])
+			    {
+			      [_managedObjects addObject: m];
+                              [_alarmLock unlock];
+			      [self domanageFwd: m];
+                              [_alarmLock lock];
+			    }
+			}
+		      else if (YES == [s hasPrefix: @"unmanage "])
+			{
+			  NSString	*m = [s substringFromIndex: 9];
+
+			  if (nil != [_managedObjects member: m])
+			    {
+                              [_alarmLock unlock];
+                              [self _unmanage: m];
+			      [self unmanageFwd: m];
+                              [_alarmLock lock];
+			    }
+
+			  /* When we unmanage an object, we also
+			   * implicitly unmanage objects which
+			   * are components of that object.
+			   */
+			  if (YES == [m hasSuffix: @"_"])
+			    {
+			      NSEnumerator	*e;
+			      NSString		*c;
+
+			      e = [[_managedObjects allObjects]
+				objectEnumerator];
+			      while (nil != (c = [e nextObject]))
+				{
+				  if (YES == [c hasPrefix: m])
+				    {
+                                      [_alarmLock unlock];
+                                      [self unmanageFwd: c];
+                                      [_alarmLock lock];
+				    }
+				}
+			    }
+			}
+		      else
+			{
+			  NSLog(@"ERROR ... unexpected command '%@'", s);
+			}
+                      RELEASE(s);
+		    }
+                  else if (NO == [(EcAlarm*)o delayed: now])
+		    {
+		      EcAlarm	*next = (EcAlarm*)AUTORELEASE(RETAIN(o));
 		      EcAlarm	*prev = [_alarmsActive member: next];
 		      NSString	*m = [next managedObject];
                       BOOL      shouldForward = NO;
+
+                      [_alarmQueue removeObjectAtIndex: index];
 
 		      if (nil == prev)
 			{
@@ -584,61 +675,13 @@
                           [_alarmLock lock];
                         }
 		    }
-		  else
-		    {
-		      NSString	*s = [o description];
-
-		      if (YES == [s hasPrefix: @"domanage "])
-			{
-			  NSString	*m = [s substringFromIndex: 9];
-
-			  if (nil == [_managedObjects member: m])
-			    {
-			      [_managedObjects addObject: m];
-                              [_alarmLock unlock];
-			      [self domanageFwd: m];
-                              [_alarmLock lock];
-			    }
-			}
-		      else if (YES == [s hasPrefix: @"unmanage "])
-			{
-			  NSString	*m = [s substringFromIndex: 9];
-
-			  if (nil != [_managedObjects member: m])
-			    {
-                              [_alarmLock unlock];
-                              [self _unmanage: m];
-			      [self unmanageFwd: m];
-                              [_alarmLock lock];
-			    }
-
-			  /* When we unmanage an object, we also
-			   * implicitly unmanage objects which
-			   * are components of that object.
-			   */
-			  if (YES == [m hasSuffix: @"_"])
-			    {
-			      NSEnumerator	*e;
-			      NSString		*s;
-
-			      e = [[_managedObjects allObjects]
-				objectEnumerator];
-			      while (nil != (s = [e nextObject]))
-				{
-				  if (YES == [s hasPrefix: m])
-				    {
-                                      [_alarmLock unlock];
-                                      [self unmanageFwd: s];
-                                      [_alarmLock lock];
-				    }
-				}
-			    }
-			}
-		      else
-			{
-			  NSLog(@"ERROR ... unexpected command '%@'", s);
-			}
-		    }
+                  else
+                    {
+                      /* This alarm is delayed, skip past to process the
+                       * next one.
+                       */
+                      index++;
+                    }
 		}
 	    }
 	  _inTimeout = NO;
