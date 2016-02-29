@@ -3040,15 +3040,15 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdPrintf: @"\nWithout parameters, the defaults command is "];
 	  [self cmdPrintf: @"used to list the current defaults overrides.\n"];
 	  [self cmdPrintf: @"With the 'delete' parameter followed by a name, "];
-	  [self cmdPrintf: @"the command is used to revert a default.\n"];
+	  [self cmdPrintf: @"removes an override.\n"];
 	  [self cmdPrintf: @"With the 'write' parameter followed by a name "];
-	  [self cmdPrintf: @"and value, the command sets a default.\n"];
+	  [self cmdPrintf: @"and value, sets an override.\n"];
 	  [self cmdPrintf: @"With the 'read' parameter followed by a name, "];
-	  [self cmdPrintf: @"the command is used to show a default.\n"];
+	  [self cmdPrintf: @"shows the effective default.\n"];
 	  [self cmdPrintf: @"With the 'revert' parameter, "];
-	  [self cmdPrintf: @"the command is used to revert all defaults.\n"];
-	  [self cmdPrintf: @"With the 'list' parameter, theis is used "];
-	  [self cmdPrintf: @"to list registered (not all) defaults.\n"];
+	  [self cmdPrintf: @"the command is used to revert all overides.\n"];
+	  [self cmdPrintf: @"With the 'list' parameter, this lists "];
+	  [self cmdPrintf: @"registered (not all) defaults/overrides.\n"];
 	}
       else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"list"])
 	{

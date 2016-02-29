@@ -66,12 +66,14 @@
     }
   else
     {
+      EcAlarmSeverity   severity = [event perceivedSeverity];
+
       [_alarmLock lock];
       if (YES  == _coalesceOff)
 	{
 	  [_alarmQueue addObject: event];
 	}
-      else if ([event perceivedSeverity] == EcAlarmSeverityCleared)
+      else if (EcAlarmSeverityCleared == severity)
         {
           NSUInteger    index;
 
@@ -82,9 +84,10 @@
             }
           else
             {
-	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
+	      EcAlarm           *old = [_alarmQueue objectAtIndex: index];
+              EcAlarmSeverity   oldSeverity = [old perceivedSeverity];
 
-	      if ([old perceivedSeverity] == EcAlarmSeverityCleared)
+	      if (EcAlarmSeverityCleared == oldSeverity)
 		{
                   /* Repeated clears may be coalesced with later clears
                    * being ignored.
@@ -122,10 +125,26 @@
             }
           else
             {
-	      EcAlarm   *old = [_alarmQueue objectAtIndex: index];
+	      EcAlarm           *old = [_alarmQueue objectAtIndex: index];
+              EcAlarmSeverity   oldSeverity = [old perceivedSeverity];
 
-	      if ([old perceivedSeverity] == EcAlarmSeverityCleared)
+	      if (EcAlarmSeverityCleared == oldSeverity)
                 {
+                  /* A clear can be replaced by a raised alarm.
+                   */
+                  [_alarmQueue addObject: event];
+                  if (YES == _debug)
+                    {
+                      NSLog(@"Coalesce %@ by removing %@ (old)",
+                        event, old);
+                    }
+		  [_alarmQueue removeObjectAtIndex: index];
+                }
+              else if (severity < oldSeverity)
+                {
+                  /* Lower numeric values are higher severity,
+                   * so the new alarm supercedes the old one.      
+                   */
                   [_alarmQueue addObject: event];
                   if (YES == _debug)
                     {
