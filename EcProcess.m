@@ -3048,7 +3048,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 	  [self cmdPrintf: @"With the 'revert' parameter, "];
 	  [self cmdPrintf: @"the command is used to revert all overides.\n"];
 	  [self cmdPrintf: @"With the 'list' parameter, this lists "];
-	  [self cmdPrintf: @"registered (not all) defaults/overrides.\n"];
+	  [self cmdPrintf: @"registered (not all) defaults options.\n"];
 	}
       else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"list"])
 	{
