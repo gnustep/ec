@@ -2339,8 +2339,9 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
       if ([v isEqual: [defs objectForKey: k]])
         {
-	  [self cmdError: @"Console defaults '%@' left at '%@' for over a day."
-            @" Please reset ('tell %@ defaults delete %@') after updating"
+	  [self cmdError: @"The Console defaults override for '%@'"
+            @" has been left at '%@' for more than a day."
+            @" Please reset it ('tell %@ defaults delete %@') after updating"
             @" Control.plist as required.", k, v, [self cmdName], k];
         }
     }
