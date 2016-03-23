@@ -1134,6 +1134,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			  m = [m stringByAppendingString:
 			    @"  Please wait for this to be 'removed' before "
 			    @"proceeding.\n"];
+                          [c setTerminating: YES];
 			  [[c obj] cmdQuit: 0];
 			  found = YES;
 			}
@@ -1244,6 +1245,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 			  m = [m stringByAppendingFormat: 
 			    @"  The process '%@' should restart shortly.\n",
 			    [c name]];
+                          [c setTerminating: YES];
 			  [[c obj] cmdQuit: 0];
 			  found = YES;
 			}
@@ -1532,6 +1534,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      NSString	*s;
 
 	      lostClients = YES;
+              [o setUnregistered: YES];
 	      [clients removeObjectIdenticalTo: o];
 	      if (i <= pingPosition && pingPosition > 0)
 		{
@@ -2157,6 +2160,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      NS_DURING
 		{
 		  [launches setObject: [NSDate distantFuture] forKey: n];
+                  [c setTerminating: YES];
 		  [[c obj] cmdQuit: 0];
 		}
 	      NS_HANDLER
@@ -2182,7 +2186,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  for (i = 0; i < [a count] && [clients count] > 0; i++)
 	    {
 	      EcClientI	*c;
-	      NSString		*n;
+	      NSString	*n;
 
 	      n = [a objectAtIndex: i];
 	      c = [self findIn: clients byName: n];
@@ -2191,6 +2195,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  NS_DURING
 		    {
 		      [launches setObject: [NSDate distantFuture] forKey: n];
+                      [c setTerminating: YES];
 		      [[c obj] cmdQuit: 0];
 		    }
 		  NS_HANDLER
@@ -2386,6 +2391,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      NS_DURING
 		{
 		  [launches setObject: when forKey: [c name]];
+                  [c setTerminating: YES];
 		  [[c obj] cmdQuit: 0];
 		}
 	      NS_HANDLER
@@ -2423,6 +2429,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		  NS_DURING
 		    {
                       [launches setObject: when forKey: [c name]];
+                      [c setTerminating: YES];
                       [[c obj] cmdQuit: 0];
 		    }
 		  NS_HANDLER

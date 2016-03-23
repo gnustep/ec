@@ -189,6 +189,22 @@
   processIdentifier = p;
 }
 
+- (void) setTerminating: (BOOL)flag
+{
+  if (flag != terminating)
+    {
+      terminating = flag ? YES : NO;
+      if (YES == terminating)
+        {
+          NSLog(@"Terminating %@", name);
+        }
+      else
+        {
+          NSLog(@"Unregistered %@", name);
+        }
+    }
+}
+
 - (void) setTransient: (BOOL)flag
 {
   transient = flag ? YES : NO;
@@ -196,7 +212,19 @@
 
 - (void) setUnregistered: (BOOL)flag
 {
-  unregistered = flag ? YES : NO;
+  if (flag != unregistered)
+    {
+      unregistered = flag ? YES : NO;
+      if (YES == unregistered)
+        {
+          [self setTerminating: NO];
+        }
+    }
+}
+
+- (BOOL) terminating
+{
+  return terminating;
 }
 
 - (BOOL) transient

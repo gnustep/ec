@@ -50,6 +50,7 @@
   BOOL		pingOk;                 /* Can remote end accept ping?  */
   BOOL		transient;              /* Is this a transient client?  */
   BOOL		unregistered;           /* Has client unregistered?     */
+  BOOL          terminating;            /* Client been asked to quit?   */
   int           processIdentifier;	/* Process ID if known (or 0).	*/
 }
 - (NSComparisonResult) compare: (EcClientI*)other;
@@ -68,8 +69,10 @@
 - (void) setName: (NSString*)n;
 - (void) setObj: (id)o;
 - (void) setProcessIdentifier: (int)p;
+- (void) setTerminating: (BOOL)flag;
 - (void) setTransient: (BOOL)flag;
 - (void) setUnregistered: (BOOL)flag;
+- (BOOL) terminating;
 - (BOOL) transient;
 @end
 
