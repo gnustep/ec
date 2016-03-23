@@ -2,6 +2,28 @@ dnl Process this file with autoconf to produce configure.
 
 AC_INIT(EcProcess.h)
 AC_CONFIG_HEADER(config.h)
+
+if test -z "$GNUSTEP_MAKEFILES"; then
+ GNUSTEP_MAKEFILES=`gnustep-config --variable=GNUSTEP_MAKEFILES 2>/dev/null`
+fi
+
+if test -z "$GNUSTEP_MAKEFILES"; then
+ AC_MSG_ERROR([You must run the GNUstep initialization script first!])
+fi
+
+#--------------------------------------------------------------------
+# Find the compiler
+#--------------------------------------------------------------------
+if test "$CC" = ""; then
+ CC=`gnustep-config --variable=CC`
+fi
+if test "$CPP" = ""; then
+ CPP=`gnustep-config --variable=CPP`
+fi
+if test "$CXX" = ""; then
+ CXX=`gnustep-config --variable=CXX`
+fi
+
 AC_PROG_CC
 AC_PROG_CPP
 

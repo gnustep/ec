@@ -1504,12 +1504,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    object: conn];
   if ([conn isKindOfClass: [NSConnection class]])
     {
-      NSMutableArray	*a = [NSMutableArray arrayWithCapacity: 2];
+      NSMutableArray	*c;
       NSMutableString	*l = [NSMutableString stringWithCapacity: 20];
       NSMutableString	*e = [NSMutableString stringWithCapacity: 20];
       NSMutableString	*m = [NSMutableString stringWithCapacity: 20];
       BOOL		lostClients = NO;
-      unsigned		i;
+      NSUInteger	i;
 
       if (control && [(NSDistantObject*)control connectionForProxy] == conn)
 	{
@@ -1518,13 +1518,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  DESTROY(control);
 	}
 
-      /*
-       *	Now remove the clients from the active list.
+      /* Now remove the clients from the active list.
        */
-      i = [clients count];
+      c = AUTORELEASE([clients mutableCopy]);
+      i = [c count];
       while (i-- > 0)
 	{
-	  EcClientI*	o = [clients objectAtIndex: i];
+	  EcClientI     *o = [c objectAtIndex: i];
 
 	  if ([(id)[o obj] connectionForProxy] == conn)
 	    {
@@ -1532,8 +1532,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      NSString	*s;
 
 	      lostClients = YES;
-	      [a addObject: o];
-	      [clients removeObjectAtIndex: i];
+	      [clients removeObjectIdenticalTo: o];
 	      if (i <= pingPosition && pingPosition > 0)
 		{
 		  pingPosition--;
@@ -1562,7 +1561,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	    }
 	}
 
-      [a removeAllObjects];
+      [c removeAllObjects];
 
       if ([l length] > 0)
 	{
