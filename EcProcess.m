@@ -3038,18 +3038,18 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       if ([[msg objectAtIndex: 0] caseInsensitiveCompare: @"help"]
         == NSOrderedSame)
 	{
-	  [self cmdPrintf: @"\nWithout parameters, the defaults command is "];
-	  [self cmdPrintf: @"used to list the current defaults overrides.\n"];
-	  [self cmdPrintf: @"With the 'delete' parameter followed by a name, "];
-	  [self cmdPrintf: @"removes an override.\n"];
+	  [self cmdPrintf: @"\nWithout parameters,\n  the defaults command is"];
+	  [self cmdPrintf: @" used to list the current defaults overrides.\n"];
+	  [self cmdPrintf: @"With the 'delete' parameter followed by a name,"];
+	  [self cmdPrintf: @"\n  removes an override.\n"];
 	  [self cmdPrintf: @"With the 'write' parameter followed by a name "];
-	  [self cmdPrintf: @"and value, sets an override.\n"];
-	  [self cmdPrintf: @"With the 'read' parameter followed by a name, "];
-	  [self cmdPrintf: @"shows the effective default.\n"];
-	  [self cmdPrintf: @"With the 'revert' parameter, "];
-	  [self cmdPrintf: @"the command is used to revert all overides.\n"];
-	  [self cmdPrintf: @"With the 'list' parameter, this lists "];
-	  [self cmdPrintf: @"registered (not all) defaults options.\n"];
+	  [self cmdPrintf: @"and value,\n  sets an override of the default.\n"];
+	  [self cmdPrintf: @"With the 'read' parameter followed by a name,\n"];
+	  [self cmdPrintf: @" shows the effective default after overrides.\n"];
+	  [self cmdPrintf: @"With the 'revert' parameter,\n  the command"];
+	  [self cmdPrintf: @" is used to revert all overides.\n"];
+	  [self cmdPrintf: @"With the 'list' parameter,\n  this lists"];
+	  [self cmdPrintf: @" registered (not all) defaults options.\n"];
 	}
       else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"list"])
 	{
@@ -3058,7 +3058,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       else if ([msg count] > 1 && [[msg objectAtIndex: 1] isEqual: @"revert"])
 	{
           [cmdDefs revertSettings];
-          [self cmdPrintf: @"All settings are reverted to default.\n"];
+          [self cmdPrintf: @"All override settings are removed.\n"];
         }
       else if ([msg count] > 2)
 	{
@@ -3074,7 +3074,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
               val = [cmdDefs objectForKey: key];
             }
           else if ([mode caseInsensitiveCompare: @"write"] == NSOrderedSame
-              || [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
+            || [mode caseInsensitiveCompare: @"set"] == NSOrderedSame)
 	    {
               if ([msg count] == 4)
                 {
@@ -3113,28 +3113,30 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
             {
               if (nil == val)
                 {
-                  [self cmdPrintf: @"The default setting for '%@' is"
+                  [self cmdPrintf:
+                    @"The override setting for the default '%@' is"
                     @" unchanged (and not set).\n", key];
                 }
               else
                 {
-                  [self cmdPrintf: @"The default setting for '%@' is"
+                  [self cmdPrintf:
+                    @"The override setting for the default '%@' is"
                     @" unchanged (%@).\n", key, val];
                 }
             }
           else if (nil == val)
             {
-              [self cmdPrintf: @"The default setting for '%@' is"
-                @" deleted (was %@).\n", key, val];
+              [self cmdPrintf: @"The override setting for the default '%@' is"
+                @" deleted (was %@).\n", key, old];
             }
           else if (nil == old)
             {
-              [self cmdPrintf: @"The default setting for '%@' is"
+              [self cmdPrintf: @"The override setting for the default '%@' is"
                 @" set to: %@ (was not set).\n", key, val];
             }
           else
             {
-              [self cmdPrintf: @"The default setting for '%@' is"
+              [self cmdPrintf: @"The override setting for the default '%@' is"
                 @" set to: %@ (was %@).\n", key, val, old];
             }
 	}
@@ -3145,7 +3147,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
           NSEnumerator  *e;
           NSString      *k;
 
-	  [self cmdPrintf: @"Console default settings:\n"];
+	  [self cmdPrintf: @"Console temporary overrides of defaults:\n"];
           a = [[d allKeys] sortedArrayUsingSelector: @selector(compare:)];
           e = [a objectEnumerator];
           k = [e nextObject];
