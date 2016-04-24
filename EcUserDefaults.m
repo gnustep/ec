@@ -355,15 +355,19 @@ static NSLock 		*lock = nil;
     }
   if (nil != new)
     {
-      if (nil != old)
-	{
-	  [self removeVolatileDomainForName: @"EcCommand"];
-	}
-      [self setVolatileDomain: new forName: @"EcCommand"];
+      if (NO == [new isEqual: old])
+        {
+          if (nil != old)
+            {
+              [self removeVolatileDomainForName: @"EcCommand"];
+            }
+          [self setVolatileDomain: new forName: @"EcCommand"];
+          [new release];
+          [[NSNotificationCenter defaultCenter] postNotificationName:
+            NSUserDefaultsDidChangeNotification object: self];
+          return YES;
+        }
       [new release];
-      [[NSNotificationCenter defaultCenter] postNotificationName:
-	NSUserDefaultsDidChangeNotification object: self];
-      return YES;
     }
   return NO;
 }
