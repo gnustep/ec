@@ -5224,6 +5224,7 @@ With two parameters ('maximum' and a number),\n\
 @implementation EcDefaultRegistration
 
 static NSMutableDictionary      *regDefs = nil;
+static BOOL                     merged = NO;
 
 + (void) defaultsChanged: (NSUserDefaults*)defs
 {
@@ -5348,6 +5349,7 @@ static NSMutableDictionary      *regDefs = nil;
       m = [NSMutableDictionary dictionaryWithCapacity: [regDefs count]];
     }
   [ecLock lock];
+  merged = YES;
   e = [regDefs keyEnumerator];
   while (nil != (k = [e nextObject]))
     {
@@ -5370,6 +5372,7 @@ static NSMutableDictionary      *regDefs = nil;
 {
   static NSCharacterSet *w = nil;
   EcDefaultRegistration *d;
+  BOOL                  alreadyMerged;
 
   if (nil == w)
     {
@@ -5414,6 +5417,7 @@ static NSMutableDictionary      *regDefs = nil;
     }
 
   [ecLock lock];
+  alreadyMerged = merged;
   d = [regDefs objectForKey: name];
   if (nil == d)
     {
@@ -5430,6 +5434,12 @@ static NSMutableDictionary      *regDefs = nil;
     }
   ASSIGNCOPY(d->val, value);
   [ecLock unlock];
+  if (YES == alreadyMerged && nil != d->val)
+    {
+      [NSException raise: NSInternalInconsistencyException
+                  format: @"default '%@' value '%@' registered too late",
+        d->name, d->val];
+    }
 }
 
 + (void) showHelp
