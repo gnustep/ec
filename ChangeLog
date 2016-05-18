@@ -1,3 +1,12 @@
+2016-05-18  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcProcess.m: When changing log files on a nightly basis, don't
+	close descriptor 2 (stderr).  Instead open the new log and use
+	dup2() to switch the new log to be stderr.  Wolfgang spotted that
+	the existing code allowed another thread to ned up using the
+	descriptor if it opened a device in the gap between the old log
+	file being closed and the new one opened.
+
 2016-01-21  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcAlarm.h:

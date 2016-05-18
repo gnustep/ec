@@ -1515,14 +1515,17 @@ static NSString	*noFiles = @"No log files to archive";
       NSDictionary	*attr;
       NSFileManager	*mgr;
 
-      /*
-       * Ensure that all data is written to file.
+      /* Ensure that all data is written to file, then close it unless it's
+       * stderr (which we must keep open for logging at all times).
        */
       fflush(stderr);
-      NS_DURING
-        [hdl closeFile];
-      NS_HANDLER
-      NS_ENDHANDLER
+      if ([hdl fileDescriptor] != 2)
+        {
+          NS_DURING
+            [hdl closeFile];
+          NS_HANDLER
+          NS_ENDHANDLER
+        }
 
       /*
        * If the file is empty, remove it, otherwise move to archive directory.
