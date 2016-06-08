@@ -398,10 +398,10 @@
  * the alarm argument must contain the original alarm details including
  * its perceived severity.  However, the value returned by [EcAlarm-extra]
  * may be used to specify that an event is a clear (the end of the alarm),
- * (the value of the field bust be 'Clear').<br />
+ * (the value of the field must be 'Clear').<br />
  * The reminder field counts the number of copies of an alarm previously
  * sent to the alerting system, and should be set to -1 if the alert is
- * not an alarm, reminder ofr an alarm, or clear of an alarm.<br />
+ * not an alarm, reminder of an alarm, or clear of an alarm.<br />
  * The use of an empty string as an identifier is permitted for events which
  * should not be buffered, but which will never be matched by a clear.
  * </p>

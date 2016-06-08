@@ -2572,11 +2572,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 }
 
 
-- (Class)_loadClassFromBundle: (NSString*)bundleName
+- (Class) _loadClassFromBundle: (NSString*)bundleName
 {
-  NSString *path = nil;
-  Class c = Nil;
-  NSBundle *bundle = nil;
+  NSString      *path = nil;
+  Class         c = Nil;
+  NSBundle      *bundle = nil;
+
   path = [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory,
     NSLocalDomainMask, YES) lastObject];
   path = [path stringByAppendingPathComponent: @"Bundles"];
