@@ -5,8 +5,6 @@
     /* Common section for any/all hosts
      */
     * = {
-      /* Common section for all processes on any/all hosts.
-       */
     };
     Feep = {
       /* Section for the process Feep on any/all hosts.
@@ -66,5 +64,9 @@
         Bar                                     // Launch Bar second
       );
     };
+  };
+  /* Section specific for the Control server itself.
+   */
+  "" = {
   };
 }

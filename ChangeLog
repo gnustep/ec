@@ -1,3 +1,9 @@
+2016-06-09  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcControl.m: Fix bug where alerter config was not always updated
+	when changed, and where Control server defaults were lost during
+	alerter updates.
+
 2016-05-18  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcProcess.m: When changing log files on a nightly basis, don't

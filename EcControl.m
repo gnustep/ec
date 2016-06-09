@@ -2610,6 +2610,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 {
   NSMutableDictionary	*dict;
   NSDictionary		*conf;
+  NSDictionary		*alertConfig = nil;
   NSDictionary		*d;
   NSArray		*a;
   NSHost                *host;
@@ -2635,8 +2636,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	  return NO;
         }
     }
-
   base = [self cmdDataDirectory];
+
+  /* The contents of AlertConfig.plist will override any configuration
+   * of Alerter in the global ("*"."*") or Control server ("*"."")
+   * sections of Control.plist.
+   */
   path = [base stringByAppendingPathComponent: @"AlertConfig.plist"];
   if ([mgr isReadableFileAtPath: path] == NO
     || (d = [NSDictionary dictionaryWithContentsOfFile: path]) == nil
@@ -2648,74 +2653,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
     }
   else
     {
-      NSDictionary      *o = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
-
-      if (nil == o || NO == [o isEqual: d])
+      alertConfig = [[self cmdDefaults] dictionaryForKey: @"Alerter"];
+      if (nil == alertConfig || NO == [alertConfig isEqual: d])
         {
-	  NSString      *alerterDef;
-          NSString      *str;
-
-	  alerterDef = [d objectForKey: @"AlerterBundle"]; 
-          str = [d objectForKey: @"AlertAlarmThreshold"];
-          if (nil != str)
-            {
-              alertAlarmThreshold = [str intValue];
-              if (alertAlarmThreshold < EcAlarmSeverityCritical)
-                {
-                  alertAlarmThreshold = EcAlarmSeverityCritical;
-                }
-              if (alertAlarmThreshold > EcAlarmSeverityWarning)
-                {
-                  alertAlarmThreshold = EcAlarmSeverityWarning;
-                }
-            }
-          str = [d objectForKey: @"AlertReminderInterval"];
-          if (nil != str)
-            {
-              reminderInterval = [str intValue];
-              if (reminderInterval < 0)
-                {
-                  reminderInterval = 0;
-                }
-            }
-
-          d = [NSDictionary dictionaryWithObjectsAndKeys:
-            d, @"Alerter", nil];
-          [[self cmdDefaults] setConfiguration: d];
-
-	  if (nil == alerterDef)
-	    {
-	      alerterClass = [EcAlerter class];
-	    }
-	  else
-	    {
-	      // First, let's try whether this corresponds to
-	      // a class we already loaded.
-	      alerterClass = NSClassFromString(alerterDef);
-	      if (Nil == alerterClass)
-		{
-		  // We didn't link the class. Try to load it 
-		  // from a bundle.
-		  alerterClass = 
-		    [self _loadClassFromBundle: alerterDef];
-		}
-	    }
-	  if (Nil == alerterClass)
-	    {
-	      NSLog(@"Could not load alerter class '%@'", alerterDef);
-	    }
-	  else if ([alerter class] != alerterClass)
-	    {
-	      DESTROY(alerter);
-	    }
-
-	  if (nil == alerter)
-	    {
-	      alerter = [alerterClass new];
-	    }
-
           changed = YES;
         }
+      alertConfig = d;
     }
 
   path = [base stringByAppendingPathComponent: @"Operators.plist"];
@@ -2797,7 +2740,6 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       [mgr changeFileAttributes: [NSDictionary dictionaryWithObjectsAndKeys:
         [NSNumber numberWithInt: 0666], NSFilePosixPermissions,
         nil] atPath: @"/tmp/Control.cnf"];
-
       root = [NSMutableDictionary dictionaryWithCapacity: [conf count]];
       rootEnum = [conf keyEnumerator];
       while ((hostKey = [rootEnum nextObject]) != nil)
@@ -2885,8 +2827,12 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 
   if (YES == changed)
     {
-      /* Merge the globalconfiguration into this process' user defaults.
-       * Don't forget to preserve the Alerter config.
+      NSString  *alerterDef;
+      NSString  *str;
+      id        myConfig;
+
+      /* Merge the global configuration and Control server specific
+       * configuration into this process' user defaults.
        */
       d = [config objectForKey: @"*"];
       if ([d isKindOfClass: [NSDictionary class]])
@@ -2895,11 +2841,81 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
         }
       if (YES == [d isKindOfClass: [NSDictionary class]])
         {
-          dict = [d mutableCopy];
-          [dict setObject: [[self cmdDefaults] objectForKey: @"Alerter"]
-                   forKey: @"Alerter"];
-          [[self cmdDefaults] setConfiguration: dict];
-          [dict release];
+          dict = [[d mutableCopy] autorelease];
+        }
+      else
+        {
+          dict = [NSMutableDictionary dictionary];
+        }
+
+      /* Control server specific config.
+       */
+      myConfig = [config objectForKey: @""];
+      if ([myConfig isKindOfClass: [NSDictionary class]])
+        {
+          [dict addEntriesFromDictionary: myConfig];
+        }
+
+      /* If AlertConfig.plist was found, it overrides any value for Alerter
+       * configured in Control.plist.
+       */
+      if (nil != alertConfig)
+        {
+          [dict setObject: alertConfig forKey: @"Alerter"];
+        }
+      [[self cmdDefaults] setConfiguration: dict];
+
+      /* Now that our defaults are set, it's safe to update the alerter
+       * configuration.
+       */
+      alertConfig = [dict objectForKey: @"Alerter"];
+      alerterDef = [alertConfig objectForKey: @"AlerterBundle"]; 
+      str = [alertConfig objectForKey: @"AlertAlarmThreshold"];
+      alertAlarmThreshold = [str intValue];
+      if (alertAlarmThreshold < EcAlarmSeverityCritical)
+        {
+          alertAlarmThreshold = EcAlarmSeverityCritical;
+        }
+      if (alertAlarmThreshold > EcAlarmSeverityWarning)
+        {
+          alertAlarmThreshold = EcAlarmSeverityWarning;
+        }
+      str = [alertConfig objectForKey: @"AlertReminderInterval"];
+      reminderInterval = [str intValue];
+      if (reminderInterval < 0)
+        {
+          reminderInterval = 0;
+        }
+
+      if (nil == alerterDef)
+        {
+          alerterClass = [EcAlerter class];
+        }
+      else
+        {
+          /* First, let's try whether this corresponds to
+           * a class we already loaded.
+           */
+          alerterClass = NSClassFromString(alerterDef);
+          if (Nil == alerterClass)
+            {
+              /* We didn't link the class. Try to load it 
+               * from a bundle.
+               */
+              alerterClass = [self _loadClassFromBundle: alerterDef];
+            }
+        }
+      if (Nil == alerterClass)
+        {
+          NSLog(@"Could not load alerter class '%@'", alerterDef);
+        }
+      else if ([alerter class] != alerterClass)
+        {
+          DESTROY(alerter);
+        }
+      if (nil == alerter)
+        {
+          alerter = [alerterClass new];
         }
 
       dict = [NSMutableDictionary dictionaryWithCapacity: 3];
