@@ -2770,6 +2770,7 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       static unsigned	pingControlCount = 0;
       NSFileManager	*mgr;
       NSDictionary	*a;
+      NSString          *s;
       float		f;
       unsigned		count;
       BOOL		lost = NO;
@@ -2940,7 +2941,9 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
        * space.
        */
       mgr = [NSFileManager defaultManager];
-      a = [mgr fileSystemAttributesAtPath: cmdLogsDir(nil)];
+
+      s = [[self ecUserDirectory] stringByAppendingPathComponent: @"DebugLogs"];
+      a = [mgr fileSystemAttributesAtPath: s];
       f = [[a objectForKey: NSFileSystemFreeSize] floatValue] 
         / [[a objectForKey: NSFileSystemSize] floatValue];
       if (f <= spaceFree)
@@ -2956,13 +2959,13 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
               if ([m length] == 0)
                 {
                   m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-                    @"Disk space at %02.1f percent"), f * 100.0];
+                    @"Debug disk debug space at %02.1f percent"), f * 100.0];
                 }
               else
                 {
                   m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-                    @"Disk space at %02.1f percent"
-                    @" - deleted logs from %@ to make space"),
+                    @"Debug disk space at %02.1f percent"
+                    @" - deleted debug logs from %@ to make space"),
                     f * 100.0, m];
                 }
 	      [self information: m from: nil to: nil type: LT_ALERT];
@@ -2983,15 +2986,50 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
               if ([m length] == 0)
                 {
                   m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-                    @"Disk nodes at %02.1f percent"), f * 100.0];
+                    @"Debug disk nodes at %02.1f percent"), f * 100.0];
                 }
               else
                 {
                   m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
-                    @"Disk nodes at %02.1f percent"
-                    @" - deleted logs from %@ to make space"),
+                    @"Debug disk nodes at %02.1f percent"
+                    @" - deleted debug logs from %@ to make space"),
                     f * 100.0, m];
                 }
+	      [self information: m from: nil to: nil type: LT_ALERT];
+	    }
+	}
+
+      s = [[self ecUserDirectory] stringByAppendingPathComponent: @"Logs"];
+      a = [mgr fileSystemAttributesAtPath: s];
+      f = [[a objectForKey: NSFileSystemFreeSize] floatValue] 
+        / [[a objectForKey: NSFileSystemSize] floatValue];
+      if (f <= spaceFree)
+	{
+	  static NSDate	*last = nil;
+
+	  if (nil == last || [last timeIntervalSinceNow] < -DLY)
+	    {
+	      NSString	*m;
+
+	      ASSIGN(last, [NSDate date]);
+              m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                @"Disk space at %02.1f percent"), f * 100.0];
+	      [self information: m from: nil to: nil type: LT_ALERT];
+	    }
+        }
+      f = [[a objectForKey: NSFileSystemFreeNodes] floatValue] 
+        / [[a objectForKey: NSFileSystemNodes] floatValue];
+      if (f <= nodesFree)
+	{
+	  static NSDate	*last = nil;
+
+	  if (nil == last || [last timeIntervalSinceNow] < -DLY)
+	    {
+	      NSString	*m;
+
+	      ASSIGN(last, [NSDate date]);
+              m = [NSString stringWithFormat: cmdLogFormat(LT_ALERT,
+                @"Disk nodes at %02.1f percent"), f * 100.0];
 	      [self information: m from: nil to: nil type: LT_ALERT];
 	    }
 	}
