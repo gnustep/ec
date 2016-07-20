@@ -944,6 +944,7 @@ static BOOL commandIsRepeat (NSString *string)
 - (int) ecRun
 {
   NSRunLoop	*loop;
+  NSDate	*distantFuture;
 
 #if defined(HAVE_LIBREADLINE)
   if (YES == interactive)
@@ -953,8 +954,9 @@ static BOOL commandIsRepeat (NSString *string)
     }
 #endif
 
+  distantFuture = [NSDate distantFuture];
   loop = [NSRunLoop currentRunLoop];
-  while (YES == [loop runMode: NSDefaultRunLoopMode beforeDate: nil])
+  while (YES == [loop runMode: NSDefaultRunLoopMode beforeDate: distantFuture])
     {
       if (0 != [self cmdSignalled])
 	{

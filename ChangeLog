@@ -1,3 +1,9 @@
+2016-07-20  Wolfgang Lux  <wolfgang.lux@gmail.com>
+
+	* EcConsole.m (-ecRun): Pass distantFuture to -runMode:beforeDate:
+	to prevent returning immediately from the run loop after recent
+	gnustep-base changes.
+
 2016-06-09  Richard Frith-Macdonald <rfm@gnu.org>
 
 	* EcControl.m: Fix bug where alerter config was not always updated
