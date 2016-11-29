@@ -2449,6 +2449,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   NSAutoreleasePool     *arp;
   NSConnection          *c;
   NSRunLoop             *loop;
+  NSDate                *future;
 
   arp = [NSAutoreleasePool new];
   if (YES == cmdIsTransient)
@@ -2518,6 +2519,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
   cmdIsRunning = YES;
   
   loop = [NSRunLoop currentRunLoop];
+  future = [NSDate distantFuture];
   while (YES == [EcProcConnection isValid])
     {
       NS_DURING
@@ -2526,6 +2528,10 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
 
 	  if (0 == cmdSignalled)
             {
+              if (nil == d)
+                {
+                  d = future;
+                }
               [loop acceptInputForMode: NSDefaultRunLoopMode beforeDate: d];
             }
 	  if (0 != cmdSignalled)
