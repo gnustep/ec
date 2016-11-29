@@ -138,6 +138,26 @@ EcTestConnect(NSString *name, NSString *host, NSTimeInterval timeout)
             }
           [NSThread sleepForTimeInterval: 0.1];
         }
+      NS_DURING
+        {
+          if (YES == [(EcProcess*)proxy cmdIsClient])
+            {
+              if (NO == [(EcProcess*)proxy cmdIsConnected])
+                {
+                  /* We must wait for the connected process to register
+                   * with the Command server and configure itself.
+                   */
+                  proxy = nil;
+                  [NSThread sleepForTimeInterval: 0.1];
+                }
+            }
+        }
+      NS_HANDLER
+        {
+          NSLog(@"Failed to communicate with '%@': %@",
+            name, localException);
+        }
+      NS_ENDHANDLER
     }
   [proxy retain];
   DESTROY(pool);

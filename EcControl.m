@@ -1030,6 +1030,10 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 		{
 		  m = @"Repeat\nRepeat the last command.\n";
 		}
+	      else if (comp(wd, @"Restart") >= 0)
+		{
+		  m = @"Restart all\nAsks all hosts to restart servers.\n";
+		}
 	      else if (comp(wd, @"Set") >= 0)
 		{
 		  m = @"Set\n"
@@ -1201,6 +1205,43 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
 	      exit(0);
 	    }
 	}
+      else if (comp(wd, @"restart") >= 0)
+        {
+	  wd = cmdWord(cmd, 1);
+	  if ([wd length] > 0 && comp(wd, @"all") == 0)
+	    {
+              NSUInteger        i;
+              NSArray           *hosts = [[commands copy] autorelease];
+
+	      for (i = 0; i < [hosts count]; i++)
+		{
+		  CommandInfo	*c = [hosts objectAtIndex: i];
+
+		  if ([commands indexOfObjectIdenticalTo: c] != NSNotFound)
+		    {
+                      NS_DURING
+                        {
+                          NSData	*dat = [NSPropertyListSerialization
+                            dataFromPropertyList: cmd
+                            format: NSPropertyListBinaryFormat_v1_0
+                            errorDescription: 0];
+                          [[c obj] command: dat
+                                        to: nil
+                                      from: [console name]];
+                        }
+                      NS_HANDLER
+                        {
+                          NSLog(@"Caught: %@", localException);
+                        }
+                      NS_ENDHANDLER
+		    }
+		}
+	    }
+          else
+            {
+              m = @"Try 'restart all' or 'on host restart ...\n";
+            }
+        }
       else if (comp(wd, @"set") >= 0)
 	{
 	  m = @"ok - set confirmed.\n";
