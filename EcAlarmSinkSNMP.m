@@ -773,8 +773,8 @@ pollHeartBeat_handler(netsnmp_mib_handler *handler,
 	/*
 	 * store old info for undo later 
 	 */
-	memdup((u_char**)&pollHeartBeat_cache,
-	  (u_char*)&pollHeartBeat, sizeof(pollHeartBeat));
+        pollHeartBeat_cache = malloc(sizeof(pollHeartBeat));
+        memcpy(&pollHeartBeat_cache, &pollHeartBeat, sizeof(pollHeartBeat));
 	if (pollHeartBeat_cache == NULL)
 	  {
 	    netsnmp_set_request_error(reqinfo, requests,
