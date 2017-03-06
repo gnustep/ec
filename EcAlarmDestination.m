@@ -366,7 +366,7 @@
   return old;
 }
 
-/* Much software uses integer settings for debub levels, so to selector
+/* Much software uses integer settings for debug levels, so to selector
  * type conflicts we use the same convention even though we are using it
  * as a boolean.
  */
