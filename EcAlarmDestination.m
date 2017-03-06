@@ -366,15 +366,19 @@
   return old;
 }
 
-- (BOOL) setDebug: (BOOL)debug
+/* Much software uses integer settings for debub levels, so to selector
+ * type conflicts we use the same convention even though we are using it
+ * as a boolean.
+ */
+- (int) setDebug: (int)debug
 {
   BOOL	old;
 
   [_alarmLock lock];
   old = _debug;
-  _debug = (YES == debug) ? YES : NO;
+  _debug = debug ? YES : NO;
   [_alarmLock unlock];
-  return old;
+  return (int)old;
 }
 
 - (id<EcAlarmDestination>) setDestination: (id<EcAlarmDestination>)destination

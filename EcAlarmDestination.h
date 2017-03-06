@@ -174,10 +174,11 @@
 - (BOOL) setCoalesce: (BOOL)coalesce;
 
 /** Sets debug on/off.  When debugging is on, we generate logs of
- * forwarding to the destination and of coalescing of alams.<br />
+ * forwarding to the destination and of coalescing of alarms.<br />
+ * Any non-zero value sets debug to YES, zero sets it to NO.<br />
  * Returns the previous value of the setting.
  */
-- (BOOL) setDebug: (BOOL)debug;
+- (int) setDebug: (int)debug;
 
 /** Sets the destination to which alarms should be forwarded.<br />
  * If nil this turns off forwarding until it is re-set to a non-nil

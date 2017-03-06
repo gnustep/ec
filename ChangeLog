@@ -1,3 +1,10 @@
+2017-03-06  Richard Frith-Macdonald <rfm@gnu.org>
+
+	* EcAlarmDestination.h:
+	* EcAlarmDestination.m:
+	Change signature of -setDebug: method to be consistent with other
+	classes using a method of the same name.
+
 2017-01-30  Wolfgang Lux  <wolfgang.lux@gmail.com>
 
 	* EcAlarmSinkSNMP.m (pollHeartBeat_handler): Don't use memdup,
