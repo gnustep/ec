@@ -142,7 +142,7 @@ typedef enum {
  *   <desc>Category: Equipment</desc>
  *   <term>EcAlarmOutOfMemory</term>
  *   <desc>Category: Processing</desc>
- *   <term>EcAlarmOuputDeviceError</term>
+ *   <term>EcAlarmOutputDeviceError</term>
  *   <desc>Category: Equipment</desc>
  *   <term>EcAlarmPerformanceDegraded</term>
  *   <desc>Category: QoS</desc>
@@ -227,7 +227,7 @@ typedef enum {
   EcAlarmMaterialSupplyExhausted = 30,			// Environmental
   EcAlarmMultiplexerProblem = 31,			// Equipment
   EcAlarmOutOfMemory = 32,				// Processing
-  EcAlarmOuputDeviceError = 33,				// Equipment
+  EcAlarmOutputDeviceError = 33,			// Equipment
   EcAlarmPerformanceDegraded = 34,			// QoS
   EcAlarmPowerProblem = 35,				// Equipment
   EcAlarmPressureUnacceptable = 36,			// Environmental

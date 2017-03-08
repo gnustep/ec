@@ -179,7 +179,7 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
       case EcAlarmInputDeviceError:
       case EcAlarmInputOutputDeviceError:
       case EcAlarmMultiplexerProblem:
-      case EcAlarmOuputDeviceError:
+      case EcAlarmOutputDeviceError:
       case EcAlarmPowerProblem:
       case EcAlarmProcessorProblem:
       case EcAlarmReceiveFailure:
@@ -305,8 +305,8 @@ EcMakeManagedObject(NSString *host, NSString *process, NSString *component)
 	return @"multiplexerProblem";
       case EcAlarmOutOfMemory:
 	return @"outOfMemory";
-      case EcAlarmOuputDeviceError:
-	return @"ouputDeviceError";
+      case EcAlarmOutputDeviceError:
+	return @"outputDeviceError";
       case EcAlarmPerformanceDegraded:
 	return @"performanceDegraded";
       case EcAlarmPowerProblem:
