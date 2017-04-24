@@ -2280,22 +2280,20 @@ static NSString*	cmdWord(NSArray* a, unsigned int pos)
       [obj setProcessIdentifier: [c processIdentifier]];
 
       /* This client has launched ... remove it from the set of launching
-       * clients.
+       * clients and the set of launchable clients.
        */
       [launching removeObjectForKey: n];
+      [launches removeObjectForKey: n];
 
-      /*
-       * If this client is in the list of launchable clients, set
-       * it's last launch time to now so that if it dies it will
-       * be restarted.  This overrides any previous shutdown - we
-       * assume that if it has been started by some process
-       * external to the Command server then we really don't want
-       * it shut down.
+      /* If this client is in the list of clients launched automatically
+       * add its launch timestamp so it will be restarted quickly if it
+       * gets shut down.
        */
-      if ([launches objectForKey: n] != nil)
-	{
-	  [launches setObject: [NSDate date] forKey: n];
-	}
+      if ([[[launchInfo objectForKey: n] objectForKey: @"Auto"] boolValue])
+        {
+          [launches setObject: [NSDate date] forKey: n];
+        }
+
       m = [NSString stringWithFormat: 
 	@"%@ registered new server with name '%@' on %@\n",
 	[NSDate date], n, host];
