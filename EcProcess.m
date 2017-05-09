@@ -2546,6 +2546,7 @@ NSLog(@"Ignored attempt to set timer interval to %g ... using 10.0", interval);
       NS_HANDLER
 	{
 	  [self cmdAlert: @"Problem running server: %@", localException];
+          [NSThread sleepForTimeInterval: 1.0];
 	}
       NS_ENDHANDLER;
       [arp emptyPool];
